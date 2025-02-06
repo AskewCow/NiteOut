@@ -1,7 +1,22 @@
 {
+<<<<<<< HEAD:frontend/package.json
   "name": "rn-starter",
   "version": "1.0.0",
   "main": "expo/AppEntry.js",
+=======
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "proxy": "http://localhost:5000",
+  "dependencies": {
+    "cra-template": "1.2.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-router-dom": "^7.1.5",
+    "react-scripts": "^5.0.1",
+    "web-vitals": "^4.2.4"
+  },
+>>>>>>> main:frontend/web/package.json
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
@@ -23,8 +38,24 @@
     "react-navigation": "^4.4.4",
     "react-navigation-stack": "^2.10.4"
   },
+<<<<<<< HEAD:frontend/package.json
   "devDependencies": {
     "@babel/core": "^7.20.0"
   },
   "private": true
+=======
+  "browserslist": {
+    "production": [
+      ">0.2%",
+      "not dead",
+      "not op_mini all"
+    ],
+    "development": [
+      "last 1 chrome version",
+      "last 1 firefox version",
+      "last 1 safari version"
+    ]
+}
+
+>>>>>>> main:frontend/web/package.json
 }
