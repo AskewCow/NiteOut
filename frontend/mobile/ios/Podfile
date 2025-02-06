@@ -1,3 +1,5 @@
+use_modular_headers!
+
 require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
 require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
 
@@ -43,6 +45,11 @@ target 'mobile' do
     :app_path => "#{Pod::Config.instance.installation_root}/..",
     :privacy_file_aggregation_enabled => podfile_properties['apple.privacyManifestAggregationEnabled'] != 'false',
   )
+
+  # Add modular headers for Firebase dependencies
+  pod 'Firebase/Core', :modular_headers => true
+  pod 'Firebase/Auth', :modular_headers => true
+  pod 'Firebase/Firestore', :modular_headers => true
 
   post_install do |installer|
     react_native_post_install(
