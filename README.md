@@ -8,6 +8,7 @@ therefore make sure to run (npm i) on command before running project.
 - Python (preferably latest version).
 - NodeJs (preferably latest).
 - IDE preferably with a terminal option (for ease of development).
+- Expo Go app on your phone (optional but recommended, both laptop and phone need to be on the same network).
 
 ## How to Run Backend
 
@@ -29,8 +30,8 @@ therefore make sure to run (npm i) on command before running project.
 
 ### Mac and Windows
 
-- Set your directory to the frontend.
-- Run the command (npm i).
-- Run the command (npm start).
-- This should open a window in your browser with the url that runs the frontend script.
-- Alternatively, the default port for frontend should be (localhost:3000).
+- Set your directory to the frontend/mobile file.
+- Run the command (npm install).
+- Run the command (npm install -g expo-cli).
+- Run the command (npx expo start).
+- A QR code should appear on the terminal. Scanning should make the frontend appear on your phone.
