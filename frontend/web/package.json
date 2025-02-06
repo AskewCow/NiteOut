@@ -1,4 +1,9 @@
 {
+<<<<<<< HEAD:frontend/package.json
+  "name": "rn-starter",
+  "version": "1.0.0",
+  "main": "expo/AppEntry.js",
+=======
   "name": "frontend",
   "version": "0.1.0",
   "private": true,
@@ -11,18 +16,34 @@
     "react-scripts": "^5.0.1",
     "web-vitals": "^4.2.4"
   },
+>>>>>>> main:frontend/web/package.json
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web"
   },
-  "eslintConfig": {
-    "extends": [
-      "react-app",
-      "react-app/jest"
-    ]
+  "dependencies": {
+    "@react-native-community/masked-view": "^0.1.11",
+    "expo": "~52.0.7",
+    "expo-linear-gradient": "~14.0.2",
+    "expo-status-bar": "~2.0.0",
+    "react": "18.3.1",
+    "react-native": "0.76.2",
+    "react-native-gesture-handler": "~2.20.2",
+    "react-native-reanimated": "~3.16.1",
+    "react-native-safe-area-context": "4.12.0",
+    "react-native-screens": "~4.0.0",
+    "react-native-svg": "^15.11.1",
+    "react-navigation": "^4.4.4",
+    "react-navigation-stack": "^2.10.4"
   },
+<<<<<<< HEAD:frontend/package.json
+  "devDependencies": {
+    "@babel/core": "^7.20.0"
+  },
+  "private": true
+=======
   "browserslist": {
     "production": [
       ">0.2%",
@@ -36,4 +57,5 @@
     ]
 }
 
+>>>>>>> main:frontend/web/package.json
 }

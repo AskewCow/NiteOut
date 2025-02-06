@@ -1,27 +1,17 @@
-/* General registration screen
-    see figma for reference
-*/
-
 import React from "react";
 import {
     View,
     Text,
     TextInput,
     TouchableOpacity,
+    TouchableWithoutFeedback,
     StyleSheet,
-    Dimensions,
-    SafeAreaView
+    Keyboard,
 } from "react-native";
-import {
-    widthPercentageToDP as wp,
-    heightPercentageToDP as hp
-} from 'react-native-responsive-screen';
 
-const { width, height } = Dimensions.get("window");
-
-const GeneralRegistrationScreen = ({ navigation }) => {
+const SignUpScreen = ({ navigation }) => {
     return (
-        <SafeAreaView style={styles.safeArea}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
             <View style={styles.container}>
                 <View style={[styles.section, styles.backgroundBlue]} />
                 <View style={[styles.section, styles.backgroundLightBlue]} />
@@ -30,7 +20,9 @@ const GeneralRegistrationScreen = ({ navigation }) => {
                 {/* Form Container */}
                 <View style={styles.formContainer}>
                     <Text style={styles.title}>Create account</Text>
-                    <Text style={styles.subtitle}>Sign up and start playing</Text>
+                    <Text style={styles.subtitle}>
+                        Sign up and start playing
+                    </Text>
 
                     {/* Full Name Input */}
                     <TextInput
@@ -55,32 +47,54 @@ const GeneralRegistrationScreen = ({ navigation }) => {
                         secureTextEntry
                     />
 
+                    {/* Verify Password Input */}
+                    <TextInput
+                        style={styles.input}
+                        placeholder="Confirm Password"
+                        placeholderTextColor="#999"
+                        secureTextEntry
+                    />
+
                     {/* Sign Up Button */}
                     <TouchableOpacity style={styles.signUpButton}>
                         <Text style={styles.signUpText}>Sign up</Text>
                     </TouchableOpacity>
 
+                    {/* Separator */}
+                    <View style={styles.separatorContainer}>
+                        <View style={styles.separatorLine} />
+                        <Text style={styles.separatorText}>or</Text>
+                        <View style={styles.separatorLine} />
+                    </View>
+
                     {/* Sign Up as Publican Button */}
-                    <TouchableOpacity style={styles.publicanButton}>
-                        <Text style={styles.publicanText}>Sign up as Publican</Text>
+                    <TouchableOpacity
+                        style={styles.publicanButton}
+                        onPress={() => navigation.navigate("PublicanSignUp")}
+                    >
+                        <Text style={styles.publicanText}>
+                            Sign up as Publican
+                        </Text>
                     </TouchableOpacity>
 
                     {/* Sign In Link */}
-                    <Text style={styles.footerText}>
-                        Already have an account?{" "}
-                        <Text style={styles.signInLink}>Sign in</Text>
-                    </Text>
+                    <View style={styles.footerContainer}>
+                        <Text style={styles.footerText}>
+                            Already have an account?{" "}
+                        </Text>
+                        <TouchableOpacity
+                            onPress={() => navigation.navigate("Login")}
+                        >
+                            <Text style={styles.signInLink}>Log in</Text>
+                        </TouchableOpacity>
+                    </View>
                 </View>
             </View>
-        </SafeAreaView>
+        </TouchableWithoutFeedback>
     );
 };
 
-export const styles = StyleSheet.create({
-    safeArea: {
-        flex: 1,
-        backgroundColor: "#00B4D8",
-    },
+const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: "#00B4D8",
@@ -110,9 +124,9 @@ export const styles = StyleSheet.create({
         backgroundColor: "#f8f9fa",
     },
     formContainer: {
-        margin: 20,
+        margin: 10,
         padding: 20,
-        borderRadius: 20,
+        borderRadius: 15,
         elevation: 3,
         top: "5%",
     },
@@ -127,48 +141,69 @@ export const styles = StyleSheet.create({
         color: "#212529",
         fontWeight: "light",
         textAlign: "center",
-        marginBottom: 70,
+        marginBottom: 80,
     },
     input: {
-        height: 50,
+        height: 55,
         backgroundColor: "#eef0f2",
-        borderRadius: 10,
+        borderRadius: 13,
         paddingHorizontal: 15,
-        marginBottom: 30,
+        marginBottom: 25,
     },
     signUpButton: {
         backgroundColor: "#FF007A",
-        paddingVertical: 15,
-        borderRadius: 10,
+        paddingVertical: 20,
+        borderRadius: 15,
         alignItems: "center",
-        marginTop: 100, // Fixed non-standard marginTop
+        marginTop: "5%",
     },
     signUpText: {
         color: "white",
         fontWeight: "bold",
         fontSize: 16,
     },
-    publicanButton: {
-        backgroundColor: "#F8B8C7",
-        paddingVertical: 15,
-        borderRadius: 10,
+    separatorContainer: {
+        flexDirection: "row",
         alignItems: "center",
-        marginTop: 10,
+        marginVertical: "2%", // Adjust spacing as needed
+    },
+    separatorLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: "#FF007A", // Pink color
+    },
+    separatorText: {
+        marginHorizontal: "5%",
+        color: "#FF007A",
+        fontWeight: "bold",
+        fontSize: 14,
+    },
+    publicanButton: {
+        backgroundColor: "#fbdbe9",
+        paddingVertical: 20,
+        borderRadius: 15,
+        alignItems: "center",
     },
     publicanText: {
         color: "black",
         fontWeight: "bold",
         fontSize: 16,
     },
+    footerContainer: {
+        flexDirection: "row",
+        justifyContent: "center",
+        alignItems: "center",
+        marginTop: "5%",
+    },
     footerText: {
-        textAlign: "center",
-        marginTop: 15,
         color: "#666",
+        fontSize: 14,
     },
     signInLink: {
         color: "#FF007A",
         fontWeight: "bold",
+        fontSize: 14,
     },
 });
 
-export default GeneralRegistrationScreen;
+export default SignUpScreen;
