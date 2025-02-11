@@ -1,6 +1,10 @@
+import uuid  #uuid generates unique gamer_id
+
 # The user account for a player, who has the option to host and play games
 class Gamer:
-    def __init__(self, name, email, password):
+    def __init__(self, name, email, password, gamer_id=None):
+        # Generate a unique ID if not provided (e.g., from database)
+        self.gamer_id = gamer_id if gamer_id else str(uuid.uuid4())
         self.set_name(name)
         self.set_email(email)
         self.set_password(password)
@@ -8,6 +12,9 @@ class Gamer:
         self.joined_games = []     
 
     # Get functions
+    def get_gamer_id(self):
+        return self.gamer_id
+    
     def get_name(self):
         return self.__name
     
@@ -34,7 +41,12 @@ class Gamer:
         self.joined_games.append(game_name.strip())
     
     def gamerinformation(self):
-        return f"Gamer: {self.__name}, Email: {self.__email}, Hosted Games: {self.hosted_games}, Joined Games: {self.joined_games}"
-
+        return {
+            "gamer_id": self.gamer_id,
+            "name": self.__name,
+            "email": self.__email,
+            "hosted_games": self.hosted_games,
+            "joined_games": self.joined_games
+        }
     
 
