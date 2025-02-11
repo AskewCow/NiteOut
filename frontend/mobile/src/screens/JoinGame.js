@@ -20,18 +20,20 @@ import {
   where,
   getDocs,
   query,
+  arrayUnion,
 } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 import { useGamer } from "../contexts/GamerContext";
 
 const JoinGame = () => {
   const { gamerId } = useGamer();
-  const [gamerIdInput, setGamerIdInput] = useState("");
+  const [gameCodeInput, setGameCodeInput] = useState("");
   const [gamerDetails, setGamerDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
   const [gameDetails, setGameDetails] = useState({
     hosted: [],
     joined: [],
+    fullGameInfo: null,
   });
 
   const fetchGameDetails = async (gameIds) => {
@@ -58,95 +60,75 @@ const JoinGame = () => {
     return gameDetails;
   };
 
-  const fetchGamerDetails = async () => {
+  const fetchGameByCode = async () => {
     try {
-      if (!gamerIdInput) {
-        Alert.alert("Error", "Please enter a valid Gamer ID");
+      if (!gameCodeInput) {
+        Alert.alert("Error", "Please enter a valid Game Code");
         return;
       }
 
       setIsLoading(true);
-      const gamersRef = collection(db, "gamers");
-      const q = query(gamersRef, where("gamerId", "==", gamerIdInput));
+      const gamesRef = collection(db, "games");
+      const q = query(gamesRef, where("game_code", "==", gameCodeInput));
       const querySnapshot = await getDocs(q);
 
       if (querySnapshot.empty) {
-        Alert.alert("Error", "Player not found");
+        Alert.alert("Error", "Game not found");
         setIsLoading(false);
         return;
       }
 
-      const gamerDoc = querySnapshot.docs[0];
-      const gamerData = gamerDoc.data();
-      console.log("Gamer data:", gamerData);
-      console.log("Hosted games:", gamerData.hosted_games);
-      console.log("Joined games:", gamerData.joined_games);
-
-      setGamerDetails({
-        uid: gamerDoc.id,
-        ...gamerData,
-      });
-
-      // Fetch game details from games collection
-      const hostedGames = await fetchGameDetails(gamerData.hosted_games || []);
-      const joinedGames = await fetchGameDetails(gamerData.joined_games || []);
+      const gameDoc = querySnapshot.docs[0];
+      const gameData = gameDoc.data();
+      console.log("Game data:", gameData);
 
       setGameDetails({
-        hosted: hostedGames,
-        joined: joinedGames,
+        fullGameInfo: {
+          id: gameDoc.id,
+          name: gameData.game_name,
+          location: gameData.location,
+          hostName: gameData.host_name,
+          availableSlots: gameData.available_slots,
+        },
       });
 
       setIsLoading(false);
     } catch (error) {
-      console.error("Error fetching gamer:", error);
-      Alert.alert("Error", "Failed to fetch gamer");
+      console.error("Error fetching game:", error);
+      Alert.alert("Error", "Failed to fetch game");
       setIsLoading(false);
     }
   };
 
-  const banPlayer = async () => {
+  const confirmJoinGame = async () => {
     try {
       setIsLoading(true);
-      const publicanRef = doc(db, "publicans", gamerId);
-      const publicanSnap = await getDoc(publicanRef);
-
-      if (!publicanSnap.exists()) {
-        Alert.alert("Error", "Publican profile not found");
-        setIsLoading(false);
-        return;
-      }
-
-      const publicanData = publicanSnap.data();
-      const bannedPlayers = publicanData.bannedPlayers || [];
-
-      if (bannedPlayers.includes(gamerDetails.uid)) {
-        Alert.alert("Error", "Player is already banned");
-        setIsLoading(false);
-        return;
-      }
-
-      bannedPlayers.push(gamerDetails.uid);
-      await updateDoc(publicanRef, {
-        bannedPlayers,
+      const gameRef = doc(db, "games", gameDetails.fullGameInfo.id);
+      await updateDoc(gameRef, {
+        participants: arrayUnion(gamerId),
       });
 
-      Alert.alert("Success", "Player has been banned successfully");
-      setGamerIdInput("");
+      const gamerRef = doc(db, "gamers", gamerId);
+      await updateDoc(gamerRef, {
+        joined_games: arrayUnion(gameDetails.fullGameInfo.id),
+      });
+
+      Alert.alert("Success", "You have joined the game successfully");
+      setGameCodeInput("");
       setGamerDetails(null);
-      setGameDetails({ hosted: [], joined: [] });
+      setGameDetails({ hosted: [], joined: [], fullGameInfo: null });
       setIsLoading(false);
-      navigation.navigate("BannedPlayers"); // assuming the route name
     } catch (error) {
-      console.error("Error banning player:", error);
-      Alert.alert("Error", "Failed to ban player");
+      console.error("Error joining game:", error);
+      Alert.alert("Error", "Failed to join game");
       setIsLoading(false);
     }
   };
 
   const resetSearch = () => {
     setGamerDetails(null);
-    setGamerIdInput("");
-    setGameDetails({ hosted: [], joined: [] });
+    setGameCodeInput("");
+    setGameDetails({ hosted: [], joined: [], fullGameInfo: null });
   };
 
   const renderGameItem = (item, index) => (
@@ -183,12 +165,12 @@ const JoinGame = () => {
             <View style={styles.searchContainer}>
               <TextInput
                 style={styles.input}
-                value={gamerIdInput}
-                onChangeText={setGamerIdInput}
+                value={gameCodeInput}
+                onChangeText={setGameCodeInput}
                 placeholder="Example: D01W2"
                 placeholderTextColor="#999"
               />
-              {gamerIdInput.length > 0 && (
+              {gameCodeInput.length > 0 && (
                 <TouchableOpacity
                   onPress={resetSearch}
                   style={styles.clearButton}
@@ -199,11 +181,11 @@ const JoinGame = () => {
             </View>
           </View>
 
-          {!gamerDetails ? (
+          {!gameDetails.fullGameInfo ? (
             <TouchableOpacity
-              onPress={fetchGamerDetails}
+              onPress={fetchGameByCode}
               style={[styles.createEventButton, { marginTop: 10 }]}
-              disabled={isLoading || !gamerIdInput}
+              disabled={isLoading || !gameCodeInput}
             >
               {isLoading ? (
                 <ActivityIndicator color="#fff" size="small" />
@@ -215,59 +197,41 @@ const JoinGame = () => {
             <View style={styles.playerDetailsContainer}>
               <View style={styles.divider} />
               <View style={styles.playerInfoItem}>
-                <Text style={styles.playerInfoLabel}>Name</Text>
+                <Text style={styles.playerInfoLabel}>Game Name</Text>
                 <Text style={styles.playerInfoValue}>
-                  {gamerDetails.fullName}
+                  {gameDetails.fullGameInfo.name}
                 </Text>
               </View>
               <View style={styles.playerInfoItem}>
-                <Text style={styles.playerInfoLabel}>Email</Text>
-                <Text style={styles.playerInfoValue}>{gamerDetails.email}</Text>
-              </View>
-              <View style={styles.playerInfoItem}>
-                <Text style={styles.playerInfoLabel}>ID</Text>
+                <Text style={styles.playerInfoLabel}>Location</Text>
                 <Text style={styles.playerInfoValue}>
-                  {gamerDetails.gamerId}
+                  {gameDetails.fullGameInfo.location}
                 </Text>
               </View>
-
-              {/* Hosted Games Section */}
-              <View style={styles.gamesSection}>
-                <Text style={styles.gamesSectionTitle}>Hosted Games</Text>
-                {gameDetails.hosted.length > 0 ? (
-                  <View style={styles.gamesList}>
-                    {gameDetails.hosted.map((game, index) =>
-                      renderGameItem(game, index)
-                    )}
-                  </View>
-                ) : (
-                  <Text style={styles.noGamesText}>No hosted games</Text>
-                )}
+              <View style={styles.playerInfoItem}>
+                <Text style={styles.playerInfoLabel}>Host</Text>
+                <Text style={styles.playerInfoValue}>
+                  {gameDetails.fullGameInfo.hostName}
+                </Text>
               </View>
-
-              {/* Joined Games Section */}
-              <View style={styles.gamesSection}>
-                <Text style={styles.gamesSectionTitle}>Joined Games</Text>
-                {gameDetails.joined.length > 0 ? (
-                  <View style={styles.gamesList}>
-                    {gameDetails.joined.map((game, index) =>
-                      renderGameItem(game, index)
-                    )}
-                  </View>
-                ) : (
-                  <Text style={styles.noGamesText}>No joined games</Text>
-                )}
+              <View style={styles.playerInfoItem}>
+                <Text style={styles.playerInfoLabel}>Available Slots</Text>
+                <Text style={styles.playerInfoValue}>
+                  {gameDetails.fullGameInfo.availableSlots}
+                </Text>
               </View>
 
               <TouchableOpacity
-                onPress={banPlayer}
+                onPress={confirmJoinGame}
                 style={[styles.createEventButton, { marginTop: 16 }]}
                 disabled={isLoading}
               >
                 {isLoading ? (
                   <ActivityIndicator color="#fff" size="small" />
                 ) : (
-                  <Text style={styles.createEventButtonText}>Ban Player</Text>
+                  <Text style={styles.createEventButtonText}>
+                    Confirm Join Game
+                  </Text>
                 )}
               </TouchableOpacity>
             </View>
