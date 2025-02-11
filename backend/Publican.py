@@ -61,7 +61,11 @@ class Publican:
         return "Reservation cancelled"
     
     def pub_details(self):
-        details = ("Name: {} \nID: {} \nAddress: {} \nAvailable Tables: {}"
-        .format(self.__pub_name, self.__ID, self.__Address, self.__tables))
-        return details
+        return {
+            "name": self.__pub_name,
+            "email": self.__email,
+            "ID(verification)": self.__ID,
+            "address": self.__address,
+            "tables": self.__tables
+        }
 
