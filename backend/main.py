@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from Gamer import Gamer
 from Publican import Publican
-from Game import Game, SeatBasedGame, TableBasedGame
+from game import Game, SeatBasedGame, TableBasedGame
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -10,15 +10,31 @@ from firebase_admin import credentials, firestore
 app = Flask(__name__)
 
 # Initialize Firebase
+# Initialize Firebase
 cred = credentials.Certificate("serviceAccountKey.json")
-firebase_admin.initialize_app(cred)
+
+# Check if Firebase has already been initialized
+if not firebase_admin._apps:
+    firebase_admin.initialize_app(cred)
+
 db_firestore = firestore.client()
+
 
 
 ## GET REQUESTS
 @app.route("/gamer", methods=["GET"])
 def get_gamer():
-    pass
+    gamer_ref = db_firestore.collection('gamers')
+    docs = gamer_ref.stream()
+
+    gamers = []
+    for doc in docs:
+        gamer_data = doc.to_dict()
+        gamer_data['id'] = doc.id  # Add the document ID to the response
+        gamers.append(gamer_data)
+
+    return jsonify(gamers), 200
+
 
 @app.route("/publican", methods=["GET"])
 def get_publican():
@@ -50,7 +66,25 @@ def get_game():
 ## POST REQUESTS
 @app.route("/create_gamer", methods=["POST"])
 def create_gamer():
-    pass
+    data = request.get_json()
+    name = data.get('name')
+    email = data.get('email')
+    password = data.get('password')  # Ideally hash passwords before storing
+    
+    if not name or not email or not password:
+        return jsonify({"error": "Name, email, and password are required."}), 400
+
+    # Create Gamer instance
+    new_gamer = Gamer(name, email, password)
+    gamer_data = new_gamer.to_dict()
+
+    try:
+        # Save to Firestore in 'gamers' collection
+        db_firestore.collection('gamers').document(new_gamer.get_gamer_id()).set(gamer_data)
+        return jsonify({"message": "Gamer created successfully!", "gamer_id": new_gamer.get_gamer_id()}), 201
+    except Exception as e:
+        return jsonify({"error": f"Failed to create gamer: {str(e)}"}), 500
+
 
 @app.route("/create_publican", methods=["POST"])
 def create_publican():

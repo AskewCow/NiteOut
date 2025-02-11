@@ -1,8 +1,15 @@
 import random
 import string
+import firebase_admin
+from firebase_admin import credentials, firestore
+
+# Initialize Firebase Admin SDK
+cred = credentials.Certificate("serviceAccountKey.json")
+firebase_admin.initialize_app(cred)
+db = firestore.client()
 
 class Gamer:
-    __existing_ids = set()  # Class variable to track existing IDs
+    __existing_ids = set()
 
     def __init__(self, name, email, password):
         self.__gamer_id = self.__generate_unique_id() 
@@ -15,12 +22,22 @@ class Gamer:
 
     def __generate_unique_id(self):
         while True:
-            # Generate 5 random characters from letters and digits
-            characters = string.ascii_uppercase + string.digits  # A-Z and 0-9
+            characters = string.ascii_uppercase + string.digits
             new_id = ''.join(random.choice(characters) for _ in range(5))
             if new_id not in Gamer.__existing_ids:
                 Gamer.__existing_ids.add(new_id)
                 return new_id
+
+    def to_dict(self):
+        return {
+            'gamer_id': self.get_gamer_id(),
+            'name': self.get_name(),
+            'email': self.get_email(),
+            'password': self.get_password(),  # Consider hashing for security
+            'hosted_games': self.hosted_games,
+            'joined_games': self.joined_games,
+            'friends_list': self.friends_list
+        }
 
     # Get functions
     def get_gamer_id(self):
@@ -62,3 +79,5 @@ class Gamer:
             self.friends_list.remove(friend_gamer_id)
             return True
         return False
+    
+    

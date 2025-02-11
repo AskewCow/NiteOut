@@ -12,6 +12,7 @@ import ResetVerificationScreen from "./src/screens/ResetVerificationScreen";
 import MapScreen from "./src/screens/MapScreen";
 import MainScreen from "./src/screens/MainScreen";
 import PracticeHomeScreen from "./src/screens/PracticeHomeScreen";
+import ProfileScreen from "./src/screens/ProfileScreen";
 
 import { logoXml } from "./src/utils/logo";
 
@@ -66,6 +67,11 @@ export default function App() {
         <Stack.Screen
           name="ResetVerification"
           component={ResetVerificationScreen}
+          options={{ headerShown: true }}
+        />
+        <Stack.Screen
+          name="Profile"
+          component={ProfileScreen}
           options={{ headerShown: true }}
         />
       </Stack.Navigator>
