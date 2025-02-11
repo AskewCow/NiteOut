@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from Gamer import Gamer
 from Publican import Publican
-from Game import Game
+from Game import Game, SeatBasedGame, TableBasedGame
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -56,9 +56,15 @@ def create_game():
     date = data.get('date')
     location = data.get('location')
     max_players = data.get('max_players')
-
-    # Create Game object
-    game = Game(host, game_name, game_type, date, location, max_players)
+    
+    # Handle seat-based or table-based games
+    if game_type == "seat_based":
+        game = SeatBasedGame(host, game_name, game_type, date, location, max_players)
+    elif game_type == "table_based":
+        tables = data.get('tables', [])
+        game = TableBasedGame(host, game_name, game_type, date, location, max_players, tables)
+    else:
+        game = Game(host, game_name, game_type, date, location, max_players)
 
     # Add game to Firestore
     new_game_ref = db_firestore.collection('games').add(game.get_game_details())
@@ -68,11 +74,11 @@ def create_game():
 
 ## PATCH REQUESTS
 @app.route("/update_gamer/<int:gamer_id>", methods=["PATCH"])
-def update_gamer():
+def update_gamer(gamer_id):
     pass
 
 @app.route("/update_publican/<int:publican_id>", methods=["PATCH"])
-def update_publican():
+def update_publican(publican_id):
     pass
 
 @app.route("/update_game/<string:game_id>", methods=["PATCH"])
