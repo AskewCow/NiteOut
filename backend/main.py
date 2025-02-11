@@ -18,7 +18,16 @@ db_firestore = firestore.client()
 ## GET REQUESTS
 @app.route("/gamer", methods=["GET"])
 def get_gamer():
-    pass
+    gamers_ref = db_firestore.collection('gamers')
+    docs = gamers_ref.stream()
+    
+    gamers = []
+    for doc in docs:
+        gamer_data = doc.to_dict()
+        gamer_data['id'] = doc.id
+        gamers.append(gamer_data)
+
+    return jsonify(gamers), 200
 
 @app.route("/publican", methods=["GET"])
 def get_publican():
@@ -50,7 +59,24 @@ def get_game():
 ## POST REQUESTS
 @app.route("/create_gamer", methods=["POST"])
 def create_gamer():
-    pass
+    data = request.json
+    name = data.get("name")
+    email = data.get("email")
+    password = data.get("password")
+    
+    if not name or not email or not password:
+        return jsonify({"error": "Missing required fields"}), 400
+    
+    gamer = Gamer(name, email, password)
+    gamer_data = {
+        "name": gamer.get_name(),
+        "email": gamer.get_email(),
+        "hosted_games": gamer.hosted_games,
+        "joined_games": gamer.joined_games
+    }
+    
+    new_gamer_ref = db_firestore.collection("gamers").add(gamer_data)
+    return jsonify({"message": "Gamer created successfully!", "gamer_id": new_gamer_ref[1].id}), 201
 
 @app.route("/create_publican", methods=["POST"])
 def create_publican():
@@ -88,9 +114,33 @@ def create_game():
 
 
 ## PATCH REQUESTS
-@app.route("/update_gamer/<int:gamer_id>", methods=["PATCH"])
-def update_gamer():
-    pass
+@app.route("/update_gamer/<string:gamer_id>", methods=["PATCH"])
+def update_gamer(gamer_id):
+    data = request.json
+    gamer_ref = db_firestore.collection('gamers').document(gamer_id)
+    
+    gamer_doc = gamer_ref.get()
+    if not gamer_doc.exists:
+        return jsonify({"error": "Gamer not found"}), 404
+    
+    gamer_data = gamer_doc.to_dict()
+    gamer = Gamer(gamer_data["name"], gamer_data["email"], "hidden_password")
+    gamer.hosted_games = gamer_data.get("hosted_games", [])
+    gamer.joined_games = gamer_data.get("joined_games", [])
+    
+    if "name" in data:
+        gamer.set_name(data["name"])
+    if "password" in data:
+        gamer.set_password(data["password"])
+    
+    updated_data = {
+        "name": gamer.get_name(),
+        "hosted_games": gamer.hosted_games,
+        "joined_games": gamer.joined_games
+    }
+    
+    gamer_ref.update(updated_data)
+    return jsonify({"message": "Gamer updated successfully!"}), 200
 
 @app.route("/update_publican/<string:publican_id>", methods=["PATCH"])
 def update_publican(publican_id):
