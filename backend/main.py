@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from Gamer import Gamer
 from Publican import Publican
-from Game import Game, SeatBasedGame, TableBasedGame
+from game import Game, SeatBasedGame, TableBasedGame
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -60,14 +60,15 @@ def create_publican():
     ID = data.get('ID')
     password = data.get('password')
     address = data.get('address')
+    xcoord = data.get('xcoord')
+    ycoord = data.get('ycoord')
     tables = data.get('tables')
 
-    publican = Publican(pub_name, email, ID, password, address, tables)
+    publican = Publican(pub_name, email, ID, password, address, xcoord, ycoord, tables)
 
     new_publican_ref = db_firestore.collection('publicans').add(publican.pub_details())
 
-    return jsonify({"message": "Publican created", "pub_id": new_publican_ref.id}), 201
-
+    return jsonify({"message": "Publican created", "pub_id": new_publican_ref[1].id}), 201
 @app.route("/create_game", methods=["POST"])
 def create_game():
     data = request.get_json()

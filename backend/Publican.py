@@ -1,12 +1,14 @@
 # The user account for the owner of a pub, who would reserve tables for use in game nights
 class Publican:
-    def __init__(self, pub_name, email, ID, password, address, tables):
+    def __init__(self, pub_name, email, ID, password, address, xcoord, ycoord, tables):
         self.set_pub_name(pub_name)
         self.set_email(email)
-        # ID is current placeholder for pub verification
+        # ID is current placeholder for pub verification (NOT THE SAME AS THE API ID), that is lowercase id
         self.set_ID(ID)
         self.set_password(password)
         self.set_address(address)
+        self.set_xcoord(xcoord)
+        self.set_ycoord(ycoord)
         self.set_tables(tables)
 
     # Get functions
@@ -25,6 +27,15 @@ class Publican:
     def get_password(self):
         return self.__password
     
+    def get_xcoord(self):
+        return self.__xcoord
+    
+    def get_ycoord(self):
+        return self.__ycoord
+    
+    def get_tables(self):
+        return self.__tables
+    
     # Set functions
     def set_pub_name(self, pub_name):
         self.__pub_name = pub_name
@@ -41,6 +52,12 @@ class Publican:
     def set_address(self, address):
         self.__address = address
 
+    def set_xcoord(self, xcoord):
+        self.__xcoord = xcoord
+
+    def set_ycoord(self, ycoord):
+        self.__ycoord = ycoord
+    
     def set_tables(self, tables):
         self.__tables = tables
 
@@ -65,7 +82,10 @@ class Publican:
             "name": self.__pub_name,
             "email": self.__email,
             "ID(verification)": self.__ID,
+            "password": self.__password,
             "address": self.__address,
+            "xcoord": self.__xcoord,
+            "ycoord": self.__ycoord,
             "tables": self.__tables
         }
 
