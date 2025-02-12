@@ -11,6 +11,8 @@ import {
   InteractionManager,
 } from "react-native";
 
+import { updateProfile } from "firebase/auth";
+
 // Firebase Imports
 import { auth, db } from "../firebaseConfig";
 import { createUserWithEmailAndPassword } from "firebase/auth";
@@ -50,6 +52,8 @@ const SignUpScreen = ({ navigation }) => {
       const user = userCredential.user;
 
       console.log("User created:", user);
+      await updateProfile(user, { displayName: fullName });
+      console.log("Display name updated in Firebase Auth:", user.displayName);
 
       InteractionManager.runAfterInteractions(async () => {
         Alert.alert("Success", "Account created successfully! Please log in.");
