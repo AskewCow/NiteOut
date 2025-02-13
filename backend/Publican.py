@@ -65,7 +65,7 @@ class Publican:
     def reserve_table(self, max_players):
         # division will always round up
         table_count = int(max_players / 4) + (max_players % 5 > 0)
-        if (table_count > self.__tables):
+        if (table_count <= self.__tables):
             self.__tables -= table_count
             return "Table reserved."
         else:
