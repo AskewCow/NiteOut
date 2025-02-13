@@ -62,6 +62,92 @@ def get_game():
 
     return jsonify(games), 200
 
+@app.route("/add_friend/<string:gamer_id>", methods=["POST"])
+def add_friend(gamer_id):
+    data = request.get_json()
+    friend_id = data.get('friend_id')
+
+    gamers_ref = db_firestore.collection("gamers")
+
+    # Find the documents where gamerId matches
+    gamer_query = gamers_ref.where("gamerId", "==", gamer_id).stream()
+    friend_query = gamers_ref.where("gamerId", "==", friend_id).stream()
+
+    gamer_doc = next(gamer_query, None)
+    friend_doc = next(friend_query, None)
+
+    if not gamer_doc:
+        return jsonify({"error": "Gamer not found"}), 404
+    if not friend_doc:
+        return jsonify({"error": "Friend ID not found"}), 404
+
+    # Get document IDs
+    gamer_doc_id = gamer_doc.id
+    friend_doc_id = friend_doc.id
+
+    # Ensure friends_list exists in both documents
+    gamer_data = gamer_doc.to_dict()
+    friend_data = friend_doc.to_dict()
+
+    if "friends_list" not in gamer_data:
+        gamer_data["friends_list"] = []
+    if "friends_list" not in friend_data:
+        friend_data["friends_list"] = []
+
+    # Add friend_id to gamer and gamer_id to friend
+    db_firestore.collection("gamers").document(gamer_doc_id).update({
+        "friends_list": firestore.ArrayUnion([friend_id])
+    })
+    db_firestore.collection("gamers").document(friend_doc_id).update({
+        "friends_list": firestore.ArrayUnion([gamer_id])
+    })
+
+    return jsonify({"message": "Friend added successfully for both users!"}), 200
+
+
+@app.route("/remove_friend/<string:gamer_id>", methods=["POST"])
+def remove_friend(gamer_id):
+    data = request.get_json()
+    friend_id = data.get("friend_id")
+
+    gamers_ref = db_firestore.collection("gamers")
+
+    # Find the documents where gamerId matches
+    gamer_query = gamers_ref.where("gamerId", "==", gamer_id).stream()
+    friend_query = gamers_ref.where("gamerId", "==", friend_id).stream()
+
+    gamer_doc = next(gamer_query, None)
+    friend_doc = next(friend_query, None)
+
+    if not gamer_doc:
+        return jsonify({"error": "Gamer not found"}), 404
+    if not friend_doc:
+        return jsonify({"error": "Friend ID not found"}), 404
+
+    # Get document IDs
+    gamer_doc_id = gamer_doc.id
+    friend_doc_id = friend_doc.id
+
+    # Ensure friends_list exists in both documents
+    gamer_data = gamer_doc.to_dict()
+    friend_data = friend_doc.to_dict()
+
+    if "friends_list" not in gamer_data:
+        gamer_data["friends_list"] = []
+    if "friends_list" not in friend_data:
+        friend_data["friends_list"] = []
+
+    # Remove friend_id from gamer's list and gamer_id from friend's list
+    db_firestore.collection("gamers").document(gamer_doc_id).update({
+        "friends_list": firestore.ArrayRemove([friend_id])
+    })
+    db_firestore.collection("gamers").document(friend_doc_id).update({
+        "friends_list": firestore.ArrayRemove([gamer_id])
+    })
+
+    return jsonify({"message": "Friend removed successfully for both users!"}), 200
+
+
 
 ## POST REQUESTS
 @app.route("/create_gamer", methods=["POST"])
