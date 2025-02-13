@@ -20,7 +20,6 @@ if not firebase_admin._apps:
 db_firestore = firestore.client()
 
 
-
 ## GET REQUESTS
 @app.route("/gamer", methods=["GET"])
 def get_gamer():
@@ -61,6 +60,7 @@ def get_game():
         games.append(game_data)
 
     return jsonify(games), 200
+
 
 @app.route("/add_friend/<string:gamer_id>", methods=["POST"])
 def add_friend(gamer_id):
@@ -103,6 +103,7 @@ def add_friend(gamer_id):
     })
 
     return jsonify({"message": "Friend added successfully for both users!"}), 200
+
 
 
 @app.route("/remove_friend/<string:gamer_id>", methods=["POST"])
@@ -156,12 +157,13 @@ def create_gamer():
     name = data.get('name')
     email = data.get('email')
     password = data.get('password')  # Ideally hash passwords before storing
+    profile = data.get('profile')
     
     if not name or not email or not password:
         return jsonify({"error": "Name, email, and password are required."}), 400
 
     # Create Gamer instance
-    new_gamer = Gamer(name, email, password)
+    new_gamer = Gamer(name, email, password, profile)
     gamer_data = new_gamer.to_dict()
 
     try:
@@ -215,9 +217,31 @@ def create_game():
 
 
 ## PATCH REQUESTS
-@app.route("/update_gamer/<int:gamer_id>", methods=["PATCH"])
-def update_gamer(gamer_id):
-    pass
+@app.route("/update_profile/<string:gamer_id>", methods=["PATCH"])
+def update_profile(gamer_id):
+    data = request.get_json()
+    new_profile = data.get("profile")
+
+    if new_profile not in [str(i).zfill(2) for i in range(1, 13)]:
+        return jsonify({"error": "Invalid profile ID. Choose between '01' and '12'."}), 400
+
+    gamers_ref = db_firestore.collection("gamers")
+    gamer_query = gamers_ref.where("gamerId", "==", gamer_id).stream()
+    gamer_doc = next(gamer_query, None)
+
+    if not gamer_doc:
+        return jsonify({"error": "Gamer not found"}), 404
+
+    # Update the profile icon
+    db_firestore.collection("gamers").document(gamer_doc.id).update({
+        "profile": new_profile
+    })
+
+    return jsonify({
+        "message": "Profile updated successfully!", 
+        "new_profile": f"/static/icons/{new_profile}.png"
+    }), 200
+
 
 @app.route("/update_publican/<string:publican_id>", methods=["PATCH"])
 def update_publican(publican_id):
