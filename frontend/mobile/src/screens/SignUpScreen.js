@@ -10,6 +10,8 @@ import {
     Alert,
     InteractionManager,
 } from "react-native";
+// Resets Page States after changing Screens
+import { useEffect } from "react";
 
 import { updateProfile } from "firebase/auth";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -25,21 +27,68 @@ const SignUpScreen = ({ navigation }) => {
     const [password, setPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
 
+    const [fullNameError, setFullNameError] = useState("");
+    const [emailError, setEmailError] = useState("");
+    const [passwordError, setPasswordError] = useState("");
+    const [confirmPasswordError, setConfirmPasswordError] = useState("");
+
     const validateEmail = (email) => {
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
         return emailRegex.test(email);
     };
 
+    useEffect(() => {
+        const unsubscribe = navigation.addListener("blur", () => {
+            setEmailError(""); // Reset email error
+            setPasswordError(""); // Reset password error
+        });
+        // Cleanup the listener when the component unmounts or on focus change
+        return unsubscribe;
+    }, [navigation]);
+
     const handleSignUp = async () => {
+        // Reset errors when user starts new input
+        setFullNameError("");
+        setEmailError("");
+        setPasswordError("");
+        setConfirmPasswordError("");
+
+        const trimmedFullName = fullName.trim();
         const trimmedEmail = email.trim();
 
-        if (!validateEmail(trimmedEmail)) {
-            Alert.alert("Error", "Please enter a valid email address.");
+        // Validate Full Name
+        if (!trimmedFullName) {
+            setFullNameError("*Full Name is required.");
+            return;
+        }
+        if (trimmedFullName.split(" ").length < 2) {
+            setFullNameError("*Must include forename and surname.");
             return;
         }
 
+        // Validate Email
+        if (!trimmedEmail) {
+            setEmailError("*Email is required.");
+            return;
+        }
+        if (!validateEmail(trimmedEmail)) {
+            setEmailError("Please enter a valid email address.");
+            return;
+        }
+
+        // Validate Password
+        if (!password) {
+            setPasswordError("*Password is required.");
+            return;
+        }
+
+        // Validate Confirm Password
+        if (!confirmPassword) {
+            setConfirmPasswordError("*Please confirm your password.");
+            return;
+        }
         if (password !== confirmPassword) {
-            Alert.alert("Error", "Passwords do not match!");
+            setConfirmPasswordError("Passwords do not match!");
             return;
         }
 
@@ -83,7 +132,14 @@ const SignUpScreen = ({ navigation }) => {
             }
         } catch (error) {
             console.error("Error during sign-up:", error);
-            Alert.alert("Error", error.message);
+
+            if (error.code === "auth/weak-password") {
+                setPasswordError("Password is too weak! Try a stronger one.");
+            } else if (error.code === "auth/invalid-email") {
+                setEmailError("Invalid email format.");
+            } else {
+                Alert.alert("Error", error.message);
+            }
         }
     };
 
@@ -101,6 +157,15 @@ const SignUpScreen = ({ navigation }) => {
                         Sign up and start playing
                     </Text>
 
+                    {/* Full Name Error */}
+                    <View style={{ minHeight: 17 }}>
+                        {fullNameError ? (
+                            <Text style={styles.errorText}>
+                                {fullNameError}
+                            </Text>
+                        ) : null}
+                    </View>
+
                     {/* Full Name Input */}
                     <TextInput
                         style={styles.input}
@@ -109,6 +174,13 @@ const SignUpScreen = ({ navigation }) => {
                         value={fullName}
                         onChangeText={setFullName}
                     />
+
+                    {/* Email Error */}
+                    <View style={{ minHeight: 17 }}>
+                        {emailError ? (
+                            <Text style={styles.errorText}>{emailError}</Text>
+                        ) : null}
+                    </View>
 
                     {/* Email Input */}
                     <TextInput
@@ -120,6 +192,21 @@ const SignUpScreen = ({ navigation }) => {
                         onChangeText={(text) => setEmail(text.trim())}
                     />
 
+                    {/* Password Error */}
+                    <View style={{ minHeight: 17 }}>
+                        {passwordError ? (
+                            <Text
+                                style={
+                                    passwordError.includes("required")
+                                        ? styles.errorText
+                                        : styles.weakPasswordText
+                                }
+                            >
+                                {passwordError}
+                            </Text>
+                        ) : null}
+                    </View>
+
                     {/* Password Input */}
                     <TextInput
                         style={styles.input}
@@ -129,6 +216,15 @@ const SignUpScreen = ({ navigation }) => {
                         value={password}
                         onChangeText={setPassword}
                     />
+
+                    {/* Confirm Password Error Message */}
+                    <View style={{ minHeight: 17 }}>
+                        {confirmPasswordError ? (
+                            <Text style={styles.errorText}>
+                                {confirmPasswordError}
+                            </Text>
+                        ) : null}
+                    </View>
 
                     {/* Confirm Password Input */}
                     <TextInput
@@ -183,9 +279,20 @@ const SignUpScreen = ({ navigation }) => {
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: "#00B4D8" },
-    section: { position: "absolute", left: 0, right: 0 },
-    backgroundBlue: { height: "100%", top: 0, backgroundColor: "#00B4D8" },
+    container: {
+        flex: 1,
+        backgroundColor: "#00B4D8",
+    },
+    section: {
+        position: "absolute",
+        left: 0,
+        right: 0,
+    },
+    backgroundBlue: {
+        height: "100%",
+        top: 0,
+        backgroundColor: "#00B4D8",
+    },
     backgroundLightBlue: {
         height: "100%",
         top: "3%",
@@ -217,14 +324,26 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: "#212529",
         textAlign: "center",
-        marginBottom: 80,
+        marginBottom: "17%",
     },
     input: {
         height: 55,
         backgroundColor: "#eef0f2",
         borderRadius: 13,
         paddingHorizontal: 15,
-        marginBottom: 25,
+        marginBottom: 15,
+    },
+    errorText: {
+        color: "red",
+        fontSize: 14,
+        marginLeft: 5,
+        marginBottom: 5,
+    },
+    weakPasswordText: {
+        color: "orange",
+        fontSize: 14,
+        marginLeft: 5,
+        marginBottom: 5,
     },
     signUpButton: {
         backgroundColor: "#FF007A",
@@ -233,13 +352,21 @@ const styles = StyleSheet.create({
         alignItems: "center",
         marginTop: "5%",
     },
-    signUpText: { color: "white", fontWeight: "bold", fontSize: 16 },
+    signUpText: {
+        color: "white",
+        fontWeight: "bold",
+        fontSize: 16,
+    },
     separatorContainer: {
         flexDirection: "row",
         alignItems: "center",
         marginVertical: "2%",
     },
-    separatorLine: { flex: 1, height: 1, backgroundColor: "#FF007A" },
+    separatorLine: {
+        flex: 1,
+        height: 1,
+        backgroundColor: "#FF007A",
+    },
     separatorText: {
         marginHorizontal: "5%",
         color: "#FF007A",
@@ -252,15 +379,26 @@ const styles = StyleSheet.create({
         borderRadius: 15,
         alignItems: "center",
     },
-    publicanText: { color: "black", fontWeight: "bold", fontSize: 16 },
+    publicanText: {
+        color: "black",
+        fontWeight: "bold",
+        fontSize: 16,
+    },
     footerContainer: {
         flexDirection: "row",
         justifyContent: "center",
         alignItems: "center",
         marginTop: "5%",
     },
-    footerText: { color: "#666", fontSize: 14 },
-    signInLink: { color: "#FF007A", fontWeight: "bold", fontSize: 14 },
+    footerText: {
+        color: "#666",
+        fontSize: 14,
+    },
+    signInLink: {
+        color: "#FF007A",
+        fontWeight: "bold",
+        fontSize: 14,
+    },
 });
 
 export default SignUpScreen;
