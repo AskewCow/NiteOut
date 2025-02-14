@@ -17,13 +17,16 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Firebase Import
 import { db } from "../firebaseConfig";
-import { doc, getDoc } from "firebase/firestore";
+import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 
 const MainScreen = () => {
   const [currentLocation, setCurrentLocation] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [fetchingUser, setFetchingUser] = useState(false);
+  const [pubs, setPubs] = useState(null);
+  const [fetchingPubs, setFetchingPubs] = useState(false);
+  const [friends, setFriends] = useState(null);
   const navigation = useNavigation();
 
   const handleProfilePress = async () => {
@@ -52,7 +55,37 @@ const MainScreen = () => {
       }
     };
     getLocation();
+    fetchPubs();
   }, []);
+
+  // Fetch pub data from Firestore
+  const fetchPubs = async () => {
+    setFetchingPubs(true);
+    try {
+      const pubsCollect = await getDocs(collection(db, "publicans"));
+      const pubList = pubsCollect.docs.map((doc) => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          pub_name: data.pub_name,
+          address: data.address,
+          xcoord: data.xcoord,
+          ycoord: data.ycoord,
+        };
+      });
+
+      if(pubList.length === 0) {
+        console.warn("No pubs in list.");
+      }
+
+      console.log("Fetched pubs: ", pubList);
+      setPubs(pubList);
+    } catch (error) {
+      console.log("Error fetching pubs: ", error);
+    } finally {
+      setFetchingPubs(false);
+    }
+  }
 
   // Fetch User Info from Firestore
   const fetchUserInfo = async () => {
@@ -77,6 +110,7 @@ const MainScreen = () => {
           fullName: userData.fullName, // Using fullName instead of name
           gamer_id: gamerId, // Using the stored gamer ID
         });
+        setFriends(userData.friends_list || []); // Set friends list
         setModalVisible(true);
       } else {
         console.log("No user document found with ID:", gamerId);
@@ -139,6 +173,17 @@ const MainScreen = () => {
               pinColor="blue"
             />
           )}
+          {pubs && pubs.map((pub) => (
+            <Marker
+              key={pub.id}
+              coordinate={{
+                latitude: pub.xcoord,
+                longitude: pub.ycoord,
+              }}
+              title={pub.pub_name}
+              description={pub.address}
+            />
+          ))}
         </MapView>
       </View>
 
@@ -179,6 +224,25 @@ const MainScreen = () => {
           </View>
         </View>
       </Modal>
+
+      {/* Friends List Section */}
+      <View style={styles.friendsContainer}>
+          <Text style={styles.friendsTitle}>Find your friends!</Text>
+          { !friends ? (
+            <Text style={styles.noFriendsText}>No friends added yet.</Text>
+          ) : (
+            <FlatList
+              data={friends}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={({ item }) => (
+                <View style={styles.friendItem}>
+                  <Text style={styles.friendName}>{item}</Text>
+                </View>
+              )}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
+        </View>
     </SafeAreaView>
   );
 };
@@ -216,8 +280,9 @@ const styles = StyleSheet.create({
   },
   map: {
     width: "95%",
-    height: "40%",
+    height: "60%",
     borderRadius: 10,
+    paddingBottom: 0
   },
   modalOverlay: {
     flex: 1,
@@ -246,6 +311,34 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: "#00B4D8",
     fontWeight: "bold",
+  },
+  friendsContainer: {
+    width: "45%",
+    height: "45%",
+    backgroundColor: "#90E0EF",
+    borderRadius: 10,
+    padding: 10,
+    marginTop: -20,
+    marginLeft: 10,
+  },
+  friendsTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    marginBottom: 5,
+    textAlign: "center"
+  },
+  friendItem: {
+    padding: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: "#ddd",
+  },
+  friendName: {
+    fontSize: 16,
+  },
+  noFriendsText: {
+    fontSize: 14,
+    color: "gray",
+    textAlign: "center",
   },
 });
 

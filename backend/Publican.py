@@ -13,7 +13,7 @@ class Publican:
 
     # Get functions
     def get_pub_name(self):
-        return self.__pubName
+        return self.__pub_name
     
     def get_email(self):
         return self.__email
