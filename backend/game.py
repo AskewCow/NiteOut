@@ -76,3 +76,67 @@ class Game:
             "participants": self.__participants
         }
         
+
+
+class SeatBasedGame(Game):
+    def __init__(self, host, game_name, game_type, date, location, max_players):
+        super().__init__(host, game_name, game_type, date, location, max_players)
+        self.__seats = {i + 1: None for i in range(max_players)}  # Initialize seats
+
+    # Reserve a specific seat
+    def reserve_seat(self, participant, seat_number):
+        if seat_number not in self.__seats:
+            return "Invalid seat number."
+        if self.__seats[seat_number] is not None:
+            return "Seat already taken."
+        if participant in self.get_participants():
+            return f"{participant} has already joined the game."
+        
+        self.__seats[seat_number] = participant
+        self.get_participants().append(participant)
+        return f"{participant} has reserved seat {seat_number}."
+
+    # Cancel seat reservation
+    def cancel_reservation(self, participant):
+        for seat, occupant in self.__seats.items():
+            if occupant == participant:
+                self.__seats[seat] = None
+                self.get_participants().remove(participant)
+                return f"{participant}'s reservation for seat {seat} has been canceled."
+        return "Participant not found."
+
+    # Get seat details
+    def get_seat_details(self):
+        return self.__seats
+
+
+class TableBasedGame(Game):
+    def __init__(self, host, game_name, game_type, date, location, max_players, tables):
+        super().__init__(host, game_name, game_type, date, location, max_players)
+        self.__tables = {table: [] for table in tables}  # Initialize tables
+
+    # Reserve a spot at a specific table
+    def reserve_table_spot(self, participant, table_name):
+        if table_name not in self.__tables:
+            return "Table not found."
+        if len(self.__tables[table_name]) >= (self.get_max_players() // len(self.__tables)):
+            return "Table is full."
+        if participant in self.get_participants():
+            return f"{participant} has already joined the game."
+
+        self.__tables[table_name].append(participant)
+        self.get_participants().append(participant)
+        return f"{participant} has reserved a spot at {table_name}."
+
+    # Cancel table reservation
+    def cancel_table_reservation(self, participant):
+        for table, participants in self.__tables.items():
+            if participant in participants:
+                participants.remove(participant)
+                self.get_participants().remove(participant)
+                return f"{participant}'s reservation at {table} has been canceled."
+        return "Participant not found."
+
+    # Get table details
+    def get_table_details(self):
+        return self.__tables

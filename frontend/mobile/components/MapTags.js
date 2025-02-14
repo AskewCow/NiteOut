@@ -39,10 +39,10 @@ const MapTags = ({ tags = [], onSelectedTag }) => {
 
 const styles = StyleSheet.create({
     container: {
-        paddingVertical: 5,
+        paddingBottom: 10,
         alignItems: 'center',
         justifyContent: 'center',
-        height: '7%',
+        height: '10%',
     }, 
     scrollContainer: {
         paddingHorizontal: 10,

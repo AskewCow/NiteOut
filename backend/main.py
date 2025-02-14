@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify
 from Gamer import Gamer
 from Publican import Publican
-from game import Game
+from game import Game, SeatBasedGame, TableBasedGame
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -10,24 +10,30 @@ from firebase_admin import credentials, firestore
 app = Flask(__name__)
 
 # Initialize Firebase
+# Initialize Firebase
 cred = credentials.Certificate("serviceAccountKey.json")
-firebase_admin.initialize_app(cred)
+
+# Check if Firebase has already been initialized
+if not firebase_admin._apps:
+    firebase_admin.initialize_app(cred)
+
 db_firestore = firestore.client()
 
 
 ## GET REQUESTS
 @app.route("/gamer", methods=["GET"])
 def get_gamer():
-    gamers_ref = db_firestore.collection('gamers')
-    docs = gamers_ref.stream()
-    
+    gamer_ref = db_firestore.collection('gamers')
+    docs = gamer_ref.stream()
+
     gamers = []
     for doc in docs:
         gamer_data = doc.to_dict()
-        gamer_data['id'] = doc.id
+        gamer_data['id'] = doc.id  # Add the document ID to the response
         gamers.append(gamer_data)
 
     return jsonify(gamers), 200
+
 
 @app.route("/publican", methods=["GET"])
 def get_publican():
@@ -56,27 +62,117 @@ def get_game():
     return jsonify(games), 200
 
 
+@app.route("/add_friend/<string:gamer_id>", methods=["POST"])
+def add_friend(gamer_id):
+    data = request.get_json()
+    friend_id = data.get('friend_id')
+
+    gamers_ref = db_firestore.collection("gamers")
+
+    # Find the documents where gamerId matches
+    gamer_query = gamers_ref.where("gamerId", "==", gamer_id).stream()
+    friend_query = gamers_ref.where("gamerId", "==", friend_id).stream()
+
+    gamer_doc = next(gamer_query, None)
+    friend_doc = next(friend_query, None)
+
+    if not gamer_doc:
+        return jsonify({"error": "Gamer not found"}), 404
+    if not friend_doc:
+        return jsonify({"error": "Friend ID not found"}), 404
+
+    # Get document IDs
+    gamer_doc_id = gamer_doc.id
+    friend_doc_id = friend_doc.id
+
+    # Ensure friends_list exists in both documents
+    gamer_data = gamer_doc.to_dict()
+    friend_data = friend_doc.to_dict()
+
+    if "friends_list" not in gamer_data:
+        gamer_data["friends_list"] = []
+    if "friends_list" not in friend_data:
+        friend_data["friends_list"] = []
+
+    # Add friend_id to gamer and gamer_id to friend
+    db_firestore.collection("gamers").document(gamer_doc_id).update({
+        "friends_list": firestore.ArrayUnion([friend_id])
+    })
+    db_firestore.collection("gamers").document(friend_doc_id).update({
+        "friends_list": firestore.ArrayUnion([gamer_id])
+    })
+
+    return jsonify({"message": "Friend added successfully for both users!"}), 200
+
+
+
+@app.route("/remove_friend/<string:gamer_id>", methods=["POST"])
+def remove_friend(gamer_id):
+    data = request.get_json()
+    friend_id = data.get("friend_id")
+
+    gamers_ref = db_firestore.collection("gamers")
+
+    # Find the documents where gamerId matches
+    gamer_query = gamers_ref.where("gamerId", "==", gamer_id).stream()
+    friend_query = gamers_ref.where("gamerId", "==", friend_id).stream()
+
+    gamer_doc = next(gamer_query, None)
+    friend_doc = next(friend_query, None)
+
+    if not gamer_doc:
+        return jsonify({"error": "Gamer not found"}), 404
+    if not friend_doc:
+        return jsonify({"error": "Friend ID not found"}), 404
+
+    # Get document IDs
+    gamer_doc_id = gamer_doc.id
+    friend_doc_id = friend_doc.id
+
+    # Ensure friends_list exists in both documents
+    gamer_data = gamer_doc.to_dict()
+    friend_data = friend_doc.to_dict()
+
+    if "friends_list" not in gamer_data:
+        gamer_data["friends_list"] = []
+    if "friends_list" not in friend_data:
+        friend_data["friends_list"] = []
+
+    # Remove friend_id from gamer's list and gamer_id from friend's list
+    db_firestore.collection("gamers").document(gamer_doc_id).update({
+        "friends_list": firestore.ArrayRemove([friend_id])
+    })
+    db_firestore.collection("gamers").document(friend_doc_id).update({
+        "friends_list": firestore.ArrayRemove([gamer_id])
+    })
+
+    return jsonify({"message": "Friend removed successfully for both users!"}), 200
+
+
+
 ## POST REQUESTS
 @app.route("/create_gamer", methods=["POST"])
 def create_gamer():
-    data = request.json
-    name = data.get("name")
-    email = data.get("email")
-    password = data.get("password")
+    data = request.get_json()
+    name = data.get('name')
+    email = data.get('email')
+    password = data.get('password')  # Ideally hash passwords before storing
+    profile = data.get('profile')
     
     if not name or not email or not password:
-        return jsonify({"error": "Missing required fields"}), 400
-    
-    gamer = Gamer(name, email, password)
-    gamer_data = {
-        "name": gamer.get_name(),
-        "email": gamer.get_email(),
-        "hosted_games": gamer.hosted_games,
-        "joined_games": gamer.joined_games
-    }
-    
-    new_gamer_ref = db_firestore.collection("gamers").add(gamer_data)
-    return jsonify({"message": "Gamer created successfully!", "gamer_id": new_gamer_ref[1].id}), 201
+        return jsonify({"error": "Name, email, and password are required."}), 400
+
+    # Create Gamer instance
+    new_gamer = Gamer(name, email, password, profile)
+    gamer_data = new_gamer.to_dict()
+
+    try:
+        # Save to Firestore in 'gamers' collection
+        db_firestore.collection('gamers').document(new_gamer.get_gamer_id()).set(gamer_data)
+        return jsonify({"message": "Gamer created successfully!", "gamer_id": new_gamer.get_gamer_id()}), 201
+    except Exception as e:
+        return jsonify({"error": f"Failed to create gamer: {str(e)}"}), 500
+
 
 @app.route("/create_publican", methods=["POST"])
 def create_publican():
@@ -86,14 +182,15 @@ def create_publican():
     ID = data.get('ID')
     password = data.get('password')
     address = data.get('address')
+    xcoord = data.get('xcoord')
+    ycoord = data.get('ycoord')
     tables = data.get('tables')
 
-    publican = Publican(pub_name, email, ID, password, address, tables)
+    publican = Publican(pub_name, email, ID, password, address, xcoord, ycoord, tables)
 
     new_publican_ref = db_firestore.collection('publicans').add(publican.pub_details())
 
-    return jsonify({"message": "Publican created", "pub_id": new_publican_ref.id}), 201
-
+    return jsonify({"message": "Publican created", "pub_id": new_publican_ref[1].id}), 201
 @app.route("/create_game", methods=["POST"])
 def create_game():
     data = request.get_json()
@@ -103,9 +200,15 @@ def create_game():
     date = data.get('date')
     location = data.get('location')
     max_players = data.get('max_players')
-
-    # Create Game object
-    game = Game(host, game_name, game_type, date, location, max_players)
+    
+    # Handle seat-based or table-based games
+    if game_type == "seat_based":
+        game = SeatBasedGame(host, game_name, game_type, date, location, max_players)
+    elif game_type == "table_based":
+        tables = data.get('tables', [])
+        game = TableBasedGame(host, game_name, game_type, date, location, max_players, tables)
+    else:
+        game = Game(host, game_name, game_type, date, location, max_players)
 
     # Add game to Firestore
     new_game_ref = db_firestore.collection('games').add(game.get_game_details())
@@ -114,33 +217,31 @@ def create_game():
 
 
 ## PATCH REQUESTS
-@app.route("/update_gamer/<string:gamer_id>", methods=["PATCH"])
-def update_gamer(gamer_id):
-    data = request.json
-    gamer_ref = db_firestore.collection('gamers').document(gamer_id)
-    
-    gamer_doc = gamer_ref.get()
-    if not gamer_doc.exists:
+@app.route("/update_profile/<string:gamer_id>", methods=["PATCH"])
+def update_profile(gamer_id):
+    data = request.get_json()
+    new_profile = data.get("profile")
+
+    if new_profile not in [str(i).zfill(2) for i in range(1, 13)]:
+        return jsonify({"error": "Invalid profile ID. Choose between '01' and '12'."}), 400
+
+    gamers_ref = db_firestore.collection("gamers")
+    gamer_query = gamers_ref.where("gamerId", "==", gamer_id).stream()
+    gamer_doc = next(gamer_query, None)
+
+    if not gamer_doc:
         return jsonify({"error": "Gamer not found"}), 404
-    
-    gamer_data = gamer_doc.to_dict()
-    gamer = Gamer(gamer_data["name"], gamer_data["email"], "hidden_password")
-    gamer.hosted_games = gamer_data.get("hosted_games", [])
-    gamer.joined_games = gamer_data.get("joined_games", [])
-    
-    if "name" in data:
-        gamer.set_name(data["name"])
-    if "password" in data:
-        gamer.set_password(data["password"])
-    
-    updated_data = {
-        "name": gamer.get_name(),
-        "hosted_games": gamer.hosted_games,
-        "joined_games": gamer.joined_games
-    }
-    
-    gamer_ref.update(updated_data)
-    return jsonify({"message": "Gamer updated successfully!"}), 200
+
+    # Update the profile icon
+    db_firestore.collection("gamers").document(gamer_doc.id).update({
+        "profile": new_profile
+    })
+
+    return jsonify({
+        "message": "Profile updated successfully!", 
+        "new_profile": f"/static/icons/{new_profile}.png"
+    }), 200
+
 
 @app.route("/update_publican/<string:publican_id>", methods=["PATCH"])
 def update_publican(publican_id):
