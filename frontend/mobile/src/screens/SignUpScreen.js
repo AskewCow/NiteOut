@@ -118,12 +118,19 @@ const SignUpScreen = ({ navigation }) => {
                 Alert.alert("Please log in again.");
                 navigation.navigate("Login");
             }
+            const randomProfileId = String(
+                Math.floor(Math.random() * 12) + 1
+            ).padStart(2, "0");
 
             // Save user data to Firestore
             try {
                 await setDoc(doc(db, "users", user.uid), {
                     fullName: fullName,
                     email: trimmedEmail,
+                    profile: randomProfileId,
+                    friends_list: [],
+                    hosted_games: [],
+                    joined_games: [],
                     createdAt: new Date(),
                 });
                 console.log("User data saved to Firestore");

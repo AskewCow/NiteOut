@@ -74,7 +74,7 @@ const MainScreen = () => {
         };
       });
 
-      if(pubList.length === 0) {
+      if (pubList.length === 0) {
         console.warn("No pubs in list.");
       }
 
@@ -85,7 +85,7 @@ const MainScreen = () => {
     } finally {
       setFetchingPubs(false);
     }
-  }
+  };
 
   // Fetch User Info from Firestore
   const fetchUserInfo = async () => {
@@ -173,17 +173,18 @@ const MainScreen = () => {
               pinColor="blue"
             />
           )}
-          {pubs && pubs.map((pub) => (
-            <Marker
-              key={pub.id}
-              coordinate={{
-                latitude: pub.xcoord,
-                longitude: pub.ycoord,
-              }}
-              title={pub.pub_name}
-              description={pub.address}
-            />
-          ))}
+          {pubs &&
+            pubs.map((pub) => (
+              <Marker
+                key={pub.id}
+                coordinate={{
+                  latitude: pub.xcoord,
+                  longitude: pub.ycoord,
+                }}
+                title={pub.pub_name}
+                description={pub.address}
+              />
+            ))}
         </MapView>
       </View>
 
@@ -227,22 +228,22 @@ const MainScreen = () => {
 
       {/* Friends List Section */}
       <View style={styles.friendsContainer}>
-          <Text style={styles.friendsTitle}>Find your friends!</Text>
-          { !friends ? (
-            <Text style={styles.noFriendsText}>No friends added yet.</Text>
-          ) : (
-            <FlatList
-              data={friends}
-              keyExtractor={(item, index) => index.toString()}
-              renderItem={({ item }) => (
-                <View style={styles.friendItem}>
-                  <Text style={styles.friendName}>{item}</Text>
-                </View>
-              )}
-              showsVerticalScrollIndicator={false}
-            />
-          )}
-        </View>
+        <Text style={styles.friendsTitle}>Find your friends!</Text>
+        {!friends ? (
+          <Text style={styles.noFriendsText}>No friends added yet.</Text>
+        ) : (
+          <FlatList
+            data={friends}
+            keyExtractor={(item, index) => index.toString()}
+            renderItem={({ item }) => (
+              <View style={styles.friendItem}>
+                <Text style={styles.friendName}>{item}</Text>
+              </View>
+            )}
+            showsVerticalScrollIndicator={false}
+          />
+        )}
+      </View>
     </SafeAreaView>
   );
 };
@@ -282,7 +283,7 @@ const styles = StyleSheet.create({
     width: "95%",
     height: "60%",
     borderRadius: 10,
-    paddingBottom: 0
+    paddingBottom: 0,
   },
   modalOverlay: {
     flex: 1,
@@ -325,7 +326,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 5,
-    textAlign: "center"
+    textAlign: "center",
   },
   friendItem: {
     padding: 10,
