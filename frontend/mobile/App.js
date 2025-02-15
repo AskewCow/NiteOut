@@ -2,6 +2,7 @@ import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
 import { NavigationContainer } from "@react-navigation/native";
 import { SvgXml } from "react-native-svg";
+import { Dimensions } from "react-native";
 
 // Screen imports
 import SignUpScreen from "./src/screens/SignUpScreen";
@@ -17,6 +18,9 @@ import pfpChoiceScreen from "./src/screens/pfpChoiceScreen";
 
 import { logoXml } from "./src/utils/logo";
 
+const screenHeight = Dimensions.get("window").height;
+const headerHeight = screenHeight * 0.12;
+
 const Stack = createStackNavigator();
 
 export default function App() {
@@ -28,12 +32,19 @@ export default function App() {
                     headerTitle: () => (
                         <SvgXml xml={logoXml} width={40} height={40} />
                     ),
+                    headerTitleAlign: "center",
                     headerStyle: {
                         elevation: 0,
                         shadowOpacity: 0,
+                        height: headerHeight, // Adjust dynamically
                         backgroundColor: "#00B4D8",
                     },
-                    headerLeft: () => null, // Removes Back Button Globally, change if needed
+                    headerTitleContainerStyle: {
+                        justifyContent: "center",
+                        alignItems: "center",
+                        flex: 1,
+                    },
+                    headerLeft: () => null,
                 }}
             >
                 <Stack.Screen

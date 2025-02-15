@@ -210,14 +210,14 @@ const styles = StyleSheet.create({
     },
     backgroundLightBlue: {
         height: "100%",
-        top: "3%",
+        top: "2%",
         borderTopLeftRadius: 42,
         borderTopRightRadius: 42,
         backgroundColor: "#90E0EF",
     },
     backgroundWhite: {
         height: "100%",
-        top: "20%",
+        top: "19%",
         borderTopLeftRadius: 42,
         borderTopRightRadius: 42,
         backgroundColor: "#f8f9fa",
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
         padding: 20,
         borderRadius: 15,
         elevation: 3,
-        top: "5%",
+        top: "4%",
     },
     title: {
         fontSize: 28,

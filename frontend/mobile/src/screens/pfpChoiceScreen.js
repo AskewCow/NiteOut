@@ -101,7 +101,7 @@ const pfpChoiceScreen = ({ route, navigation }) => {
                 disabled={!selectedAvatar}
                 onPress={saveProfileToFirebase}
             >
-                <Text style={styles.startButtonText}>Start Playing</Text>
+                <Text style={styles.startButtonText}>Set Avatar</Text>
             </TouchableOpacity>
 
             <Text style={styles.footerText}>
