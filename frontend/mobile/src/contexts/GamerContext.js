@@ -8,7 +8,7 @@ export const useGamer = () => useContext(GamerContext);
 
 // Create a provider to wrap your app and manage the state
 export const GamerProvider = ({ children }) => {
-  const [gamerId, setGamerId] = useState(null); // Start with no gamerId, replace as needed
+  const [gamerId, setGamerId] = useState(null);
 
   return (
     <GamerContext.Provider value={{ gamerId, setGamerId }}>

@@ -7,11 +7,11 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
-  TouchableOpacity
+  TouchableOpacity,
+  FlatList
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
-import { useNavigation } from "@react-navigation/native";
 import { DrawerActions } from "@react-navigation/native";
 import MapTags from "../../components/MapTags";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -31,14 +31,19 @@ const MainScreen = ({ navigation }) => {
   const [pubs, setPubs] = useState(null);
   const [fetchingPubs, setFetchingPubs] = useState(false);
   const [friends, setFriends] = useState(null);
-  // const navigation = useNavigation();
+  const { gamerId, setGamerId } = useGamer();
 
-  const { setGamerId } = useGamer();
+  // Upon rendering
+  useEffect(() => {
+    getLocation();
+    fetchPubs();
+    fetchUserInfo();
+  }, []);
 
-  const handleProfilePress = async () => {
-    const gamerId = await AsyncStorage.getItem("gamerId");
+
+  const handleProfilePress = (gamerId) => {
+    console.log("GamerId: ", gamerId);
     if(gamerId) {
-      setGamerId(gamerId);
       navigation.dispatch(DrawerActions.openDrawer());
     } else {
       alert("Please log in again.");
@@ -47,25 +52,21 @@ const MainScreen = ({ navigation }) => {
     }
   };
 
-
   // Get current location
-  useEffect(() => {
-    const getLocation = async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status === "granted") {
-          const location = await Location.getCurrentPositionAsync({});
-          setCurrentLocation(location.coords);
-        } else {
-          alert("Location permission denied!");
-        }
-      } catch (error) {
-        console.error(error);
+  const getLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === "granted") {
+        const location = await Location.getCurrentPositionAsync({});
+        setCurrentLocation(location.coords);
+      } else {
+        alert("Location permission denied!");
       }
-    };
-    getLocation();
-    fetchPubs();
-  }, []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
 
   // Fetch pub data from Firestore
   const fetchPubs = async () => {
@@ -109,6 +110,7 @@ const MainScreen = ({ navigation }) => {
         return;
       }
 
+      setGamerId(gamerId);
       const userDoc = await getDoc(doc(db, "gamers", gamerId));
 
       if (userDoc.exists()) {
@@ -116,12 +118,11 @@ const MainScreen = ({ navigation }) => {
         console.log("User Data Retrieved:", userData);
 
         setUserInfo({
-          fullName: userData.fullName, // Using fullName instead of name
-          gamer_id: gamerId, // Using the stored gamer ID
+          fullName: userData.fullName, 
+          gamer_id: gamerId, 
         });
-        setFriends(userData.friends_list || []); // Set friends list
+        setFriends(userData.friends_list || []);
         setModalVisible(true);
-        // Save the gamerId globally using the context
         setGamerId(gamerId); 
       } else {
         console.log("No user document found with ID:", gamerId);
@@ -195,44 +196,6 @@ const MainScreen = ({ navigation }) => {
         </MapView>
       </View>
 
-      {/* Simplified Modal to show user info */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            {fetchingUser ? (
-              <ActivityIndicator size="large" color="#00B4D8" />
-            ) : (
-              <>
-                <Text style={styles.modalTitle}>Gamer Profile</Text>
-                {userInfo ? (
-                  <>
-                    <Text style={styles.modalText}>
-                      Name: {userInfo.fullName}
-                    </Text>
-                    <Text style={styles.modalText}>
-                      Gamer ID: {userInfo.gamer_id}
-                    </Text>
-                  </>
-                ) : (
-                  <Text style={styles.modalText}>No user data available.</Text>
-                )}
-                <Text
-                  style={styles.closeButton}
-                  onPress={() => setModalVisible(false)}
-                >
-                  Close
-                </Text>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
-
       {/* Friends List Section */}
       <View style={styles.friendsContainer}>
           <Text style={styles.friendsTitle}>Find your friends!</Text>
@@ -291,28 +254,6 @@ const styles = StyleSheet.create({
     height: "60%",
     borderRadius: 10,
     paddingBottom: 0
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContainer: {
-    backgroundColor: "white",
-    width: "80%",
-    padding: 20,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 15,
-  },
-  modalText: {
-    fontSize: 16,
-    marginBottom: 10,
   },
   closeButton: {
     marginTop: 20,
