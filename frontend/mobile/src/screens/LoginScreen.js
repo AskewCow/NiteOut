@@ -56,8 +56,7 @@ const LoginScreen = ({ navigation }) => {
             await AsyncStorage.setItem("gamerId", user.uid);
             console.log("Gamer ID stored successfully:", user.uid);
 
-            // Navigate to the MainScreen only after storing the gamerId
-            navigation.navigate("Main");
+            navigation.navigate("Drawer", {screen: "Home"});
         } catch (error) {
             console.error("Error during login:", error);
 

@@ -1,8 +1,9 @@
 import React from "react";
 import { createStackNavigator } from "@react-navigation/stack";
+import { createDrawerNavigator } from "@react-navigation/drawer";
 import { NavigationContainer } from "@react-navigation/native";
 import { SvgXml } from "react-native-svg";
-import { Dimensions } from "react-native";
+import { Dimensions, TouchableOpacity } from "react-native";
 
 // Screen imports
 import SignUpScreen from "./src/screens/SignUpScreen";
@@ -22,13 +23,21 @@ const screenHeight = Dimensions.get("window").height;
 const headerHeight = screenHeight * 0.12;
 
 const Stack = createStackNavigator();
+const Drawer = createDrawerNavigator();
 
-export default function App() {
+function DrawerNavigator() {
     return (
-        <NavigationContainer>
-            <Stack.Navigator
-                initialRouteName="Login"
-                screenOptions={{
+        <Drawer.Navigator>
+            <Drawer.Screen 
+                name="Main" 
+                component={MainScreen} 
+                screenOptions={{ headerShown: false }}
+            />
+            <Drawer.Screen 
+                name="Profile" 
+                component={ProfileScreen}
+                initialParams={{ gamerId: null }}
+                screenOptions={({ navigation, route }) => ({
                     headerTitle: () => (
                         <SvgXml xml={logoXml} width={40} height={40} />
                     ),
@@ -36,25 +45,48 @@ export default function App() {
                     headerStyle: {
                         elevation: 0,
                         shadowOpacity: 0,
-                        height: headerHeight, // Adjust dynamically
+                        height: headerHeight,
                         backgroundColor: "#00B4D8",
                     },
                     headerTitleContainerStyle: {
                         justifyContent: "center",
                         alignItems: "center",
                         flex: 1,
+                    }
+                })}
+            />
+        </Drawer.Navigator>
+    );
+}
+
+export default function App() {
+    return (
+        <NavigationContainer>
+            <Stack.Navigator
+                initialRouteName="Login"
+                screenOptions={({ navigation, route }) => ({
+                    headerTitle: () => (
+                        <SvgXml xml={logoXml} width={40} height={40} />
+                    ),
+                    headerTitleAlign: "center",
+                    headerStyle: {
+                        elevation: 0,
+                        shadowOpacity: 0,
+                        height: headerHeight,
+                        backgroundColor: "#00B4D8",
                     },
-                    headerLeft: () => null,
-                }}
+                    headerTitleContainerStyle: {
+                        justifyContent: "center",
+                        alignItems: "center",
+                        flex: 1,
+                    }
+                })}
             >
-                <Stack.Screen
-                    name="PracticeHome"
-                    component={PracticeHomeScreen}
-                />
-                <Stack.Screen
-                    name="Main"
-                    component={MainScreen}
-                    options={{ headerShown: false }}
+                {/* Drawer Navigator (Only Main has the menu) */}
+                <Stack.Screen 
+                    name="Drawer" 
+                    component={DrawerNavigator} 
+                    options={{ headerShown: false }} 
                 />
                 <Stack.Screen
                     name="Map"

@@ -7,13 +7,16 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
+  TouchableOpacity
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import { useNavigation } from "@react-navigation/native";
-import AntDesign from "@expo/vector-icons/AntDesign";
+import { DrawerActions } from "@react-navigation/native";
 import MapTags from "../../components/MapTags";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { logoXml } from "../utils/logo";
+import { SvgXml } from "react-native-svg";
 
 // Firebase Import
 import { db } from "../firebaseConfig";
@@ -31,13 +34,15 @@ const MainScreen = () => {
 
   const handleProfilePress = async () => {
     const gamerId = await AsyncStorage.getItem("gamerId");
-    if (gamerId) {
-      navigation.navigate("Profile", { gamerId });
-    } else {
-      alert("Please log in again.");
-      navigation.navigate("Login");
-    }
+    // if (gamerId) {
+    //   navigation.navigate("Profile", { gamerId });
+    // } else {
+    //   alert("Please log in again.");
+    //   navigation.navigate("Login");
+    // }
+    navigation.dispatch(DrawerActions.openDrawer());
   };
+
 
   // Get current location
   useEffect(() => {
@@ -74,7 +79,7 @@ const MainScreen = () => {
         };
       });
 
-      if (pubList.length === 0) {
+      if(pubList.length === 0) {
         console.warn("No pubs in list.");
       }
 
@@ -85,7 +90,7 @@ const MainScreen = () => {
     } finally {
       setFetchingPubs(false);
     }
-  };
+  }
 
   // Fetch User Info from Firestore
   const fetchUserInfo = async () => {
@@ -137,14 +142,11 @@ const MainScreen = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <View style={styles.userIconContainer}>
-            <AntDesign
-              name="user"
-              size={28}
-              color="black"
-              onPress={handleProfilePress}
-            />
-          </View>
+        <View>
+          <TouchableOpacity onPress={handleProfilePress}>
+            <SvgXml xml={logoXml} width={40} height={40} />
+          </TouchableOpacity>
+    </View>
           <TextInput
             style={styles.searchBar}
             placeholder="Search pubs and games"
@@ -173,18 +175,17 @@ const MainScreen = () => {
               pinColor="blue"
             />
           )}
-          {pubs &&
-            pubs.map((pub) => (
-              <Marker
-                key={pub.id}
-                coordinate={{
-                  latitude: pub.xcoord,
-                  longitude: pub.ycoord,
-                }}
-                title={pub.pub_name}
-                description={pub.address}
-              />
-            ))}
+          {pubs && pubs.map((pub) => (
+            <Marker
+              key={pub.id}
+              coordinate={{
+                latitude: pub.xcoord,
+                longitude: pub.ycoord,
+              }}
+              title={pub.pub_name}
+              description={pub.address}
+            />
+          ))}
         </MapView>
       </View>
 
@@ -228,22 +229,22 @@ const MainScreen = () => {
 
       {/* Friends List Section */}
       <View style={styles.friendsContainer}>
-        <Text style={styles.friendsTitle}>Find your friends!</Text>
-        {!friends ? (
-          <Text style={styles.noFriendsText}>No friends added yet.</Text>
-        ) : (
-          <FlatList
-            data={friends}
-            keyExtractor={(item, index) => index.toString()}
-            renderItem={({ item }) => (
-              <View style={styles.friendItem}>
-                <Text style={styles.friendName}>{item}</Text>
-              </View>
-            )}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-      </View>
+          <Text style={styles.friendsTitle}>Find your friends!</Text>
+          { !friends ? (
+            <Text style={styles.noFriendsText}>No friends added yet.</Text>
+          ) : (
+            <FlatList
+              data={friends}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={({ item }) => (
+                <View style={styles.friendItem}>
+                  <Text style={styles.friendName}>{item}</Text>
+                </View>
+              )}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
+        </View>
     </SafeAreaView>
   );
 };
@@ -283,7 +284,7 @@ const styles = StyleSheet.create({
     width: "95%",
     height: "60%",
     borderRadius: 10,
-    paddingBottom: 0,
+    paddingBottom: 0
   },
   modalOverlay: {
     flex: 1,
@@ -326,7 +327,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 5,
-    textAlign: "center",
+    textAlign: "center"
   },
   friendItem: {
     padding: 10,
