@@ -1,6 +1,5 @@
 class Permissions:
     def __init__(self, user):
-        """Determine role based on the user type (Gamer or Publican)."""
         if isinstance(user, Gamer):
             self.__role = "player"
         elif isinstance(user, Publican):
