@@ -7,19 +7,23 @@ import {
   TextInput,
   Modal,
   ActivityIndicator,
+  TouchableOpacity,
+  FlatList
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
-import { useNavigation } from "@react-navigation/native";
-import AntDesign from "@expo/vector-icons/AntDesign";
+import { DrawerActions } from "@react-navigation/native";
 import MapTags from "../../components/MapTags";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { logoXml } from "../utils/logo";
+import { SvgXml } from "react-native-svg";
+import { useGamer } from "../contexts/GamerContext";
 
 // Firebase Import
 import { db } from "../firebaseConfig";
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 
-const MainScreen = () => {
+const MainScreen = ({ navigation }) => {
   const [currentLocation, setCurrentLocation] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -27,36 +31,42 @@ const MainScreen = () => {
   const [pubs, setPubs] = useState(null);
   const [fetchingPubs, setFetchingPubs] = useState(false);
   const [friends, setFriends] = useState(null);
-  const navigation = useNavigation();
+  const { gamerId, setGamerId } = useGamer();
 
-  const handleProfilePress = async () => {
-    const gamerId = await AsyncStorage.getItem("gamerId");
-    if (gamerId) {
-      navigation.navigate("Profile", { gamerId });
+  // Upon rendering
+  useEffect(() => {
+    getLocation();
+    fetchPubs();
+    fetchUserInfo();
+  }, []);
+
+
+  const handleProfilePress = (gamerId) => {
+    console.log("GamerId: ", gamerId);
+    if(gamerId) {
+      navigation.dispatch(DrawerActions.openDrawer());
     } else {
       alert("Please log in again.");
       navigation.navigate("Login");
+      return;
     }
   };
 
   // Get current location
-  useEffect(() => {
-    const getLocation = async () => {
-      try {
-        const { status } = await Location.requestForegroundPermissionsAsync();
-        if (status === "granted") {
-          const location = await Location.getCurrentPositionAsync({});
-          setCurrentLocation(location.coords);
-        } else {
-          alert("Location permission denied!");
-        }
-      } catch (error) {
-        console.error(error);
+  const getLocation = async () => {
+    try {
+      const { status } = await Location.requestForegroundPermissionsAsync();
+      if (status === "granted") {
+        const location = await Location.getCurrentPositionAsync({});
+        setCurrentLocation(location.coords);
+      } else {
+        alert("Location permission denied!");
       }
-    };
-    getLocation();
-    fetchPubs();
-  }, []);
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
 
   // Fetch pub data from Firestore
   const fetchPubs = async () => {
@@ -74,7 +84,7 @@ const MainScreen = () => {
         };
       });
 
-      if (pubList.length === 0) {
+      if(pubList.length === 0) {
         console.warn("No pubs in list.");
       }
 
@@ -85,7 +95,7 @@ const MainScreen = () => {
     } finally {
       setFetchingPubs(false);
     }
-  };
+  }
 
   // Fetch User Info from Firestore
   const fetchUserInfo = async () => {
@@ -100,6 +110,7 @@ const MainScreen = () => {
         return;
       }
 
+      setGamerId(gamerId);
       const userDoc = await getDoc(doc(db, "gamers", gamerId));
 
       if (userDoc.exists()) {
@@ -107,11 +118,12 @@ const MainScreen = () => {
         console.log("User Data Retrieved:", userData);
 
         setUserInfo({
-          fullName: userData.fullName, // Using fullName instead of name
-          gamer_id: gamerId, // Using the stored gamer ID
+          fullName: userData.fullName, 
+          gamer_id: gamerId, 
         });
-        setFriends(userData.friends_list || []); // Set friends list
+        setFriends(userData.friends_list || []);
         setModalVisible(true);
+        setGamerId(gamerId); 
       } else {
         console.log("No user document found with ID:", gamerId);
         alert("User data not found. Please log in again.");
@@ -137,13 +149,10 @@ const MainScreen = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-          <View style={styles.userIconContainer}>
-            <AntDesign
-              name="user"
-              size={28}
-              color="black"
-              onPress={handleProfilePress}
-            />
+          <View>
+            <TouchableOpacity onPress={handleProfilePress}>
+              <SvgXml xml={logoXml} width={40} height={40} />
+            </TouchableOpacity>
           </View>
           <TextInput
             style={styles.searchBar}
@@ -173,77 +182,38 @@ const MainScreen = () => {
               pinColor="blue"
             />
           )}
-          {pubs &&
-            pubs.map((pub) => (
-              <Marker
-                key={pub.id}
-                coordinate={{
-                  latitude: pub.xcoord,
-                  longitude: pub.ycoord,
-                }}
-                title={pub.pub_name}
-                description={pub.address}
-              />
-            ))}
+          {pubs && pubs.map((pub) => (
+            <Marker
+              key={pub.id}
+              coordinate={{
+                latitude: pub.xcoord,
+                longitude: pub.ycoord,
+              }}
+              title={pub.pub_name}
+              description={pub.address}
+            />
+          ))}
         </MapView>
       </View>
 
-      {/* Simplified Modal to show user info */}
-      <Modal
-        visible={modalVisible}
-        animationType="slide"
-        transparent={true}
-        onRequestClose={() => setModalVisible(false)}
-      >
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            {fetchingUser ? (
-              <ActivityIndicator size="large" color="#00B4D8" />
-            ) : (
-              <>
-                <Text style={styles.modalTitle}>Gamer Profile</Text>
-                {userInfo ? (
-                  <>
-                    <Text style={styles.modalText}>
-                      Name: {userInfo.fullName}
-                    </Text>
-                    <Text style={styles.modalText}>
-                      Gamer ID: {userInfo.gamer_id}
-                    </Text>
-                  </>
-                ) : (
-                  <Text style={styles.modalText}>No user data available.</Text>
-                )}
-                <Text
-                  style={styles.closeButton}
-                  onPress={() => setModalVisible(false)}
-                >
-                  Close
-                </Text>
-              </>
-            )}
-          </View>
-        </View>
-      </Modal>
-
       {/* Friends List Section */}
       <View style={styles.friendsContainer}>
-        <Text style={styles.friendsTitle}>Find your friends!</Text>
-        {!friends ? (
-          <Text style={styles.noFriendsText}>No friends added yet.</Text>
-        ) : (
-          <FlatList
-            data={friends}
-            keyExtractor={(item, index) => index.toString()}
-            renderItem={({ item }) => (
-              <View style={styles.friendItem}>
-                <Text style={styles.friendName}>{item}</Text>
-              </View>
-            )}
-            showsVerticalScrollIndicator={false}
-          />
-        )}
-      </View>
+          <Text style={styles.friendsTitle}>Find your friends!</Text>
+          { !friends ? (
+            <Text style={styles.noFriendsText}>No friends added yet.</Text>
+          ) : (
+            <FlatList
+              data={friends}
+              keyExtractor={(item, index) => index.toString()}
+              renderItem={({ item }) => (
+                <View style={styles.friendItem}>
+                  <Text style={styles.friendName}>{item}</Text>
+                </View>
+              )}
+              showsVerticalScrollIndicator={false}
+            />
+          )}
+        </View>
     </SafeAreaView>
   );
 };
@@ -283,29 +253,7 @@ const styles = StyleSheet.create({
     width: "95%",
     height: "60%",
     borderRadius: 10,
-    paddingBottom: 0,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  modalContainer: {
-    backgroundColor: "white",
-    width: "80%",
-    padding: 20,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  modalTitle: {
-    fontSize: 20,
-    fontWeight: "bold",
-    marginBottom: 15,
-  },
-  modalText: {
-    fontSize: 16,
-    marginBottom: 10,
+    paddingBottom: 0
   },
   closeButton: {
     marginTop: 20,
@@ -326,7 +274,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: "bold",
     marginBottom: 5,
-    textAlign: "center",
+    textAlign: "center"
   },
   friendItem: {
     padding: 10,
