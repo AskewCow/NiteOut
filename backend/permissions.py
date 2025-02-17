@@ -1,8 +1,15 @@
 class Permissions:
-    def __init__(self, role='player'):
-        self.__role = role.lower()
+    def __init__(self, user):
+        """Determine role based on the user type (Gamer or Publican)."""
+        if isinstance(user, Gamer):
+            self.__role = "player"
+        elif isinstance(user, Publican):
+            self.__role = "publican"
+        else:
+            raise ValueError("Invalid user type. Must be a Gamer or Publican instance.")
+
         self.__permissions = {
-            'publicant': {
+            'publican': {
                 'can_host_game': False,
                 'can_join_game': False,
                 'can_manage_friends': False
@@ -17,12 +24,6 @@ class Permissions:
     def get_role(self):
         return self.__role
 
-    def set_role(self, new_role):
-        if new_role.lower() in self.__permissions:
-            self.__role = new_role.lower()
-        else:
-            raise ValueError("Invalid role. Choose 'publicant' or 'player'.")
-
     def can_host_game(self):
         return self.__permissions[self.__role]['can_host_game']
 
@@ -31,3 +32,4 @@ class Permissions:
 
     def can_manage_friends(self):
         return self.__permissions[self.__role]['can_manage_friends']
+
