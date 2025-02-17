@@ -4,9 +4,8 @@ import { createDrawerNavigator } from "@react-navigation/drawer";
 import { NavigationContainer } from "@react-navigation/native";
 import { SvgXml } from "react-native-svg";
 import { Dimensions, TouchableOpacity } from "react-native";
-import { GamerProvider } from './src/contexts/GamerContext'; 
+import { GamerProvider } from "./src/contexts/GamerContext";
 import { logoXml } from "./src/utils/logo";
-
 
 // Screen imports
 import SignUpScreen from "./src/screens/SignUpScreen";
@@ -19,7 +18,6 @@ import MainScreen from "./src/screens/MainScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import pfpChoiceScreen from "./src/screens/pfpChoiceScreen";
 
-
 const screenHeight = Dimensions.get("window").height;
 const headerHeight = screenHeight * 0.12;
 
@@ -29,13 +27,13 @@ const Drawer = createDrawerNavigator();
 function DrawerNavigator() {
     return (
         <Drawer.Navigator screenOptions={{ headerShown: false }}>
-            <Drawer.Screen 
-                name="Main" 
-                component={MainScreen} 
+            <Drawer.Screen
+                name="Main"
+                component={MainScreen}
                 screenOptions={{ headerShown: false }}
             />
-            <Drawer.Screen 
-                name="Profile" 
+            <Drawer.Screen
+                name="Profile"
                 component={ProfileScreen}
                 initialParams={{ gamerId: null }}
                 screenOptions={({ navigation, route }) => ({
@@ -53,7 +51,7 @@ function DrawerNavigator() {
                         justifyContent: "center",
                         alignItems: "center",
                         flex: 1,
-                    }
+                    },
                 })}
             />
         </Drawer.Navigator>
@@ -62,7 +60,7 @@ function DrawerNavigator() {
 
 export default function App() {
     return (
-        <GamerProvider> 
+        <GamerProvider>
             <NavigationContainer>
                 <Stack.Navigator
                     initialRouteName="Login"
@@ -81,14 +79,14 @@ export default function App() {
                             justifyContent: "center",
                             alignItems: "center",
                             flex: 1,
-                        }
+                        },
                     })}
                 >
                     {/* Drawer Navigator (Only Main has the menu) */}
-                    <Stack.Screen 
-                        name="Drawer" 
-                        component={DrawerNavigator} 
-                        options={{ headerShown: false }} 
+                    <Stack.Screen
+                        name="Drawer"
+                        component={DrawerNavigator}
+                        options={{ headerShown: false }}
                     />
                     <Stack.Screen
                         name="Map"
@@ -133,6 +131,5 @@ export default function App() {
                 </Stack.Navigator>
             </NavigationContainer>
         </GamerProvider>
-        
     );
 }

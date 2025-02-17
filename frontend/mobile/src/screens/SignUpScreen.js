@@ -8,9 +8,7 @@ import {
     StyleSheet,
     Keyboard,
     Alert,
-    InteractionManager,
 } from "react-native";
-// Resets Page States after changing Screens
 import { useEffect } from "react";
 
 import { updateProfile } from "firebase/auth";
