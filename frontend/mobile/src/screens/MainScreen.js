@@ -17,12 +17,13 @@ import MapTags from "../../components/MapTags";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { logoXml } from "../utils/logo";
 import { SvgXml } from "react-native-svg";
+import { useGamer } from "../contexts/GamerContext";
 
 // Firebase Import
 import { db } from "../firebaseConfig";
 import { collection, doc, getDoc, getDocs } from "firebase/firestore";
 
-const MainScreen = () => {
+const MainScreen = ({ navigation }) => {
   const [currentLocation, setCurrentLocation] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
@@ -30,17 +31,20 @@ const MainScreen = () => {
   const [pubs, setPubs] = useState(null);
   const [fetchingPubs, setFetchingPubs] = useState(false);
   const [friends, setFriends] = useState(null);
-  const navigation = useNavigation();
+  // const navigation = useNavigation();
+
+  const { setGamerId } = useGamer();
 
   const handleProfilePress = async () => {
     const gamerId = await AsyncStorage.getItem("gamerId");
-    // if (gamerId) {
-    //   navigation.navigate("Profile", { gamerId });
-    // } else {
-    //   alert("Please log in again.");
-    //   navigation.navigate("Login");
-    // }
-    navigation.dispatch(DrawerActions.openDrawer());
+    if(gamerId) {
+      setGamerId(gamerId);
+      navigation.dispatch(DrawerActions.openDrawer());
+    } else {
+      alert("Please log in again.");
+      navigation.navigate("Login");
+      return;
+    }
   };
 
 
@@ -117,6 +121,8 @@ const MainScreen = () => {
         });
         setFriends(userData.friends_list || []); // Set friends list
         setModalVisible(true);
+        // Save the gamerId globally using the context
+        setGamerId(gamerId); 
       } else {
         console.log("No user document found with ID:", gamerId);
         alert("User data not found. Please log in again.");
@@ -142,11 +148,11 @@ const MainScreen = () => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.container}>
         <View style={styles.header}>
-        <View>
-          <TouchableOpacity onPress={handleProfilePress}>
-            <SvgXml xml={logoXml} width={40} height={40} />
-          </TouchableOpacity>
-    </View>
+          <View>
+            <TouchableOpacity onPress={handleProfilePress}>
+              <SvgXml xml={logoXml} width={40} height={40} />
+            </TouchableOpacity>
+          </View>
           <TextInput
             style={styles.searchBar}
             placeholder="Search pubs and games"

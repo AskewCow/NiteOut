@@ -13,9 +13,11 @@ import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 import profileIcons from "../utils/profileIcons/profileIcons";
 import { editIconXml } from "../utils/editIcon";
+import { useGamer } from '../contexts/GamerContext'; 
 
-const ProfileScreen = ({ route, navigation }) => {
-    const { gamerId } = route.params;
+const ProfileScreen = ({ navigation }) => {
+    // const { gamerId } = route.params;
+    const { gamerId } = useGamer();
     const [userInfo, setUserInfo] = useState(null);
     const [loading, setLoading] = useState(true);
 
