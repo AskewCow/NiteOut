@@ -1,4 +1,5 @@
 from flask import Flask, request, jsonify
+from flask_apscheduler import APScheduler
 from Gamer import Gamer
 from Publican import Publican
 from game import Game, SeatBasedGame, TableBasedGame
@@ -6,8 +7,16 @@ from game import Game, SeatBasedGame, TableBasedGame
 import firebase_admin
 from firebase_admin import credentials, firestore
 
+class Config:
+    SCHEDULER_API_ENABLED = True
+
 # Initialize Flask App
 app = Flask(__name__)
+app.config.from_object(Config())
+
+scheduler = APScheduler()
+scheduler.init_app(app)
+scheduler.start()
 
 # Initialize Firebase
 # Initialize Firebase
@@ -18,6 +27,14 @@ if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
 
 db_firestore = firestore.client()
+
+# Define a function to perform the refresh
+def refresh_data():
+    # Include logic to refresh or update data here
+    print("Data refreshed at interval")
+
+# Schedule the function to run every 10 minutes
+scheduler.add_job(id='Scheduled Task', func=refresh_data, trigger='interval', minutes=30)
 
 
 ## GET REQUESTS
