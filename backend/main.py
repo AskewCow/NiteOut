@@ -203,12 +203,12 @@ def create_publican():
         "pub_name": data.get("pub_name"),
         "email": data.get("email"),
         "ID": data.get("ID"),
-        "password": data.get("password"),  # Store the hashed password
+        "password": data.get("password"), 
         "address": data.get("address"),
         "xcoord": data.get("xcoord"),
         "ycoord": data.get("ycoord"),
         "tables": data.get("tables"),
-        "events": []  # New publicans start with no events
+        "events": []  
     }
 
     try:
@@ -222,7 +222,6 @@ def create_publican():
 def create_event():
     data = request.get_json()
 
-    # Validate required fields
     required_fields = ["game_type", "start_time", "end_time", "expires", "pub_id"]
     if not all(field in data for field in required_fields):
         return jsonify({"error": "Missing required fields"}), 400
@@ -237,14 +236,12 @@ def create_event():
     if not all(field in data for field in specific_fields):
         return jsonify({"error": "Missing required fields"}), 400
 
-    # Check if the publican exists
     publican_ref = db_firestore.collection('publicans').document(data["pub_id"])
     publican_doc = publican_ref.get()
     
     if not publican_doc.exists:
         return jsonify({"error": "Publican not found"}), 404
 
-    # Prepare the event dictionary
     event_data = {
         "game_type": data["game_type"],
         "start_time": data["start_time"],
@@ -260,13 +257,11 @@ def create_event():
         event_data["table_capacity"] = data["table_capacity"]
 
     try:
-        # Add event to Firestore collection
         new_event_ref = db_firestore.collection('events').add(event_data)
-        event_id = new_event_ref[1].id  # Get the Firestore event document ID
+        event_id = new_event_ref[1].id  
 
-        # Update the publican's `events` array
         publican_ref.update({
-            "events": firestore.ArrayUnion([event_id])  # Append event ID to the array
+            "events": firestore.ArrayUnion([event_id]) 
         })
 
         return jsonify({
