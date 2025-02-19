@@ -10,7 +10,7 @@ class Publican:
         self.tables = tables
         self.events = []
 
-    def create_event(self, game_type, start_time, end_time, expires, num_units, unit_capacity=None):
+    def create_event(self, game_type, start_time, end_time, expires, num_units, unit_capacity=None, available_slots=None):
         if game_type not in ["Seat Based", "Table Based"]:
             return {"status": "error", "message": "Invalid game type specified."}
 
@@ -19,7 +19,8 @@ class Publican:
             "start_time": start_time,
             "end_time": end_time,
             "expires": expires,
-            "num_units": num_units
+            "num_units": num_units,
+            "available_slots": available_slots
         }
         if game_type == "Table Based":
             event["table_capacity"] = unit_capacity

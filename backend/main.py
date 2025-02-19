@@ -3,6 +3,7 @@ from flask_apscheduler import APScheduler
 from Gamer import Gamer
 from Publican import Publican
 from game import Game, SeatBasedGame, TableBasedGame
+from datetime import datetime, timedelta
 
 import firebase_admin
 from firebase_admin import credentials, firestore
@@ -241,13 +242,30 @@ def create_event():
     
     if not publican_doc.exists:
         return jsonify({"error": "Publican not found"}), 404
+    
+    start_time = datetime.fromisoformat(data["start_time"])
+    end_time = datetime.fromisoformat(data["end_time"])
+    total_hours = int((end_time - start_time).total_seconds() / 3600)
+
+    available_slots = {}
+    for i in range (total_hours):
+        slot_start = (start_time + timedelta(hours=i)).strftime("%H:%M")
+        slot_end = (start_time + timedelta(hours=i + 1)).strftime("%H:%M")
+        slot_key = f"{slot_start}-{slot_end}"
+
+        if data["game_type"] == "Seat Based":
+            available_slots[slot_key] = data["num_seats"]  
+        elif data["game_type"] == "Table Based":
+            available_slots[slot_key] = data["num_tables"] 
+
 
     event_data = {
         "game_type": data["game_type"],
         "start_time": data["start_time"],
         "end_time": data["end_time"],
         "expires": data["expires"],
-        "pub_id": data["pub_id"]
+        "pub_id": data["pub_id"],
+        "available_slots": available_slots
     }
 
     if data["game_type"] == "Seat Based":
