@@ -194,43 +194,88 @@ def create_gamer():
 @app.route("/create_publican", methods=["POST"])
 def create_publican():
     data = request.get_json()
-    pub_name = data.get('pub_name')
-    email = data.get('email')
-    ID = data.get('ID')
-    password = data.get('password')
-    address = data.get('address')
-    xcoord = data.get('xcoord')
-    ycoord = data.get('ycoord')
-    tables = data.get('tables')
 
-    publican = Publican(pub_name, email, ID, password, address, xcoord, ycoord, tables)
-
-    new_publican_ref = db_firestore.collection('publicans').add(publican.pub_details())
-
-    return jsonify({"message": "Publican created", "pub_id": new_publican_ref[1].id}), 201
-@app.route("/create_game", methods=["POST"])
-def create_game():
-    data = request.get_json()
-    host = data.get('host')
-    game_name = data.get('game_name')
-    game_type = data.get('game_type')
-    date = data.get('date')
-    location = data.get('location')
-    max_players = data.get('max_players')
+    required_fields = ["pub_name", "email", "ID", "password", "address", "xcoord", "ycoord", "tables"]
+    if not all(field in data for field in required_fields):
+        return jsonify({"error": "Missing required fields"}), 400
     
-    # Handle seat-based or table-based games
-    if game_type == "seat_based":
-        game = SeatBasedGame(host, game_name, game_type, date, location, max_players)
-    elif game_type == "table_based":
-        tables = data.get('tables', [])
-        game = TableBasedGame(host, game_name, game_type, date, location, max_players, tables)
+    publican_data = {
+        "pub_name": data.get("pub_name"),
+        "email": data.get("email"),
+        "ID": data.get("ID"),
+        "password": data.get("password"),  # Store the hashed password
+        "address": data.get("address"),
+        "xcoord": data.get("xcoord"),
+        "ycoord": data.get("ycoord"),
+        "tables": data.get("tables"),
+        "events": []  # New publicans start with no events
+    }
+
+    try:
+        new_publican_ref = db_firestore.collection('publicans').add(publican_data)[1]
+        return jsonify({"message": "Publican created", "pub_id": new_publican_ref.id}), 201
+    except Exception as e:
+        return jsonify({"error": f"Failed to create publican: {str(e)}"}), 500
+
+
+@app.route("/create_event", methods=["POST"])
+def create_event():
+    data = request.get_json()
+
+    # Validate required fields
+    required_fields = ["game_type", "start_time", "end_time", "expires", "pub_id"]
+    if not all(field in data for field in required_fields):
+        return jsonify({"error": "Missing required fields"}), 400
+
+    if data["game_type"] == "Seat Based":
+        specific_fields = ["num_seats"]
+    elif data["game_type"] == "Table Based":
+        specific_fields = ["num_tables", "table_capacity"]
     else:
-        game = Game(host, game_name, game_type, date, location, max_players)
+        return jsonify({"error": "Invalid game type"}), 400
 
-    # Add game to Firestore
-    new_game_ref = db_firestore.collection('games').add(game.get_game_details())
+    if not all(field in data for field in specific_fields):
+        return jsonify({"error": "Missing required fields"}), 400
 
-    return jsonify({"message": "Game created successfully!", "game_id": new_game_ref[1].id}), 201
+    # Check if the publican exists
+    publican_ref = db_firestore.collection('publicans').document(data["pub_id"])
+    publican_doc = publican_ref.get()
+    
+    if not publican_doc.exists:
+        return jsonify({"error": "Publican not found"}), 404
+
+    # Prepare the event dictionary
+    event_data = {
+        "game_type": data["game_type"],
+        "start_time": data["start_time"],
+        "end_time": data["end_time"],
+        "expires": data["expires"],
+        "pub_id": data["pub_id"]
+    }
+
+    if data["game_type"] == "Seat Based":
+        event_data["num_seats"] = data["num_seats"]
+    elif data["game_type"] == "Table Based":
+        event_data["num_tables"] = data["num_tables"]
+        event_data["table_capacity"] = data["table_capacity"]
+
+    try:
+        # Add event to Firestore collection
+        new_event_ref = db_firestore.collection('events').add(event_data)
+        event_id = new_event_ref[1].id  # Get the Firestore event document ID
+
+        # Update the publican's `events` array
+        publican_ref.update({
+            "events": firestore.ArrayUnion([event_id])  # Append event ID to the array
+        })
+
+        return jsonify({
+            "message": "Event created successfully!",
+            "event_id": event_id
+        }), 201
+
+    except Exception as e:
+        return jsonify({"error": f"Failed to create event: {str(e)}"}), 500
 
 
 ## PATCH REQUESTS
