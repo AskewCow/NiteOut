@@ -41,7 +41,7 @@ class Publican:
 
     def pub_details(self):
         return {
-            "name": self.pub_name,
+            "pub_name": self.pub_name,
             "email": self.email,
             "ID": self.ID,
             "password": self.password,
