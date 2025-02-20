@@ -265,6 +265,7 @@ def create_event():
         "end_time": data["end_time"],
         "expires": data["expires"],
         "pub_id": data["pub_id"],
+        "pub_name": publican_doc["pub_name"],
         "available_slots": available_slots
     }
 
@@ -289,6 +290,94 @@ def create_event():
 
     except Exception as e:
         return jsonify({"error": f"Failed to create event: {str(e)}"}), 500
+
+
+@app.route("/create_game", methods=["POST"])
+def create_game():
+    data = request.get_json()
+    
+    required_fields = ["game_name", "game_type", "start_time", "end_time", "expires", "pub_id", "gamer_id", "max_players"]
+    if not all(field in data for field in required_fields):
+        return jsonify({"error": "Missing required fields"}), 400
+    
+    publican_ref = db_firestore.collection('publicans').document(data["pub_id"])
+    publican_doc = publican_ref.get()
+    if not publican_doc.exists:
+        return jsonify({"error": "Pub not found"}), 404
+    publican_data = publican_doc.to_dict()
+    
+    gamer_ref = db_firestore.collection('gamers').document(data["gamer_id"])
+    gamer_doc = gamer_ref.get()
+    if not gamer_doc.exists:
+        return jsonify({"error": "Gamer not found"}), 404
+
+    start_time = datetime.fromisoformat(data["start_time"])
+    end_time = datetime.fromisoformat(data["end_time"])
+    
+    event_ref = (db_firestore.collection('events').where("pub_id", "==", data["pub_id"]).
+                   where("start_time", "<=", data["start_time"]).where("end_time", ">=", data["end_time"]).stream())
+    event_doc = next(event_ref, None)
+    if not event_doc:
+        return jsonify({"error": "No events found during specified time for this pub"}), 404
+    event_data = event_doc.to_dict()
+    
+    start_time = start_time.time()
+    end_time = end_time.time()
+
+    available_slots = event_doc.get("available_slots")
+    for slot_key, slot_value in available_slots.items():
+        string_start, string_end = slot_key.split('-')
+        slot_start = datetime.strptime(string_start, "%H:%M").time()
+        slot_end = datetime.strptime(string_end, "%H:%M").time()
+        if slot_start >= start_time and slot_end <= end_time:
+
+            if event_data["game_type"] == "Seat Based":
+                slot_value -= data["max_players"]
+
+            if event_data["game_type"] == "Table Based":
+                table_divisor = event_data["table_capacity"]
+                tables = data["max_players"] // table_divisor
+                if data["max_players"] % table_divisor > 0:
+                    tables += 1
+                slot_value -= tables
+            
+            if slot_value < 0:
+                return jsonify({"error": "Not enough room available"}), 400
+            
+            available_slots[slot_key] = slot_value
+
+    host = data["gamer_id"]
+    game_name = data["game_name"]
+    game_type = data["game_type"]
+    start_time = data["start_time"]
+    end_time = data["end_time"]
+    expires = data["expires"]
+    location = publican_data["pub_name"]
+    max_players = data["max_players"]
+
+    new_game = Game(host, game_name, game_type, start_time, end_time, expires, location, max_players)
+    game_data = new_game.get_game_details()
+
+    try:
+        new_game_ref = db_firestore.collection('games').add(game_data)
+        game_id = new_game_ref[1].id  
+
+        gamer_ref.update({
+            "hosted_games": firestore.ArrayUnion([game_id]) 
+        })
+
+        db_firestore.collection('events').document(event_doc.id).update({
+            "available_slots": available_slots
+        })
+
+        return jsonify({
+            "message": "Game created successfully!",
+            "game_id": game_id
+        }), 201
+
+    except Exception as e:
+        return jsonify({"error": f"Failed to create game: {str(e)}"}), 500
+
 
 
 ## PATCH REQUESTS

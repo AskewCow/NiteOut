@@ -1,53 +1,35 @@
 class Game:
-    def __init__(self, host, game_name, game_type, date, location, max_players):
+    def __init__(self, host, game_name, game_type, start_time, end_time, expires, location, max_players):
         self.set_host(host)
         self.set_game_name(game_name)
         self.set_game_type(game_type)
-        self.set_date(date)
+        self.set_start_time(start_time)
+        self.set_end_time(end_time)
+        self.set_expires(expires)
         self.set_location(location)
         self.set_max_players(max_players)
         self.__participants = []
 
     # Get functions
-    def get_host(self):
-        return self.__host
-    
-    def get_game_name(self):
-        return self.__game_name
-    
-    def get_game_type(self):
-        return self.__game_type
-    
-    def get_date(self):
-        return self.__date
-    
-    def get_location(self):
-        return self.__location
-
-    def get_max_players(self):
-        return self.__max_players
-
-    def get_participants(self):
-        return self.__participants
+    def get_host(self): return self.__host  
+    def get_game_name(self): return self.__game_name  
+    def get_game_type(self): return self.__game_type
+    def get_start_time(self): return self.__start_time
+    def get_end_time(self): return self.__end_time
+    def get_expires(self): return self.__expires
+    def get_location(self): return self.__location
+    def get_max_players(self): return self.__max_players
+    def get_participants(self): return self.__participants
 
     # Set functions
-    def set_host(self, host):
-        self.__host = host
-
-    def set_game_name(self, game_name):
-        self.__game_name = game_name
-
-    def set_game_type(self, game_type):
-        self.__game_type = game_type
-
-    def set_date(self, date):
-        self.__date = date
-
-    def set_location(self, location):
-        self.__location = location
-
-    def set_max_players(self, max_players):
-        self.__max_players = max_players
+    def set_host(self, host): self.__host = host
+    def set_game_name(self, game_name): self.__game_name = game_name
+    def set_game_type(self, game_type): self.__game_type = game_type
+    def set_start_time(self, start_time): self.__start_time = start_time
+    def set_end_time(self, end_time): self.__end_time = end_time
+    def set_expires(self, expires): self.__expires = expires
+    def set_location(self, location): self.__location = location
+    def set_max_players(self, max_players): self.__max_players = max_players
 
     # Add participant
     def add_participant(self, participant):
@@ -70,8 +52,10 @@ class Game:
             "host": self.__host,
             "game_name": self.__game_name,
             "game_type": self.__game_type,
-            "date": self.__date,
+            "start_time": self.__start_time,
+            "end_time": self.__end_time,
             "location": self.__location,
+            "expires": self.__expires,
             "max_players": self.__max_players,
             "participants": self.__participants
         }
@@ -79,8 +63,8 @@ class Game:
 
 
 class SeatBasedGame(Game):
-    def __init__(self, host, game_name, game_type, date, location, max_players):
-        super().__init__(host, game_name, game_type, date, location, max_players)
+    def __init__(self, host, game_name, game_type, start_time, end_time, location, max_players):
+        super().__init__(host, game_name, game_type, start_time, end_time, location, max_players)
         self.__seats = {i + 1: None for i in range(max_players)}  # Initialize seats
 
     # Reserve a specific seat
@@ -111,8 +95,8 @@ class SeatBasedGame(Game):
 
 
 class TableBasedGame(Game):
-    def __init__(self, host, game_name, game_type, date, location, max_players, tables):
-        super().__init__(host, game_name, game_type, date, location, max_players)
+    def __init__(self, host, game_name, game_type, start_time, end_time, location, max_players, tables):
+        super().__init__(host, game_name, game_type, start_time, end_time, location, max_players)
         self.__tables = {table: [] for table in tables}  # Initialize tables
 
     # Reserve a spot at a specific table
