@@ -1,5 +1,5 @@
 class Game:
-    def __init__(self, host, game_name, game_type, start_time, end_time, expires, location, max_players):
+    def __init__(self, host, game_name, game_type, start_time, end_time, expires, location, xcoord, ycoord, max_players):
         self.set_host(host)
         self.set_game_name(game_name)
         self.set_game_type(game_type)
@@ -7,6 +7,8 @@ class Game:
         self.set_end_time(end_time)
         self.set_expires(expires)
         self.set_location(location)
+        self.set_xcoord(xcoord)
+        self.set_ycoord(ycoord)
         self.set_max_players(max_players)
         self.__participants = []
 
@@ -18,6 +20,8 @@ class Game:
     def get_end_time(self): return self.__end_time
     def get_expires(self): return self.__expires
     def get_location(self): return self.__location
+    def get_xcoord(self): return self.__xcoord
+    def get_ycoord(self): return self.__ycoord
     def get_max_players(self): return self.__max_players
     def get_participants(self): return self.__participants
 
@@ -29,6 +33,8 @@ class Game:
     def set_end_time(self, end_time): self.__end_time = end_time
     def set_expires(self, expires): self.__expires = expires
     def set_location(self, location): self.__location = location
+    def set_xcoord(self, xcoord): self.__xcoord = xcoord
+    def set_ycoord(self, ycoord): self.__ycoord = ycoord
     def set_max_players(self, max_players): self.__max_players = max_players
 
     # Add participant
@@ -55,6 +61,8 @@ class Game:
             "start_time": self.__start_time,
             "end_time": self.__end_time,
             "location": self.__location,
+            "xcoord": self.__xcoord,
+            "ycoord": self.__ycoord,
             "expires": self.__expires,
             "max_players": self.__max_players,
             "participants": self.__participants

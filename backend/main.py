@@ -353,9 +353,11 @@ def create_game():
     end_time = data["end_time"]
     expires = data["expires"]
     location = publican_data["pub_name"]
+    xcoord = publican_data["xcoord"]
+    ycoord = publican_data["ycoord"]
     max_players = data["max_players"]
 
-    new_game = Game(host, game_name, game_type, start_time, end_time, expires, location, max_players)
+    new_game = Game(host, game_name, game_type, start_time, end_time, expires, location, xcoord, ycoord, max_players)
     game_data = new_game.get_game_details()
 
     try:
