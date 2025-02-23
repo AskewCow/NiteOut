@@ -7,26 +7,32 @@ import {
     TextInput,
     ScrollView,
     TouchableOpacity,
-    FlatList,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import { DrawerActions } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SvgXml } from "react-native-svg";
-
+import moment from "moment"; // for time handling?
 import { logoXml } from "../utils/logo";
+
+// Contexts
 import { useGamer } from "../contexts/GamerContext";
+
+// Components
+import GamesNearYou from "../components/GamesNearYou";
+import Friends from "../components/Friends";
 import LoadingAnimation from "../components/LoadingAnimation";
 
 // Firebase Import
 import { db } from "../firebaseConfig";
-import { collection, doc, getDoc, getDocs } from "firebase/firestore";
+import { collection, query, where, orderBy, doc, getDoc, getDocs } from "firebase/firestore";
 
 const MainScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
     const [currentLocation, setCurrentLocation] = useState(null);
     const [userInfo, setUserInfo] = useState(null);
+    const [games, setGames] = useState(null);
     const [modalVisible, setModalVisible] = useState(false);
     const [fetchingUser, setFetchingUser] = useState(false);
     const [pubs, setPubs] = useState(null);
@@ -39,6 +45,7 @@ const MainScreen = ({ navigation }) => {
         getLocation();
         fetchPubs();
         fetchUserInfo();
+        fetchGames();
     }, []);
 
     useEffect(() => {
@@ -102,6 +109,27 @@ const MainScreen = ({ navigation }) => {
             setFetchingPubs(false);
         }
     };
+
+    // Fetch games info from Firestore
+    const fetchGames = async () => {
+        try {
+            const now = moment().format("YYYY-MM-DDTHH:mm:ss"); 
+            const gamesRef = collection(db, "games");
+            const q = query(gamesRef, where("expires", ">", now));
+
+            const querySnapshot = await getDocs(q);
+            const gameList = querySnapshot.docs.map(doc => ({
+            id: doc.id,
+            game_name: doc.data().game_name,
+            location: doc.data().location,
+            }));
+
+            setGames(gameList);
+            console.log("Fetched games: ", gameList);
+        } catch (error) {
+            console.error("Error fetching games: ", error);
+        }
+    }
 
     // Fetch User Info from Firestore
     const fetchUserInfo = async () => {
@@ -237,25 +265,9 @@ const MainScreen = ({ navigation }) => {
                 </MapView>
             </View>
 
-            {/* Friends List Section */}
-            <View style={styles.friendsContainer}>
-                <Text style={styles.friendsTitle}>Find your friends!</Text>
-                {!friends ? (
-                    <Text style={styles.noFriendsText}>
-                        No friends added yet.
-                    </Text>
-                ) : (
-                    <FlatList
-                        data={friends}
-                        keyExtractor={(item, index) => index.toString()}
-                        renderItem={({ item }) => (
-                            <View style={styles.friendItem}>
-                                <Text style={styles.friendName}>{item}</Text>
-                            </View>
-                        )}
-                        showsVerticalScrollIndicator={false}
-                    />
-                )}
+            <View style={styles.friendsAndGamesContainer}>
+                <Friends friends={friends}/>
+                <GamesNearYou gamesList={games}/>
             </View>
         </SafeAreaView>
     );
@@ -300,12 +312,12 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         borderRadius: 10,
         marginHorizontal: 5,
-        height: 16 * 1.2 + 8 * 2, // Text height + padding
-        justifyContent: "center", // Center text vertically
+        height: 16 * 1.2 + 8 * 2, 
+        justifyContent: "center", 
     },
     tagText: {
         fontSize: 16,
-        lineHeight: 16 * 1.2, // Ensure proper spacing
+        lineHeight: 16 * 1.2,
         color: "black",
     },
     selectedTag: {
@@ -316,7 +328,7 @@ const styles = StyleSheet.create({
     },
     map: {
         width: "95%",
-        height: "60%",
+        height: "71%",
         borderRadius: 10,
         paddingBottom: 0,
     },
@@ -353,6 +365,12 @@ const styles = StyleSheet.create({
         fontSize: 14,
         color: "gray",
         textAlign: "center",
+    },
+    friendsAndGamesContainer: {
+        flex: 1,
+        width: "100%",
+        flexDirection: "row",
+        padding: 10
     },
 });
 
