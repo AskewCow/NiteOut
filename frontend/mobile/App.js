@@ -17,6 +17,8 @@ import MapScreen from "./src/screens/MapScreen";
 import MainScreen from "./src/screens/MainScreen";
 import ProfileScreen from "./src/screens/ProfileScreen";
 import pfpChoiceScreen from "./src/screens/pfpChoiceScreen";
+import GameDetails from "./src/screens/GameDetails";
+import FriendProfile from "./src/screens/FriendProfile";
 
 const screenHeight = Dimensions.get("window").height;
 const headerHeight = screenHeight * 0.12;
@@ -127,6 +129,16 @@ export default function App() {
                         name="pfpChoice"
                         component={pfpChoiceScreen}
                         options={{ headerShown: true }}
+                    />
+                    <Stack.Screen
+                        name="GameDetails"
+                        component={GameDetails}
+                        options={{ headerShown: false }}
+                    />
+                    <Stack.Screen
+                        name="FriendProfile"
+                        component={FriendProfile}
+                        options={{ headerShown: false }}
                     />
                 </Stack.Navigator>
             </NavigationContainer>
