@@ -292,6 +292,7 @@ def create_event():
         return jsonify({"error": f"Failed to create event: {str(e)}"}), 500
 
 
+# Create a game for during a pub event
 @app.route("/create_game", methods=["POST"])
 def create_game():
     data = request.get_json()
@@ -314,6 +315,7 @@ def create_game():
     start_time = datetime.fromisoformat(data["start_time"])
     end_time = datetime.fromisoformat(data["end_time"])
     
+    # event must start and end on an hourly time slot
     event_ref = (db_firestore.collection('events').where("pub_id", "==", data["pub_id"]).
                    where("start_time", "<=", data["start_time"]).where("end_time", ">=", data["end_time"]).stream())
     event_doc = next(event_ref, None)
@@ -334,6 +336,7 @@ def create_game():
             if event_data["game_type"] == "Seat Based":
                 slot_value -= data["max_players"]
 
+            # if table based, round up on number of tables for players
             if event_data["game_type"] == "Table Based":
                 table_divisor = event_data["table_capacity"]
                 tables = data["max_players"] // table_divisor
@@ -380,6 +383,73 @@ def create_game():
     except Exception as e:
         return jsonify({"error": f"Failed to create game: {str(e)}"}), 500
 
+@app.route("/join_game", methods=["POST"])
+def join_game():
+    data = request.get_json()
+    
+    required_fields = ["game_id", "gamer_id"]
+    if not all(field in data for field in required_fields):
+        return jsonify({"error": "Missing required fields"}), 400
+
+    game_ref = db_firestore.collection('games').document(data["game_id"])
+    game_doc = game_ref.get()
+    if not game_doc.exists:
+        return jsonify({"error": "Game not found"}), 404
+    game_data = game_doc.to_dict()
+
+    gamer_ref = db_firestore.collection('gamers').document(data["gamer_id"])
+    gamer_doc = gamer_ref.get()
+    if not gamer_doc.exists:
+        return jsonify({"error": "Gamer not found"}), 404
+
+    current_players = game_data.get("players", [])
+    max_players = game_data["max_players"]
+    if len(current_players) >= max_players:
+        return jsonify({"error": "Game is full"}), 400
+    if data["gamer_id"] in current_players:
+        return jsonify({"error": "User already joined the game"}), 400
+
+    game_ref.update({
+        "participants": firestore.ArrayUnion([data["gamer_id"]])
+    })
+    gamer_ref.update({
+       "joined_games": firestore.ArrayUnion([data["game_id"]]) 
+    })
+
+    return jsonify({"message": "Joined game"}), 200
+
+
+@app.route("/leave_game", methods=["POST"])
+def leave_game():
+    data = request.get_json()
+    
+    required_fields = ["game_id", "gamer_id"]
+    if not all(field in data for field in required_fields):
+        return jsonify({"error": "Missing required fields"}), 400
+
+    game_ref = db_firestore.collection('games').document(data["game_id"])
+    game_doc = game_ref.get()
+    if not game_doc.exists:
+        return jsonify({"error": "Game not found"}), 404
+    game_data = game_doc.to_dict()
+
+    gamer_ref = db_firestore.collection('gamers').document(data["gamer_id"])
+    gamer_doc = gamer_ref.get()
+    if not gamer_doc.exists:
+        return jsonify({"error": "Gamer not found"}), 404
+
+    current_players = game_data.get("players", [])
+    if data["gamer_id"] not in current_players:
+        return jsonify({"error": "User has not joined the game"}), 400
+
+    game_ref.update({
+        "participants": firestore.ArrayRemove([data["gamer_id"]])
+    })
+    gamer_ref.update({
+       "joined_games": firestore.ArrayRemove([data["game_id"]])
+    })
+
+    return jsonify({"message": "Left the game"}), 200
 
 
 ## PATCH REQUESTS

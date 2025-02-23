@@ -65,6 +65,6 @@ class Publican:
             "xcoord": self.xcoord,
             "ycoord": self.ycoord,
             "tables": self.tables,
-            "events": self.events
+            "events": self.events,
             "pub_image": self.pub_image 
         }
