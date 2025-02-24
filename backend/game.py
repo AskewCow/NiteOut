@@ -71,8 +71,8 @@ class Game:
 
 
 class SeatBasedGame(Game):
-    def __init__(self, host, game_name, game_type, start_time, end_time, location, max_players):
-        super().__init__(host, game_name, game_type, start_time, end_time, location, max_players)
+    def __init__(self, host, game_name, game_type, start_time, end_time, expires, location, xcoord, ycoord, max_players):
+        super().__init__(host, game_name, game_type, start_time, end_time, expires, location, xcoord, ycoord, max_players)
         self.__seats = {i + 1: None for i in range(max_players)}  # Initialize seats
 
     # Reserve a specific seat
@@ -103,9 +103,10 @@ class SeatBasedGame(Game):
 
 
 class TableBasedGame(Game):
-    def __init__(self, host, game_name, game_type, start_time, end_time, location, max_players, tables):
-        super().__init__(host, game_name, game_type, start_time, end_time, location, max_players)
+    def __init__(self, host, game_name, game_type, start_time, end_time, expires, location, xcoord, ycoord, max_players, tables):
+        super().__init__(host, game_name, game_type, start_time, end_time, expires, location, xcoord, ycoord, max_players)
         self.__tables = {table: [] for table in tables}  # Initialize tables
+
 
     # Reserve a spot at a specific table
     def reserve_table_spot(self, participant, table_name):

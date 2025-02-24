@@ -360,7 +360,18 @@ def create_game():
     ycoord = publican_data["ycoord"]
     max_players = data["max_players"]
 
-    new_game = Game(host, game_name, game_type, start_time, end_time, expires, location, xcoord, ycoord, max_players)
+    # Debugging print statements to check values
+    print(f"DEBUG: Expires: {expires}, X: {xcoord}, Y: {ycoord}")
+
+    # Correctly instantiate SeatBasedGame and TableBasedGame
+    if game_type == "Seat Based":
+        new_game = SeatBasedGame(host, game_name, game_type, start_time, end_time, expires, location, xcoord, ycoord, max_players)
+    elif game_type == "Table Based":
+        tables = data.get("tables", [])
+        new_game = TableBasedGame(host, game_name, game_type, start_time, end_time, expires, location, xcoord, ycoord, max_players, tables)
+    else:
+        return jsonify({"error": "Invalid game type"}), 400
+    
     game_data = new_game.get_game_details()
 
     try:
