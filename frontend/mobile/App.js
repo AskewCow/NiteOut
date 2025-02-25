@@ -25,10 +25,20 @@ const headerHeight = screenHeight * 0.12;
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
+console.error = () => {}; // Disables all error logs
+
 
 function DrawerNavigator() {
     return (
-        <Drawer.Navigator screenOptions={{ headerShown: false }}>
+        <Drawer.Navigator screenOptions={{ headerShown: false,
+            drawerStyle: {
+                backgroundColor: '#FFDCEC', // Change this to your preferred color
+                width: 250,
+              },
+              drawerActiveTintColor: '#FFFFFF', // Change active item text color
+              drawerInactiveTintColor: '#FF006E', // Change inactive item text color
+              drawerActiveBackgroundColor: '#FF006E', // Change active item background
+         }}>
             <Drawer.Screen
                 name="Main"
                 component={MainScreen}
