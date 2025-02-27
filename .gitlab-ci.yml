@@ -28,14 +28,15 @@ build-job:       # This job runs in the build stage, which runs first.
     - echo "Compile complete."
 
 unit-test-job:   # This job runs in the test stage.
+  tags:
+    - docker  # This ensures the job runs on the Docker-based runner
+  image: python:3.9  # Use a Python Docker image
   stage: test
   before_script:
-    - sudo apt-get update
-    - sudo apt-get install -y python3 python3-pip  # Install Python and pip
-    - python3 --version  # Verify Python is installed
-    - pip3 install -r requirements.txt  # Install dependencies
+    - python --version  # Check Python version
+    - pip install -r requirements.txt  # Install dependencies
   script:
-    - pytest tests/ --cov=src/ --junitxml=report.xml
+    - pytest tests/ --cov=src/ --junitxml=report.xml  # Run tests
   coverage: '/^TOTAL.*\s+(\d+%)$/'
   artifacts:
     reports:
