@@ -34,7 +34,7 @@ unit-test-job:   # This job runs in the test stage.
   stage: test
   before_script:
     - python --version  # Check Python version
-    - pip install -r requirements.txt  # Install dependencies
+    #- pip install -r requirements.txt  # Install dependencies
   script:
     - pytest tests/ --cov=src/ --junitxml=report.xml  # Run tests
   coverage: '/^TOTAL.*\s+(\d+%)$/'
