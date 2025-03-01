@@ -1,0 +1,6 @@
+{
+  "dependencies": {
+    "react-native-reanimated": "^3.17.1",
+    "react-native-safe-area-context": "^5.2.0"
+  }
+}

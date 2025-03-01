@@ -14,7 +14,6 @@ import { DrawerActions } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SvgXml } from "react-native-svg";
 import moment from "moment"; // for time handling?
-import { logoXml } from "../utils/logo";
 
 // Contexts
 import { useGamer } from "../contexts/GamerContext";
@@ -23,10 +22,18 @@ import { useGamer } from "../contexts/GamerContext";
 import GamesNearYou from "../components/GamesNearYou";
 import Friends from "../components/Friends";
 import LoadingAnimation from "../components/LoadingAnimation";
+import { logoXml } from "../utils/logo";
 
 // Firebase Import
 import { db } from "../firebaseConfig";
-import { collection, query, where, orderBy, doc, getDoc, getDocs } from "firebase/firestore";
+import {
+    collection,
+    query,
+    where,
+    doc,
+    getDoc,
+    getDocs,
+} from "firebase/firestore";
 
 const MainScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
@@ -113,15 +120,15 @@ const MainScreen = ({ navigation }) => {
     // Fetch games info from Firestore
     const fetchGames = async () => {
         try {
-            const now = moment().format("YYYY-MM-DDTHH:mm:ss"); 
+            const now = moment().format("YYYY-MM-DDTHH:mm:ss");
             const gamesRef = collection(db, "games");
             const q = query(gamesRef, where("expires", ">", now));
 
             const querySnapshot = await getDocs(q);
-            const gameList = querySnapshot.docs.map(doc => ({
-            id: doc.id,
-            game_name: doc.data().game_name,
-            location: doc.data().location,
+            const gameList = querySnapshot.docs.map((doc) => ({
+                id: doc.id,
+                game_name: doc.data().game_name,
+                location: doc.data().location,
             }));
 
             setGames(gameList);
@@ -129,7 +136,7 @@ const MainScreen = ({ navigation }) => {
         } catch (error) {
             console.error("Error fetching games: ", error);
         }
-    }
+    };
 
     // Fetch User Info from Firestore
     const fetchUserInfo = async () => {
@@ -242,6 +249,7 @@ const MainScreen = ({ navigation }) => {
                         latitudeDelta: 0.00922,
                         longitudeDelta: 0.0421,
                     }}
+                    onLongPress={() => navigation.navigate("Map")}
                 >
                     {currentLocation && (
                         <Marker
@@ -266,8 +274,8 @@ const MainScreen = ({ navigation }) => {
             </View>
 
             <View style={styles.friendsAndGamesContainer}>
-                <Friends friends={friends}/>
-                <GamesNearYou gamesList={games}/>
+                <Friends friends={friends} />
+                <GamesNearYou gamesList={games} />
             </View>
         </SafeAreaView>
     );
@@ -312,8 +320,8 @@ const styles = StyleSheet.create({
         paddingHorizontal: 15,
         borderRadius: 10,
         marginHorizontal: 5,
-        height: 16 * 1.2 + 8 * 2, 
-        justifyContent: "center", 
+        height: 16 * 1.2 + 8 * 2,
+        justifyContent: "center",
     },
     tagText: {
         fontSize: 16,
@@ -370,7 +378,7 @@ const styles = StyleSheet.create({
         flex: 1,
         width: "100%",
         flexDirection: "row",
-        padding: 10
+        padding: 10,
     },
 });
 

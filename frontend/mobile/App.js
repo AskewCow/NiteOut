@@ -25,34 +25,33 @@ const headerHeight = screenHeight * 0.12;
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
-console.error = () => {}; // Disables all error logs
-
 
 function DrawerNavigator() {
     return (
-        <Drawer.Navigator screenOptions={{ headerShown: false,
-            drawerStyle: {
-                backgroundColor: '#FFDCEC', // Change this to your preferred color
-                width: 250,
-              },
-              drawerActiveTintColor: '#FFFFFF', // Change active item text color
-              drawerInactiveTintColor: '#FF006E', // Change inactive item text color
-              drawerActiveBackgroundColor: '#FF006E', // Change active item background
-         }}>
-            <Drawer.Screen
-                name="Main"
-                component={MainScreen}
-                screenOptions={{ headerShown: false }}
-            />
+        <Drawer.Navigator
+            screenOptions={{
+                headerShown: false,
+                drawerStyle: {
+                    backgroundColor: "#FFDCEC",
+                    width: 250,
+                },
+                drawerActiveTintColor: "#FFFFFF",
+                drawerInactiveTintColor: "#FF006E",
+                drawerActiveBackgroundColor: "#FF006E",
+            }}
+        >
+            <Drawer.Screen name="Main" component={MainScreen} />
             <Drawer.Screen
                 name="Profile"
                 component={ProfileScreen}
                 initialParams={{ gamerId: null }}
-                screenOptions={({ navigation, route }) => ({
+                options={{
                     headerTitle: () => (
                         <SvgXml xml={logoXml} width={40} height={40} />
                     ),
                     headerTitleAlign: "center",
+                    headerShown: true,
+                    headerLeft: () => null, // Removes the three-line menu icon
                     headerStyle: {
                         elevation: 0,
                         shadowOpacity: 0,
@@ -64,7 +63,7 @@ function DrawerNavigator() {
                         alignItems: "center",
                         flex: 1,
                     },
-                })}
+                }}
             />
         </Drawer.Navigator>
     );
@@ -92,9 +91,9 @@ export default function App() {
                             alignItems: "center",
                             flex: 1,
                         },
+                        gestureEnabled: false, // Disable swipe back globally
                     })}
                 >
-                    {/* Drawer Navigator (Only Main has the menu) */}
                     <Stack.Screen
                         name="Drawer"
                         component={DrawerNavigator}
@@ -108,47 +107,50 @@ export default function App() {
                     <Stack.Screen
                         name="SignUp"
                         component={SignUpScreen}
-                        options={{ headerShown: true }}
+                        options={{ headerShown: true, gestureEnabled: false }}
                     />
                     <Stack.Screen
                         name="PublicanSignUp"
                         component={PublicanSignUpScreen}
-                        options={{ headerShown: true }}
+                        options={{ headerShown: true, gestureEnabled: false }}
                     />
                     <Stack.Screen
                         name="Login"
                         component={LoginScreen}
-                        options={{ headerShown: true }}
+                        options={{ headerShown: true, gestureEnabled: false }}
                     />
                     <Stack.Screen
                         name="PassReset"
                         component={PassResetScreen}
-                        options={{ headerShown: true }}
+                        options={{ headerShown: true, gestureEnabled: false }}
                     />
                     <Stack.Screen
                         name="ResetVerification"
                         component={ResetVerificationScreen}
-                        options={{ headerShown: true }}
+                        options={{ headerShown: true, gestureEnabled: false }}
                     />
                     <Stack.Screen
                         name="Profile"
                         component={ProfileScreen}
-                        options={{ headerShown: true }}
+                        options={{
+                            headerShown: true,
+                            gestureEnabled: false, // Prevent swiping back from Profile
+                        }}
                     />
                     <Stack.Screen
                         name="pfpChoice"
                         component={pfpChoiceScreen}
-                        options={{ headerShown: true }}
+                        options={{ headerShown: true, gestureEnabled: false }}
                     />
                     <Stack.Screen
                         name="GameDetails"
                         component={GameDetails}
-                        options={{ headerShown: false }}
+                        options={{ headerShown: false, gestureEnabled: false }}
                     />
                     <Stack.Screen
                         name="FriendProfile"
                         component={FriendProfile}
-                        options={{ headerShown: false }}
+                        options={{ headerShown: false, gestureEnabled: false }}
                     />
                 </Stack.Navigator>
             </NavigationContainer>
