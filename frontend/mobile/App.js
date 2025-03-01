@@ -150,7 +150,7 @@ export default function App() {
                     <Stack.Screen
                         name="FriendProfile"
                         component={FriendProfile}
-                        options={{ headerShown: false, gestureEnabled: false }}
+                        options={{ headerShown: true, gestureEnabled: false }}
                     />
                 </Stack.Navigator>
             </NavigationContainer>
