@@ -1,12 +1,15 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify, send_from_directory
 from flask_apscheduler import APScheduler
 from Gamer import Gamer
 from Publican import Publican
 from game import Game, SeatBasedGame, TableBasedGame
 from datetime import datetime, timedelta
+from werkzeug.utils import secure_filename
+from firebase_admin import credentials, firestore, storage, initialize_app
 
+import os
+import time
 import firebase_admin
-from firebase_admin import credentials, firestore
 
 class Config:
     SCHEDULER_API_ENABLED = True
@@ -14,20 +17,33 @@ class Config:
 # Initialize Flask App
 app = Flask(__name__)
 app.config.from_object(Config())
+app.config['UPLOAD_FOLDER'] = 'backend/assets'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024 
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
 scheduler = APScheduler()
 scheduler.init_app(app)
 scheduler.start()
 
-# Initialize Firebase
-# Initialize Firebase
-cred = credentials.Certificate("serviceAccountKey.json")
 
-# Check if Firebase has already been initialized
 if not firebase_admin._apps:
-    firebase_admin.initialize_app(cred)
+    cred = credentials.Certificate("serviceAccountKey.json")
+    default_app = initialize_app(cred, {
+        'storageBucket': 'niteout-storage-49dc5'
+    })
+else:
+    default_app = firebase_admin.get_app()
 
-db_firestore = firestore.client()
+bucket = storage.bucket('niteout-storage-49dc5', app=default_app)
+db_firestore = firestore.client(app=default_app)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+@app.route('/images/<filename>')
+def serve_image(filename):
+    return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
+
 
 # Define a function to perform the refresh
 def refresh_data():
@@ -192,32 +208,57 @@ def create_gamer():
         return jsonify({"error": f"Failed to create gamer: {str(e)}"}), 500
 
 
-@app.route("/create_publican", methods=["POST"])
-def create_publican():
-    data = request.get_json()
-
-    required_fields = ["pub_name", "email", "ID", "password", "address", "xcoord", "ycoord", "tables"]
-    if not all(field in data for field in required_fields):
-        return jsonify({"error": "Missing required fields"}), 400
+@app.route('/create_publican', methods=['POST']) 
+def create_publican(): 
+    if 'file' not in request.files: 
+        return jsonify({"error": "No image file provided"}), 400 
+    file = request.files['file'] 
+    if file.filename == '': 
+        return jsonify({"error": "No file selected"}), 400 
+ 
+    # Check for required form fields 
+    required_fields = ["pub_name", "email", "password", "address", "xcoord", "ycoord", "tables"] 
+    if not all(field in request.form for field in required_fields): 
+        missing = [field for field in required_fields if field not in request.form]
+        return jsonify({"error": f"Missing required fields: {missing}"}), 400 
     
-    publican_data = {
-        "pub_name": data.get("pub_name"),
-        "email": data.get("email"),
-        "ID": data.get("ID"),
-        "password": data.get("password"), 
-        "address": data.get("address"),
-        "xcoord": data.get("xcoord"),
-        "ycoord": data.get("ycoord"),
-        "tables": data.get("tables"),
-        "events": []  
-    }
-
     try:
-        new_publican_ref = db_firestore.collection('publicans').add(publican_data)[1]
-        return jsonify({"message": "Publican created", "pub_id": new_publican_ref.id}), 201
-    except Exception as e:
+        # Upload image to Firebase Storage
+        pub_name = request.form.get("pub_name")
+        file_extension = os.path.splitext(file.filename)[1]
+        storage_path = f"pub_images/{pub_name}_{int(time.time())}{file_extension}"
+        
+        # Use the existing bucket variable that was initialized at the top level
+        # No need to call storage.bucket() again
+        blob = bucket.blob(storage_path)
+        
+        # Reset file pointer before upload
+        file.seek(0)
+        blob.upload_from_file(file)
+        
+        # Make the file publicly accessible
+        blob.make_public()
+        
+        # Get the public URL
+        image_url = blob.public_url
+        
+        # Collect other form data 
+        publican_data = { 
+            "pub_name": request.form.get("pub_name"), 
+            "email": request.form.get("email"),
+            "password": request.form.get("password"),  
+            "address": request.form.get("address"), 
+            "xcoord": request.form.get("xcoord"), 
+            "ycoord": request.form.get("ycoord"), 
+            "tables": request.form.get("tables"), 
+            "events": [], 
+            "pub_image_url": image_url,  # Store URL instead of base64 image
+        } 
+    
+        new_publican_ref = db_firestore.collection('publicans').add(publican_data)
+        return jsonify({"message": "Publican created", "pub_id": new_publican_ref[1].id}), 201 
+    except Exception as e: 
         return jsonify({"error": f"Failed to create publican: {str(e)}"}), 500
-
 
 @app.route("/create_event", methods=["POST"])
 def create_event():
@@ -489,6 +530,37 @@ def update_profile(gamer_id):
         "new_profile": f"/static/icons/{new_profile}.png"
     }), 200
 
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    file = request.files['file']
+    if file.filename == '':
+        return jsonify({"error": "No selected file"}), 400
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        return jsonify({"message": "File uploaded successfully", "file_path": file_path}), 200
+    
+@app.route('/update_pub_image/<string:publican_id>', methods=['POST'])
+def update_pub_image(publican_id):
+    if 'file' not in request.files:
+        return jsonify({"error": "No file part"}), 400
+    file = request.files['file']
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        file.save(file_path)
+        
+        # Update the pub image path in Firestore
+        publican_ref = db_firestore.collection('publicans').document(publican_id)
+        try:
+            publican_ref.update({"pub_image": file_path})
+            return jsonify({"message": "Pub image updated successfully!"}), 200
+        except Exception as e:
+            return jsonify({"error": f"Failed to update pub image: {str(e)}"}), 500
+
 
 @app.route("/update_publican/<string:publican_id>", methods=["PATCH"])
 def update_publican(publican_id):
@@ -516,4 +588,4 @@ def delete_publican(publican_id):
 
 ## Running this file as main
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=8080, debug=True)
