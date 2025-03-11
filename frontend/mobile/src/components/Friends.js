@@ -115,6 +115,7 @@ const styles = StyleSheet.create({
         height: "100%",
         backgroundColor: "#90E0EF",
         borderRadius: 10,
+        marginRight: 5,
         padding: 10,
     },
     friendsTitle: {

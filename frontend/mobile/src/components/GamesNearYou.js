@@ -44,6 +44,7 @@ const styles = StyleSheet.create({
         padding: 10,
         backgroundColor: "#90E0EF",
         borderRadius: 10,
+        marginRight: 0,
         marginHorizontal: 5,
     },
     sectionTitle: {
