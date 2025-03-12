@@ -19,6 +19,7 @@ import ProfileScreen from "./src/screens/ProfileScreen";
 import pfpChoiceScreen from "./src/screens/pfpChoiceScreen";
 import GameDetails from "./src/screens/GameDetails";
 import FriendProfile from "./src/screens/FriendProfile";
+import ReservedEvents from "./src/screens/ReservedEvents";
 
 const screenHeight = Dimensions.get("window").height;
 const headerHeight = screenHeight * 0.12;
@@ -65,6 +66,7 @@ function DrawerNavigator() {
                     },
                 }}
             />
+            <Drawer.Screen name="My Reservations" component={ReservedEvents} />
         </Drawer.Navigator>
     );
 }
