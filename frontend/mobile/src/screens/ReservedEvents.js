@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
 import { db } from '../firebaseConfig';
 import { useGamer } from '../contexts/GamerContext'; 
 import { getDoc, doc } from 'firebase/firestore';
+import { SvgXml } from "react-native-svg";
+import { logoXml } from "../utils/logo";
+import { DrawerActions } from '@react-navigation/native';
 
 const ReservedEvents = ({ navigation }) => {
   const { gamerId } = useGamer();
@@ -12,7 +15,6 @@ const ReservedEvents = ({ navigation }) => {
   useEffect(() => {
     const fetchReservations = async () => {
       try {
-        // Fetch user document
         console.log("gamerId: ", gamerId);
         const userDoc = await getDoc(doc(db, "gamers", gamerId));
         console.log("here");
@@ -21,29 +23,41 @@ const ReservedEvents = ({ navigation }) => {
         console.log("Fetched userData ", userData);
         
         if (userData && userData.joined_games) {
-          const gamePromises = userData.joined_games.map(gameId =>  {
+            const gamePromises = userData.joined_games.map(gameId => {
             console.log('Fetching game with ID:', gameId);
-            getDoc(doc(db, 'games', gameId))
+            
+            return getDoc(doc(db, 'games', gameId))  
+                .then(docSnapshot => {
+                console.log("Got doc: ", docSnapshot);
+                return docSnapshot;
+                })
+                .catch(error => {
+                console.error("Error fetching game: ", error);
+                return undefined;  
+                });
             });
-          
-          const gameDocs = await Promise.all(gamePromises);
-          const newEventsByDate = {};
 
-          gameDocs.forEach(doc => {
-            if (doc.exists) {
-              const gameData = doc.data();
-              const { start_time, title } = gameData;  
-              const date = start_time.split('T')[0];  
+            console.log("game promises: ", gamePromises);
 
-              if (!newEventsByDate[date]) {
-                newEventsByDate[date] = [];
-              }
+            const gameDocs = await Promise.all(gamePromises);
+            console.log("gameDocs: ", gameDocs);
+            const newEvents = {};
 
-              newEventsByDate[date].push({ title, start_time });
-            }
-          });
+            gameDocs.forEach(doc => {
+                if (doc.exists()) {
+                    const gameData = doc.data();
+                    const { start_time, game_name, location } = gameData;  
+                    const date = new Date(start_time);
+                    const formattedDate = new Intl.DateTimeFormat('en-US', { weekday: 'long', day: 'numeric', month: 'long' }).format(date);
+                    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });  // Format time as HH:MM
 
-          setEventsByDate(newEventsByDate);
+                    if (!newEvents[formattedDate]) {
+                        newEvents[formattedDate] = [];
+                    }
+                    newEvents[formattedDate].push({ game_name, start_time, location, time });
+                }
+            });
+          setEventsByDate(newEvents);
         }
       } catch (error) {
         console.error('Error fetching reservations:', error);
@@ -58,42 +72,70 @@ const ReservedEvents = ({ navigation }) => {
   if (loading) {
     return (
       <View style={styles.container}>
+        <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20 }}>Upcoming reservations</Text>
         <ActivityIndicator size="large" color="#0000ff" />
       </View>
     );
   }
 
+  const handleProfilePress = (gamerId) => {
+          console.log("GamerId: ", gamerId);
+          if (gamerId) {
+              navigation.dispatch(DrawerActions.openDrawer());
+          } else {
+              alert("Please log in again.");
+              navigation.navigate("Login");
+              return;
+          }
+      };
+
   return (
-    <ScrollView style={styles.scrollView}>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.header}>
+          <View>
+              <TouchableOpacity onPress={handleProfilePress}>
+                  <SvgXml xml={logoXml} width={40} height={40} />
+              </TouchableOpacity>
+          </View>
+          <Text style={styles.headerText}>Your Games</Text>
+      </View>
+      <ScrollView style={styles.scrollView}>
       {Object.keys(eventsByDate).map(date => (
-        <View key={date} style={styles.dateSection}>
+          <View key={date} style={styles.dateSection}>
           <Text style={styles.dateTitle}>{date}</Text>
           {eventsByDate[date].map((event, index) => (
-            <TouchableOpacity 
+              <TouchableOpacity 
               key={index} 
               style={styles.eventItem}
               onPress={() => navigation.navigate('EventDetails', { event })}
-            >
-              <Text style={styles.eventTitle}>{event.title}</Text>
-              <Text style={styles.eventTime}>{event.start_time}</Text>
-            </TouchableOpacity>
+              > 
+                  <View style={styles.eventDetails}>
+                      <Text style={styles.eventTitle}>{event.game_name}</Text>
+                      <Text style={styles.pubName}>{event.location}</Text>
+                  </View>
+                  <Text style={styles.eventTime}>{event.time}</Text>
+              </TouchableOpacity>
           ))}
-        </View>
+          </View>
       ))}
-    </ScrollView>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
-  container: {
+  headerText: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    paddingLeft: 10,
     flex: 1,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center',
   },
   scrollView: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#90E0EF',
+    width: '95%',
+    alignSelf: 'center',
+    borderRadius: 10,
   },
   dateSection: {
     marginVertical: 10,
@@ -109,6 +151,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     marginVertical: 5,
+    flexDirection: 'row',
   },
   eventTitle: {
     fontSize: 16,
@@ -116,6 +159,23 @@ const styles = StyleSheet.create({
   eventTime: {
     fontSize: 14,
     color: '#555',
+    alignSelf: "center",
+  },
+  eventDetails: {
+    flexDirection: 'column',
+    flex: 1,
+  },
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    padding: 10,
+    paddingTop: 10,
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#00B4D8",
+    justifyContent: "flex-start",
   },
 });
 
