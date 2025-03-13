@@ -210,14 +210,18 @@ def create_gamer():
 
 @app.route('/create_publican', methods=['POST']) 
 def create_publican(): 
-    if 'file' not in request.files: 
+    if 'image_file' not in request.files: 
         return jsonify({"error": "No image file provided"}), 400 
-    file = request.files['file'] 
-    if file.filename == '': 
-        return jsonify({"error": "No file selected"}), 400 
- 
+    image_file = request.files['image_file'] 
+    if 'verification_file' not in request.files: 
+        return jsonify({"error": "No verification file provided"}), 400 
+    verification_file = request.files['verification_file'] 
+    
+    if image_file.filename == '' or verification_file.filename == '': 
+        return jsonify({"error": "No image/verification file selected"}), 400
+
     # Check for required form fields 
-    required_fields = ["pub_name", "email", "password", "address", "xcoord", "ycoord", "tables"] 
+    required_fields = ["pub_name", "email", "password", "address", "xcoord", "ycoord"] 
     if not all(field in request.form for field in required_fields): 
         missing = [field for field in required_fields if field not in request.form]
         return jsonify({"error": f"Missing required fields: {missing}"}), 400 
@@ -225,23 +229,31 @@ def create_publican():
     try:
         # Upload image to Firebase Storage
         pub_name = request.form.get("pub_name")
-        file_extension = os.path.splitext(file.filename)[1]
-        storage_path = f"pub_images/{pub_name}_{int(time.time())}{file_extension}"
-        
-        # Use the existing bucket variable that was initialized at the top level
-        # No need to call storage.bucket() again
-        blob = bucket.blob(storage_path)
-        
-        # Reset file pointer before upload
-        file.seek(0)
-        blob.upload_from_file(file)
-        
-        # Make the file publicly accessible
-        blob.make_public()
-        
-        # Get the public URL
-        image_url = blob.public_url
-        
+        image_file_extension = os.path.splitext(image_file.filename)[1]
+        image_storage_path = f"pub_images/{pub_name}_{int(time.time())}{image_file_extension}"
+        image_url = generate_url(image_file, image_storage_path)
+
+        # Upload pub verification to Firebase Storage
+        verification_file_extension = os.path.splitext(verification_file.filename)[1]
+        verification_storage_path = f"pub_verification/{pub_name}_{int(time.time())}{verification_file_extension}"
+        verification_pdf_url = generate_url(verification_file, verification_storage_path)
+
+        # Upload optional BER rating to Firebase Storage
+        BER = None
+        BER_url = None
+        if 'BER' in request.form:
+            if 'BER_file' not in request.files:
+                return jsonify({"error": "No BER verification file provided"}), 400
+            BER_file = request.files['BER_file']
+            if BER_file.filename == '':
+                return jsonify({"error": "No BER verification file selected"}), 400
+            BER_file_extension = os.path.splitext(BER_file.filename)[1]
+            BER_storage_path = f"BER_verification/{pub_name}_{int(time.time())}{BER_file_extension}"
+            BER_url = generate_url(BER_file, BER_storage_path)        
+
+        if 'BER_file' in request.files and 'BER' not in request.form:
+            return jsonify({"error": "BER verification file provided, with no specified BER"}), 400
+
         # Collect other form data 
         publican_data = { 
             "pub_name": request.form.get("pub_name"), 
@@ -250,15 +262,32 @@ def create_publican():
             "address": request.form.get("address"), 
             "xcoord": request.form.get("xcoord"), 
             "ycoord": request.form.get("ycoord"), 
-            "tables": request.form.get("tables"), 
             "events": [], 
             "pub_image_url": image_url,  # Store URL instead of base64 image
+            "verification_pdf_url": verification_pdf_url,
+            "BER": request.form.get("BER"),
+            "BER_url": BER_url
         } 
     
         new_publican_ref = db_firestore.collection('publicans').add(publican_data)
         return jsonify({"message": "Publican created", "pub_id": new_publican_ref[1].id}), 201 
     except Exception as e: 
         return jsonify({"error": f"Failed to create publican: {str(e)}"}), 500
+    
+def generate_url(file, storage_path):
+    # Use the existing bucket variable that was initialized at the top level
+    # No need to call storage.bucket() again
+    blob = bucket.blob(storage_path)
+        
+    # Reset file pointer before upload
+    file.seek(0)
+    blob.upload_from_file(file)
+        
+    # Make the file publicly accessible
+    blob.make_public()
+        
+    # Get the public URL
+    return blob.public_url
 
 @app.route("/create_event", methods=["POST"])
 def create_event():
