@@ -1,4 +1,6 @@
 import pytest
+from unittest.mock import mock_open, patch
+import base64
 
 import sys
 import os
