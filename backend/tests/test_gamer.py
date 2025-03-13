@@ -4,7 +4,7 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from gamer import Gamer
+from Gamer import Gamer
 
 def test_gamer_initialization_valid_profile():
     name = "Alice"
