@@ -49,13 +49,26 @@ const FriendProfile = ({ route, navigation }) => {
             {/* Friend's Name */}
             <Text style={styles.title}>{friend?.fullName}</Text>
 
-            {/* Remove Friend Button */}
             <TouchableOpacity
                 style={styles.removeFriendButton}
                 onPress={() =>
                     Alert.alert(
                         "Remove Friend",
-                        "Are you sure you want to remove this friend?"
+                        "Are you sure you want to remove this friend?",
+                        [
+                            {
+                                text: "Cancel",
+                                style: "cancel", // Makes it look like a default cancel button
+                            },
+                            {
+                                text: "Confirm",
+                                onPress: () => {
+                                    // Add your remove friend logic here
+                                    console.log("Friend removed");
+                                },
+                                style: "destructive", // Makes the text red on iOS (optional)
+                            },
+                        ]
                     )
                 }
             >

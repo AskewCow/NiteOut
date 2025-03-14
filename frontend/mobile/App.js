@@ -26,6 +26,7 @@ const headerHeight = screenHeight * 0.12;
 
 const Stack = createStackNavigator();
 const Drawer = createDrawerNavigator();
+console.error = () => {};
 
 function DrawerNavigator() {
     return (
