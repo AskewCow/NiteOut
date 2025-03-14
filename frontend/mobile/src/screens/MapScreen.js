@@ -15,14 +15,18 @@ import { db } from "../firebaseConfig";
 import { collection, getDocs } from "firebase/firestore";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import GamesList from "../components/GamesList";
+
 const MapScreen = ({ navigation }) => {
     const [currentLocation, setCurrentLocation] = useState(null);
     const [pubs, setPubs] = useState([]);
     const [selectedTag, setSelectedTag] = useState("All");
+    const [games, setGames] = useState([]);
 
     useEffect(() => {
         getLocation();
         fetchPubs();
+        fetchGames();
     }, []);
 
     const getLocation = async () => {
@@ -50,6 +54,19 @@ const MapScreen = ({ navigation }) => {
             setPubs(pubList);
         } catch (error) {
             console.error("Error fetching pubs: ", error);
+        }
+    };
+
+    const fetchGames = async () => {
+        try {
+            const gamesCollect = await getDocs(collection(db, "games"));
+            const gamesList = gamesCollect.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+            }));
+            setGames(gamesList);
+        } catch (error) {
+            console.error("Error fetching games: ", error);
         }
     };
 
@@ -141,6 +158,15 @@ const MapScreen = ({ navigation }) => {
                             description={pub.address}
                         />
                     ))}
+                    <View style={styles.gamesListContainer}>
+                        <ScrollView
+                            horizontal
+                            showsHorizontalScrollIndicator={false} // Hides the scrollbar for a cleaner UI
+                            contentContainerStyle={styles.gamesListScrollView}
+                        >
+                            <GamesList games={games} />
+                        </ScrollView>
+                    </View>
                 </MapView>
             </View>
         </View>
@@ -202,6 +228,14 @@ const styles = StyleSheet.create({
     map: {
         flex: 1,
         width: "100%",
+    },
+    gamesListContainer: {
+        position: "absolute",
+        bottom: "7%",
+    },
+    gamesListScrollView: {
+        flexDirection: "row",
+        paddingHorizontal: 5, // Some space at the edges
     },
 });
 
