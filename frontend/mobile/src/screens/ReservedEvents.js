@@ -49,7 +49,7 @@ const ReservedEvents = ({ navigation }) => {
                     const { start_time, game_name, location } = gameData;  
                     const date = new Date(start_time);
                     const formattedDate = new Intl.DateTimeFormat('en-US', { weekday: 'long', day: 'numeric', month: 'long' }).format(date);
-                    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });  // Format time as HH:MM
+                    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });  
 
                     if (!newEvents[formattedDate]) {
                         newEvents[formattedDate] = [];
@@ -79,15 +79,15 @@ const ReservedEvents = ({ navigation }) => {
   }
 
   const handleProfilePress = (gamerId) => {
-          console.log("GamerId: ", gamerId);
-          if (gamerId) {
-              navigation.dispatch(DrawerActions.openDrawer());
-          } else {
-              alert("Please log in again.");
-              navigation.navigate("Login");
-              return;
-          }
-      };
+    console.log("GamerId: ", gamerId);
+    if (gamerId) {
+        navigation.dispatch(DrawerActions.openDrawer());
+    } else {
+        alert("Please log in again.");
+        navigation.navigate("Login");
+        return;
+    }
+};
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -97,7 +97,7 @@ const ReservedEvents = ({ navigation }) => {
                   <SvgXml xml={logoXml} width={40} height={40} />
               </TouchableOpacity>
           </View>
-          <Text style={styles.headerText}>Your Games</Text>
+          <Text style={styles.headerText}>My Games</Text>
       </View>
       <ScrollView style={styles.scrollView}>
       {Object.keys(eventsByDate).map(date => (

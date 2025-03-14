@@ -129,6 +129,13 @@ const MainScreen = ({ navigation }) => {
                 id: doc.id,
                 game_name: doc.data().game_name,
                 location: doc.data().location,
+                xcoord: doc.data().xcoord,
+                ycoord: doc.data().ycoord,
+                start_time: doc.data().start_time,
+                end_time: doc.data().end_time,
+                expires: doc.data().expires,
+                max_players: doc.data().max_players,
+                participants: doc.data().participants,
             }));
 
             setGames(gameList);
