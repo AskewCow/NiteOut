@@ -12,8 +12,7 @@ import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import { DrawerActions } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import { SvgXml } from "react-native-svg";
-import moment from "moment"; // for time handling?
+import moment from "moment";
 
 // Contexts
 import { useGamer } from "../contexts/GamerContext";
@@ -23,6 +22,8 @@ import GamesNearYou from "../components/GamesNearYou";
 import Friends from "../components/Friends";
 import LoadingAnimation from "../components/LoadingAnimation";
 import { logoXml } from "../utils/logo";
+import { SvgXml } from "react-native-svg";
+
 
 // Firebase Import
 import { db } from "../firebaseConfig";
@@ -170,7 +171,7 @@ const MainScreen = ({ navigation }) => {
                     gamer_id: gamerId,
                 });
                 setFriends(userData.friends_list || []);
-                setModalVisible(true);
+                
                 setGamerId(gamerId);
             } else {
                 console.log("No user document found with ID:", gamerId);
