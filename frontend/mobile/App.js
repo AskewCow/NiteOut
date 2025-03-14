@@ -5,7 +5,9 @@ import { NavigationContainer } from "@react-navigation/native";
 import { SvgXml } from "react-native-svg";
 import { Dimensions, TouchableOpacity } from "react-native";
 import { GamerProvider } from "./src/contexts/GamerContext";
+import { LocationProvider } from "./src/contexts/LocationContext";
 import { logoXml } from "./src/utils/logo";
+import { Ionicons } from '@expo/vector-icons';
 
 // Screen imports
 import SignUpScreen from "./src/screens/SignUpScreen";
@@ -20,6 +22,7 @@ import pfpChoiceScreen from "./src/screens/pfpChoiceScreen";
 import GameDetails from "./src/screens/GameDetails";
 import FriendProfile from "./src/screens/FriendProfile";
 import ReservedEvents from "./src/screens/ReservedEvents";
+
 
 const screenHeight = Dimensions.get("window").height;
 const headerHeight = screenHeight * 0.12;
@@ -46,13 +49,15 @@ function DrawerNavigator() {
                 name="Profile"
                 component={ProfileScreen}
                 initialParams={{ gamerId: null }}
-                options={{
-                    headerTitle: () => (
-                        <SvgXml xml={logoXml} width={40} height={40} />
-                    ),
+                options={({ navigation }) => ({
+                    headerTitle: '',
                     headerTitleAlign: "center",
                     headerShown: true,
-                    headerLeft: () => null, // Removes the three-line menu icon
+                    headerLeft: () => (
+                        <TouchableOpacity onPress={() => navigation.openDrawer()}>
+                            <SvgXml xml={logoXml} width={40} height={40} style={{ marginLeft: 10 }} />
+                        </TouchableOpacity>
+                    ),
                     headerStyle: {
                         elevation: 0,
                         shadowOpacity: 0,
@@ -64,9 +69,9 @@ function DrawerNavigator() {
                         alignItems: "center",
                         flex: 1,
                     },
-                }}
+                })}
             />
-            <Drawer.Screen name="My Reservations" component={ReservedEvents} />
+            <Drawer.Screen name="My Games" component={ReservedEvents} />
         </Drawer.Navigator>
     );
 }
@@ -74,6 +79,7 @@ function DrawerNavigator() {
 export default function App() {
     return (
         <GamerProvider>
+        <LocationProvider>
             <NavigationContainer>
                 <Stack.Navigator
                     initialRouteName="Login"
@@ -131,14 +137,42 @@ export default function App() {
                         component={ResetVerificationScreen}
                         options={{ headerShown: true, gestureEnabled: false }}
                     />
-                    <Stack.Screen
+                    {/* <Stack.Screen
                         name="Profile"
                         component={ProfileScreen}
                         options={{
-                            headerShown: true,
+                            headerShown: false,
                             gestureEnabled: false, // Prevent swiping back from Profile
                         }}
-                    />
+                    /> */}
+                    <Stack.Screen
+                    name="Profile"
+                    component={ProfileScreen}
+                    initialParams={{ gamerId: null }}
+                    options={({ navigation }) => ({
+                        headerTitle: () => (
+                            <SvgXml xml={logoXml} width={40} height={40} />
+                        ),
+                        headerTitleAlign: "center",
+                        headerShown: true,
+                        headerLeft: () => (
+                            <TouchableOpacity onPress={() => navigation.goBack()}>
+                                <Ionicons name="arrow-back" size={24} color="white" style={{ marginLeft: 10 }} />
+                            </TouchableOpacity>
+                        ),
+                        headerStyle: {
+                            elevation: 0,
+                            shadowOpacity: 0,
+                            height: headerHeight,
+                            backgroundColor: "#00B4D8",
+                        },
+                        headerTitleContainerStyle: {
+                            justifyContent: "center",
+                            alignItems: "center",
+                            flex: 1,
+                        },
+                    })}
+                />
                     <Stack.Screen
                         name="pfpChoice"
                         component={pfpChoiceScreen}
@@ -156,6 +190,7 @@ export default function App() {
                     />
                 </Stack.Navigator>
             </NavigationContainer>
+        </LocationProvider>
         </GamerProvider>
     );
 }
