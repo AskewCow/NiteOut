@@ -313,6 +313,8 @@ def create_event():
     if not publican_doc.exists:
         return jsonify({"error": "Publican not found"}), 404
     
+    publican_data = publican_doc.to_dict()
+    
     start_time = datetime.fromisoformat(data["start_time"])
     end_time = datetime.fromisoformat(data["end_time"])
     total_hours = int((end_time - start_time).total_seconds() / 3600)
@@ -335,7 +337,7 @@ def create_event():
         "end_time": data["end_time"],
         "expires": data["expires"],
         "pub_id": data["pub_id"],
-        "pub_name": publican_doc["pub_name"],
+        "pub_name": publican_data["pub_name"],
         "available_slots": available_slots
     }
 
@@ -368,7 +370,7 @@ def create_game():
     data = request.get_json()
     
     # Note: game type here is description of game, not seat based or table based similar to an event
-    required_fields = ["game_name", "game_type", "start_time", "end_time", "expires", "pub_id", "gamer_id", "max_players"]
+    required_fields = ["game_name", "game_desc", "game_type", "start_time", "end_time", "expires", "pub_id", "gamer_id", "max_players"]
     if not all(field in data for field in required_fields):
         return jsonify({"error": "Missing required fields"}), 400
     
@@ -422,6 +424,7 @@ def create_game():
 
     host = data["gamer_id"]
     game_name = data["game_name"]
+    game_desc = data["game_desc"]
     game_type = data["game_type"]
     start_time = data["start_time"]
     end_time = data["end_time"]
@@ -437,10 +440,10 @@ def create_game():
 
     # Correctly instantiate SeatBasedGame and TableBasedGame
     if event_data["game_type"] == "Seat Based":
-        new_game = SeatBasedGame(host, game_name, game_type, start_time, end_time, expires, pub_id, location, xcoord, ycoord, max_players)
+        new_game = SeatBasedGame(host, game_name, game_desc, game_type, start_time, end_time, expires, pub_id, location, xcoord, ycoord, max_players)
     elif event_data["game_type"] == "Table Based":
         tables = data.get("tables", [])
-        new_game = TableBasedGame(host, game_name, game_type, start_time, end_time, expires, pub_id, location, xcoord, ycoord, max_players, tables)
+        new_game = TableBasedGame(host, game_name, game_desc, game_type, start_time, end_time, expires, pub_id, location, xcoord, ycoord, max_players, tables)
     else:
         return jsonify({"error": "Invalid game instantiation"}), 400
     
