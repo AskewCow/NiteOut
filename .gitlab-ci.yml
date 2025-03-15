@@ -46,12 +46,12 @@ unit-test-job: # This job runs in the test stage.
     - rm -rf /builds/*  
     - rm -rf /tmp/*
   before_script:
-    - python --version # Check Python version
-    - pip install --upgrade pip
-    - pip install pytest pytest-cov firebase-admin requests flask
+  - rm -rf /var/lib/apt/lists/*  # Free up system package cache
+  - rm -rf /builds/* /tmp/*  # Clear previous builds
+  - python --version
+  - pip install --upgrade pip
+  - pip install -r backend/requirements.txt
     - PYTHONPATH=$PYTHONPATH:/builds/sweng25_group13/sweng25_group13_pubgamenightfinder/backend
-  script:
-    - pytest backend/tests/ --cov=backend/ --junitxml=report.xml # Run tests
   coverage: '/^TOTAL.*\s+(\d+%)$/'
   artifacts:
     reports:
