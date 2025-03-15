@@ -5,35 +5,53 @@ import {
     FlatList,
     StyleSheet,
     TouchableOpacity,
+    Image,
 } from "react-native";
 import { collection, getDocs } from "firebase/firestore";
 import { useNavigation } from "@react-navigation/native";
-import { db } from "../firebaseConfig"; // Ensure your Firebase setup is correct
+import { db } from "../firebaseConfig";
 
 const GamesList = () => {
     const [games, setGames] = useState([]);
+    const [publicans, setPublicans] = useState([]);
     const navigation = useNavigation();
 
     useEffect(() => {
-        const fetchGames = async () => {
+        const fetchGamesAndPublicans = async () => {
             try {
-                const querySnapshot = await getDocs(collection(db, "games"));
-                const gamesData = querySnapshot.docs.map((doc) => ({
+                // Fetch games
+                const gamesSnapshot = await getDocs(collection(db, "games"));
+                const gamesData = gamesSnapshot.docs.map((doc) => ({
                     id: doc.id,
                     ...doc.data(),
                 }));
+
+                // Fetch publicans
+                const publicansSnapshot = await getDocs(
+                    collection(db, "publicans")
+                );
+                const publicansData = publicansSnapshot.docs.map((doc) => ({
+                    id: doc.id,
+                    ...doc.data(),
+                }));
+
                 setGames(gamesData);
+                setPublicans(publicansData);
             } catch (error) {
-                console.error("Error fetching games:", error);
+                console.error("Error fetching data:", error);
             }
         };
 
-        fetchGames();
+        fetchGamesAndPublicans();
     }, []);
 
     const renderGameCard = ({ item }) => {
         const spotsLeft = item.max_players - (item.participants?.length || 0);
 
+        // Find the matching publican by comparing pub_name with the game's location
+        const matchedPublican = publicans.find((pub) => {
+            return pub.id === item.pub_id;
+        });
         return (
             <TouchableOpacity
                 style={styles.card}
@@ -41,9 +59,24 @@ const GamesList = () => {
                     navigation.navigate("GameDetails", { game: item })
                 }
             >
-                <Text style={styles.gameName}>{item.game_name}</Text>
-                <Text style={styles.location}>{item.location}</Text>
-                <Text style={styles.spotsLeft}>{spotsLeft} spots left</Text>
+                <View style={styles.rowContainer}>
+                    {matchedPublican?.pub_image_url ? (
+                        <Image
+                            source={{ uri: matchedPublican.pub_image_url }}
+                            style={styles.thumbnail}
+                            resizeMode="cover"
+                        />
+                    ) : (
+                        <View style={styles.placeholder} />
+                    )}
+                    <View style={styles.textContainer}>
+                        <Text style={styles.gameName}>{item.game_name}</Text>
+                        <Text style={styles.location}>{item.location}</Text>
+                        <Text style={styles.spotsLeft}>
+                            {spotsLeft} spots left
+                        </Text>
+                    </View>
+                </View>
             </TouchableOpacity>
         );
     };
@@ -69,10 +102,37 @@ const styles = StyleSheet.create({
     },
     card: {
         backgroundColor: "white",
-        padding: 15,
+        padding: 10,
         marginBottom: 10,
         borderRadius: 10,
         elevation: 3,
+        height: 100, // Keep height fixed
+        flexDirection: "row",
+        alignItems: "center",
+        alignSelf: "flex-start", // Let width be dynamic based on content
+        paddingRight: 15, // Prevent text from touching the edge
+    },
+    rowContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    thumbnail: {
+        width: 80,
+        height: 80,
+        borderRadius: 8,
+        marginRight: 10,
+        resizeMode: "cover",
+    },
+    placeholder: {
+        width: 80,
+        height: 80,
+        backgroundColor: "#ccc",
+        borderRadius: 8,
+        marginRight: 10,
+    },
+    textContainer: {
+        flexShrink: 1, // Prevents overflow
+        maxWidth: "80%", // Keeps text wrapping within a reasonable size
     },
     gameName: {
         fontSize: 16,

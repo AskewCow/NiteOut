@@ -1,47 +1,61 @@
-import React, { useEffect } from "react";
+import React, { useEffect, useRef } from "react";
 import { View, Animated, Easing } from "react-native";
 
 const LoadingAnimation = () => {
-    const rotateAnim = new Animated.Value(0);
+    const scaleAnims = [
+        useRef(new Animated.Value(1)).current,
+        useRef(new Animated.Value(1)).current,
+        useRef(new Animated.Value(1)).current,
+    ];
 
-    // Rotate animation with loop and continuous smooth transition
     useEffect(() => {
-        Animated.loop(
-            Animated.timing(rotateAnim, {
-                toValue: 1,
-                duration: 1500,
-                easing: Easing.linear,
-                useNativeDriver: true,
-            })
-        ).start();
-    }, []);
+        const createPulseAnimation = (animatedValue, delay) => {
+            return Animated.loop(
+                Animated.sequence([
+                    Animated.timing(animatedValue, {
+                        toValue: 1.5,
+                        duration: 400,
+                        easing: Easing.ease,
+                        useNativeDriver: true,
+                    }),
+                    Animated.timing(animatedValue, {
+                        toValue: 1,
+                        duration: 400,
+                        easing: Easing.ease,
+                        useNativeDriver: true,
+                    }),
+                ]),
+                { delay }
+            );
+        };
 
-    const rotate = rotateAnim.interpolate({
-        inputRange: [0, 1],
-        outputRange: ["0deg", "360deg"],
-    });
+        createPulseAnimation(scaleAnims[0], 0).start();
+        createPulseAnimation(scaleAnims[1], 400).start();
+        createPulseAnimation(scaleAnims[2], 800).start();
+    }, []);
 
     return (
         <View style={styles.container}>
-            <Animated.View
-                style={[styles.spinner, { transform: [{ rotate }] }]}
-            >
-                <View style={[styles.circle, { backgroundColor: "#00b4d8" }]} />
-                <View style={[styles.circle, { backgroundColor: "#90e0ef" }]} />
-                <View style={[styles.circle, { backgroundColor: "#ff006e" }]} />
-            </Animated.View>
+            {scaleAnims.map((anim, index) => (
+                <Animated.View
+                    key={index}
+                    style={[
+                        styles.circle,
+                        { transform: [{ scale: anim }] },
+                        {
+                            backgroundColor: ["#00b4d8", "#90e0ef", "#ff006e"][
+                                index
+                            ],
+                        },
+                    ]}
+                />
+            ))}
         </View>
     );
 };
 
 const styles = {
     container: {
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-        backgroundColor: "transparent",
-    },
-    spinner: {
         flexDirection: "row",
         justifyContent: "center",
         alignItems: "center",
