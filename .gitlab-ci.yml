@@ -45,7 +45,6 @@ unit-test-job: # This job runs in the test stage.
   after_script:
     - rm -rf /builds/*  
     - rm -rf /tmp/*
-    - docker system prune -af # Clean up any Docker images
   before_script:
     - python --version # Check Python version
     - pip install --upgrade pip
