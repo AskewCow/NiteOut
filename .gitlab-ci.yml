@@ -39,6 +39,8 @@ unit-test-job: # This job runs in the test stage.
   tags:
     - docker
   image: python:3.9-slim  # ✅ Changed to `slim` to avoid package issues
+  variables:
+    DOCKER_PULL_POLICY: "if-not-present" 
   stage: test
   before_script:
     - rm -rf /var/lib/apt/lists/*  # Free up system package cache
