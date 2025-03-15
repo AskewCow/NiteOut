@@ -38,7 +38,7 @@ build-job:
 unit-test-job: # This job runs in the test stage.
   tags:
     - docker
-  image: python:3.9-slim  # ✅ Changed to `slim` to avoid package issues
+  image: python:3.9-alpine  # ✅ Changed to `slim` to avoid package issues
   variables:
     DOCKER_PULL_POLICY: "if-not-present" 
   stage: test
