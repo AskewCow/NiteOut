@@ -50,7 +50,7 @@ unit-test-job: # This job runs in the test stage.
     - python --version # Check Python version
     - pip install --upgrade pip
     - pip install pytest pytest-cov
-    - pip install -r requirements.txt  # Install dependencies
+    - pip install -r backend/requirements.txt  # Install dependencies
     - PYTHONPATH=$PYTHONPATH:/builds/sweng25_group13/sweng25_group13_pubgamenightfinder/backend
 
   script:
