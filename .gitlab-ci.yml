@@ -38,13 +38,14 @@ build-job:
 unit-test-job: # This job runs in the test stage.
   tags:
     - docker # This ensures the job runs on the Docker-based runner
-  image: python:3.9-slim # Use a Python Docker image
+  image: python:3.9-alpine # Use a Python Docker image
   stage: test
   script:
     - pytest backend/tests/ --cov=backend/ --junitxml=report.xml
   after_script:
     - rm -rf /builds/*  
     - rm -rf /tmp/*
+    - docker system prune -af # Clean up any Docker images
   before_script:
     - python --version # Check Python version
     - pip install --upgrade pip
