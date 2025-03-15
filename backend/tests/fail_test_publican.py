@@ -5,6 +5,7 @@ sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")
 
 from Publican import Publican
 
+@pytest.mark.xfail
 def test_fail_cancel_reservation():
     """
     This test is intended to fail because the cancel_reservation method always returns
@@ -16,6 +17,7 @@ def test_fail_cancel_reservation():
     assert result["message"] == "Reservation cancellation failed.", \
         "Expected cancel reservation to fail, but it succeeded."
 
+@pytest.mark.xfail
 def test_fail_encode_image_success():
     """
     This test is intended to fail because encode_image with a non-existent file returns
@@ -26,6 +28,7 @@ def test_fail_encode_image_success():
     # Intentionally expecting a success status even though the file does not exist.
     assert result["status"] == "success", "Expected image encoding to succeed, but it failed."
 
+@pytest.mark.xfail
 def test_fail_pub_details_missing_password():
     """
     This test is intended to fail because pub_details includes the password in its output,
@@ -36,6 +39,7 @@ def test_fail_pub_details_missing_password():
     # Intentionally asserting that 'password' should be omitted.
     assert "password" not in details, "Expected pub details to not contain 'password', but it does."
 
+@pytest.mark.xfail
 def test_fail_create_table_event_without_capacity():
     """
     This test is intended to fail because when creating a 'Table Based' event without supplying
