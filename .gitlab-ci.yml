@@ -48,10 +48,8 @@ unit-test-job: # This job runs in the test stage.
   before_script:
     - python --version # Check Python version
     - pip install --upgrade pip
-    - pip install pytest pytest-cov
-    - pip install -r backend/requirements.txt  # Install dependencies
+    - pip install pytest pytest-cov firebase-admin requests flask
     - PYTHONPATH=$PYTHONPATH:/builds/sweng25_group13/sweng25_group13_pubgamenightfinder/backend
-
   script:
     - pytest backend/tests/ --cov=backend/ --junitxml=report.xml # Run tests
   coverage: '/^TOTAL.*\s+(\d+%)$/'
