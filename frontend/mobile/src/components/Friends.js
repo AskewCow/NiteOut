@@ -111,7 +111,7 @@ const FriendsList = ({ friends }) => {
 
 const styles = StyleSheet.create({
     friendsContainer: {
-        width: "47.5%",
+        width: "48%",
         height: "100%",
         backgroundColor: "#90E0EF",
         borderRadius: 10,

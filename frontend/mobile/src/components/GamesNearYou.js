@@ -1,15 +1,38 @@
-import React, { use } from "react";
+import React from "react";
 import {
     View,
     Text,
     FlatList,
     StyleSheet,
     TouchableOpacity,
+    ActivityIndicator,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
-const GamesNearYou = ({ gamesList }) => {
+const GamesNearYou = ({ gamesList, isLoading }) => {
     const navigation = useNavigation();
+
+    if (isLoading) {
+        return (
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Games Near You</Text>
+                <View style={styles.loadingContainer}>
+                    <ActivityIndicator size="small" color="#0000ff" />
+                </View>
+            </View>
+        );
+    }
+
+    if (!gamesList || gamesList.length === 0) {
+        return (
+            <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Games Near You</Text>
+                <View style={styles.noGamesContainer}>
+                    <Text style={styles.noGamesText}>No games available.</Text>
+                </View>
+            </View>
+        );
+    }
 
     return (
         <View style={styles.section}>
@@ -66,6 +89,20 @@ const styles = StyleSheet.create({
     },
     gameLocation: {
         fontSize: 14,
+        color: "gray",
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    noGamesContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
+    },
+    noGamesText: {
+        fontSize: 16,
         color: "gray",
     },
 });

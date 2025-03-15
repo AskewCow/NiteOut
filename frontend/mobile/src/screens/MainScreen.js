@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
     View,
     StyleSheet,
@@ -7,6 +7,8 @@ import {
     TextInput,
     ScrollView,
     TouchableOpacity,
+    TouchableWithoutFeedback,
+    Keyboard,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
@@ -39,7 +41,7 @@ const MainScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
     const [currentLocation, setCurrentLocation] = useState(null);
     const [userInfo, setUserInfo] = useState(null);
-    const [games, setGames] = useState(null);
+    const [games, setGames] = useState([]);
     const [modalVisible, setModalVisible] = useState(false);
     const [fetchingUser, setFetchingUser] = useState(false);
     const [pubs, setPubs] = useState(null);
@@ -47,6 +49,12 @@ const MainScreen = ({ navigation }) => {
     const [friends, setFriends] = useState(null);
     const { gamerId, setGamerId } = useGamer();
     const [selectedTag, setSelectedTag] = useState("All");
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filteredResults, setFilteredResults] = useState([]);
+    const searchBarRef = useRef(null);
+    const [isSearchActive, setIsSearchActive] = useState(false);
+    const [mapRegion, setMapRegion] = useState(null);
+    const mapRef = useRef(null);
 
     useEffect(() => {
         getLocation();
@@ -56,8 +64,20 @@ const MainScreen = ({ navigation }) => {
     }, []);
 
     useEffect(() => {
+        if (games) {
+            handleSearch();
+        }
+    }, [searchQuery, pubs, games]);
+
+    useEffect(() => {
         if (currentLocation && pubs && userInfo) {
-            setLoading(false); // Data has finished loading
+            setLoading(false);
+            setMapRegion({
+                latitude: currentLocation.latitude,
+                longitude: currentLocation.longitude,
+                latitudeDelta: 0.00922,
+                longitudeDelta: 0.0421,
+            });
         }
     }, [currentLocation, pubs, userInfo]);
 
@@ -189,6 +209,45 @@ const MainScreen = ({ navigation }) => {
         }
     };
 
+    const handleSearch = () => {
+        if (!searchQuery.trim()) {
+            setFilteredResults([]);
+            return;
+        }
+
+        const filteredPubs = (pubs || [])
+            .filter((pub) =>
+                pub.pub_name.toLowerCase().includes(searchQuery.toLowerCase())
+            )
+            .map((pub) => ({ ...pub, type: "pub" }));
+
+        const filteredGames = (games || [])
+            .filter((game) =>
+                game.game_name.toLowerCase().includes(searchQuery.toLowerCase())
+            )
+            .map((game) => ({ ...game, type: "game" }));
+
+        setFilteredResults([...filteredPubs, ...filteredGames]);
+    };
+
+    const handleResultPress = (item) => {
+        if (item.type === "pub" && mapRef.current) {
+            mapRef.current.animateToRegion(
+                {
+                    latitude: item.xcoord,
+                    longitude: item.ycoord,
+                    latitudeDelta: 0.005,
+                    longitudeDelta: 0.005,
+                },
+                3000
+            );
+        } else if (item.type === "game") {
+            alert(`Game: ${item.game_name}`);
+        }
+        setSearchQuery("");
+        setFilteredResults([]);
+    };
+
     if (loading) {
         return (
             <View
@@ -198,93 +257,126 @@ const MainScreen = ({ navigation }) => {
                     alignItems: "center",
                 }}
             >
-                <LoadingAnimation /> {/* Display loading animation */}
+                <LoadingAnimation />
             </View>
         );
     }
 
     return (
-        <SafeAreaView style={styles.safeArea}>
-            <View style={styles.container}>
-                <View style={styles.header}>
-                    <View>
-                        <TouchableOpacity onPress={handleProfilePress}>
-                            <SvgXml xml={logoXml} width={40} height={40} />
-                        </TouchableOpacity>
+        <TouchableWithoutFeedback
+            onPress={() => {
+                if (isSearchActive) {
+                    setIsSearchActive(false);
+                    setSearchQuery(""); // Clear search query
+                    setFilteredResults([]); // Hide results
+                }
+                Keyboard.dismiss();
+            }}
+        >
+            <SafeAreaView style={styles.safeArea}>
+                <View style={styles.container}>
+                    <View style={styles.header}>
+                        <View>
+                            <TouchableOpacity onPress={handleProfilePress}>
+                                <SvgXml xml={logoXml} width={40} height={40} />
+                            </TouchableOpacity>
+                        </View>
+                        <TextInput
+                            ref={searchBarRef}
+                            style={styles.searchBar}
+                            placeholder="Search pubs and games"
+                            placeholderTextColor="#999"
+                            value={searchQuery}
+                            onChangeText={setSearchQuery}
+                            onFocus={() => setIsSearchActive(true)} // Set active on focus
+                        />
                     </View>
-                    <TextInput
-                        style={styles.searchBar}
-                        placeholder="Search pubs and games"
-                        placeholderTextColor="#999"
-                    />
-                </View>
 
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.tagScrollView}
-                >
-                    {[
-                        "All",
-                        "Scrabble",
-                        "Darts",
-                        "Billiards",
-                        "Trivia",
-                        "Cards",
-                        "Catan",
-                    ].map((tag, index) => (
+                    {searchQuery.length > 0 && (
+                        <View style={styles.searchResultsContainer}>
+                            <ScrollView
+                                style={styles.scrollView}
+                                nestedScrollEnabled={true}
+                            >
+                                {filteredResults.map((item) => (
+                                    <TouchableOpacity
+                                        key={item.id}
+                                        style={styles.searchResult}
+                                        onPress={() => handleResultPress(item)}
+                                    >
+                                        <Text style={styles.resultText}>
+                                            {item.type === "pub"
+                                                ? "🍺 "
+                                                : "🎲 "}
+                                            {item.pub_name || item.game_name}
+                                        </Text>
+                                    </TouchableOpacity>
+                                ))}
+                            </ScrollView>
+                        </View>
+                    )}
+
+                    <View style={styles.tagContainer}>
                         <TouchableOpacity
-                            key={index}
-                            onPress={() => setSelectedTag(tag)}
+                            onPress={() => setSelectedTag("All")}
                             style={[
                                 styles.tagButton,
-                                selectedTag === tag
+                                selectedTag === "All"
                                     ? styles.selectedTag
                                     : styles.unselectedTag,
                             ]}
                         >
-                            <Text style={styles.tagText}>{tag}</Text>
+                            <Text style={styles.tagText}>All</Text>
                         </TouchableOpacity>
-                    ))}
-                </ScrollView>
 
-                <MapView
-                    style={styles.map}
-                    initialRegion={{
-                        latitude: currentLocation.latitude,
-                        longitude: currentLocation.longitude,
-                        latitudeDelta: 0.00922,
-                        longitudeDelta: 0.0421,
-                    }}
-                    onLongPress={() => navigation.navigate("Map")}
-                >
-                    {currentLocation && (
-                        <Marker
-                            coordinate={currentLocation}
-                            title="You are here"
-                            pinColor="blue"
-                        />
-                    )}
-                    {pubs &&
-                        pubs.map((pub) => (
+                        <TouchableOpacity
+                            onPress={() => setSelectedTag("Favourites")}
+                            style={[
+                                styles.tagButton,
+                                selectedTag === "Favourites"
+                                    ? styles.selectedTag
+                                    : styles.unselectedTag,
+                            ]}
+                        >
+                            <Text style={styles.tagText}>Favourites</Text>
+                        </TouchableOpacity>
+                    </View>
+
+                    <MapView
+                        ref={mapRef}
+                        style={styles.map}
+                        initialRegion={mapRegion}
+                        onLongPress={() => navigation.navigate("Map")}
+                    >
+                        {currentLocation && (
                             <Marker
-                                key={pub.id}
-                                coordinate={{
-                                    latitude: pub.xcoord,
-                                    longitude: pub.ycoord,
-                                }}
-                                title={pub.pub_name}
-                                description={pub.address}
+                                coordinate={currentLocation}
+                                title="You are here"
+                                pinColor="#FF006E"
                             />
-                        ))}
-                </MapView>
-            </View>
+                        )}
+                        {pubs &&
+                            pubs.map((pub) => (
+                                <Marker
+                                    key={pub.id}
+                                    coordinate={{
+                                        latitude: pub.xcoord,
+                                        longitude: pub.ycoord,
+                                    }}
+                                    title={pub.pub_name}
+                                    description={pub.address}
+                                    pinColor="#90E0EF"
+                                />
+                            ))}
+                    </MapView>
+                </View>
 
-            <View style={styles.friendsAndGamesContainer}>
-                <Friends friends={friends} />
-                <GamesNearYou gamesList={games} />
-            </View>
-        </SafeAreaView>
+                <View style={styles.friendsAndGamesContainer}>
+                    <Friends friends={friends} />
+                    <GamesNearYou gamesList={games} />
+                </View>
+            </SafeAreaView>
+        </TouchableWithoutFeedback>
     );
 };
 
@@ -319,27 +411,55 @@ const styles = StyleSheet.create({
         marginLeft: 5,
         fontSize: 17,
     },
-    tagScrollView: {
-        paddingHorizontal: 10,
+    searchResultsContainer: {
+        position: "absolute",
+        top: 60,
+        width: "90%",
+        alignSelf: "center",
+        backgroundColor: "white",
+        borderRadius: 8,
+        shadowColor: "#000",
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+        maxHeight: 200,
+        zIndex: 10,
+    },
+    scrollView: {
+        maxHeight: 200,
+    },
+    searchResult: {
+        padding: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: "#ddd",
+    },
+    resultText: {
+        fontSize: 16,
+    },
+    tagContainer: {
+        flexDirection: "row",
+        justifyContent: "space-between",
+        alignItems: "center",
+        width: "98%", // Same width as the map
+        alignSelf: "center",
+        marginBottom: 7,
     },
     tagButton: {
-        marginLeft: 0,
-        paddingHorizontal: 15,
-        borderRadius: 10,
+        flex: 1,
+        paddingVertical: 10,
+        borderRadius: 7,
+        alignItems: "center",
         marginHorizontal: 5,
-        height: 16 * 1.2 + 8 * 2,
-        justifyContent: "center",
-    },
-    tagText: {
-        fontSize: 16,
-        lineHeight: 16 * 1.2,
-        color: "black",
     },
     selectedTag: {
         backgroundColor: "#FF006E",
     },
     unselectedTag: {
         backgroundColor: "#FFDCEC",
+    },
+    tagText: {
+        fontSize: 16,
+        lineHeight: 16 * 1.2,
+        color: "black",
     },
     map: {
         width: "95%",
