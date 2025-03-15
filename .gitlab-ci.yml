@@ -45,6 +45,7 @@ unit-test-job: # This job runs in the test stage.
   before_script:
     - rm -rf /var/lib/apt/lists/*  # Free up system package cache
     - rm -rf /builds/* /tmp/*  # Clear previous builds
+    - docker system prune -af 
     - python --version
     - pip install --upgrade pip
     - pip install -r backend/requirements.txt
