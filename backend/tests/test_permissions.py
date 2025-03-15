@@ -4,17 +4,13 @@ import sys
 import os
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
+from Gamer import Gamer
+from Publican import Publican
 from permissions import Permissions
-
-class Gamer:
-    pass
-
-class Publican:
-    pass
 
 def test_permissions_player():
     # Create a Gamer instance and initialize Permissions
-    player = Gamer()
+    player = Gamer(name="Alice", email="alicetest@gmail.com", password="password", profile="01")
     perms = Permissions(player)
     
     # Check that role is set to "player" and corresponding permissions are True
@@ -25,7 +21,7 @@ def test_permissions_player():
 
 def test_permissions_publican():
     # Create a Publican instance and initialize Permissions
-    publican = Publican()
+    publican = Publican(pub_name="TestPub", email="pub@example.com", ID="PUB123", password="securepass", address="123 Pub Street", xcoord=10.0, ycoord=20.0, tables=5)    
     perms = Permissions(publican)
     
     # Check that role is set to "publican" and corresponding permissions are False

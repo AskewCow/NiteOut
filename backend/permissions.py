@@ -1,3 +1,6 @@
+from Gamer import Gamer
+from Publican import Publican
+
 class Permissions:
     def __init__(self, user):
         if isinstance(user, Gamer):
