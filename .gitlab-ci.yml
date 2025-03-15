@@ -37,35 +37,35 @@ build-job:
 
 unit-test-job: # This job runs in the test stage.
   tags:
-    - docker # This ensures the job runs on the Docker-based runner
-  image: python:3.9-alpine # Use a Python Docker image
+    - docker
+  image: python:3.9-slim  # ✅ Changed to `slim` to avoid package issues
   stage: test
+  before_script:
+    - rm -rf /var/lib/apt/lists/*  # Free up system package cache
+    - rm -rf /builds/* /tmp/*  # Clear previous builds
+    - python --version
+    - pip install --upgrade pip
+    - pip install -r backend/requirements.txt
+    - export PYTHONPATH=$PYTHONPATH:/builds/sweng25_group13/sweng25_group13_pubgamenightfinder/backend  # ✅ Fixed indentation
   script:
     - pytest backend/tests/ --cov=backend/ --junitxml=report.xml
   after_script:
     - rm -rf /builds/*  
     - rm -rf /tmp/*
-  before_script:
-  - rm -rf /var/lib/apt/lists/*  # Free up system package cache
-  - rm -rf /builds/* /tmp/*  # Clear previous builds
-  - python --version
-  - pip install --upgrade pip
-  - pip install -r backend/requirements.txt
-    - PYTHONPATH=$PYTHONPATH:/builds/sweng25_group13/sweng25_group13_pubgamenightfinder/backend
   coverage: '/^TOTAL.*\s+(\d+%)$/'
   artifacts:
     reports:
       junit: report.xml
 
 lint-test-job: # This job also runs in the test stage.
-  stage: test # It can run at the same time as unit-test-job (in parallel).
+  stage: test
   script:
     - echo "Linting code... This will take about 10 seconds."
     - sleep 10
     - echo "No lint issues found."
 
 deploy-job: # This job runs in the deploy stage.
-  stage: deploy # It only runs when *both* jobs in the test stage complete successfully.
+  stage: deploy
   environment: production
   script:
     - echo "Deploying application..."
