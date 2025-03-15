@@ -367,6 +367,7 @@ def create_event():
 def create_game():
     data = request.get_json()
     
+    # Note: game type here is description of game, not seat based or table based similar to an event
     required_fields = ["game_name", "game_type", "start_time", "end_time", "expires", "pub_id", "gamer_id", "max_players"]
     if not all(field in data for field in required_fields):
         return jsonify({"error": "Missing required fields"}), 400
@@ -425,6 +426,7 @@ def create_game():
     start_time = data["start_time"]
     end_time = data["end_time"]
     expires = data["expires"]
+    pub_id = data["pub_id"]
     location = publican_data["pub_name"]
     xcoord = publican_data["xcoord"]
     ycoord = publican_data["ycoord"]
@@ -434,13 +436,13 @@ def create_game():
     print(f"DEBUG: Expires: {expires}, X: {xcoord}, Y: {ycoord}")
 
     # Correctly instantiate SeatBasedGame and TableBasedGame
-    if game_type == "Seat Based":
-        new_game = SeatBasedGame(host, game_name, game_type, start_time, end_time, expires, location, xcoord, ycoord, max_players)
-    elif game_type == "Table Based":
+    if event_data["game_type"] == "Seat Based":
+        new_game = SeatBasedGame(host, game_name, game_type, start_time, end_time, expires, pub_id, location, xcoord, ycoord, max_players)
+    elif event_data["game_type"] == "Table Based":
         tables = data.get("tables", [])
-        new_game = TableBasedGame(host, game_name, game_type, start_time, end_time, expires, location, xcoord, ycoord, max_players, tables)
+        new_game = TableBasedGame(host, game_name, game_type, start_time, end_time, expires, pub_id, location, xcoord, ycoord, max_players, tables)
     else:
-        return jsonify({"error": "Invalid game type"}), 400
+        return jsonify({"error": "Invalid game instantiation"}), 400
     
     game_data = new_game.get_game_details()
 
