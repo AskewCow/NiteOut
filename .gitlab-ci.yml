@@ -27,8 +27,8 @@ build-job:
     - echo "Compiling the code..."
     - echo "Compile complete."
   after_script:
-    - rm -rf .gitlab-ci-cache # Clean up any cache files
-    - rm -rf /tmp/* # Clear temp files
+    - rm -rf .gitlab-ci-cache  # Clean up any cache files
+    - rm -rf /tmp/*  # Clear temp files
 
 unit-test-job: # This job runs in the test stage.
   tags:
@@ -38,23 +38,22 @@ unit-test-job: # This job runs in the test stage.
   script:
     - pytest backend/tests/ --cov=backend/ --junitxml=report.xml
   after_script:
-    - rm -rf /builds/* # Clean up any build artifacts
+    - rm -rf /builds/*  # Clean up any build artifacts
   before_script:
     - python --version # Check Python version
     - pip install --upgrade pip
     - pip install pytest pytest-cov
     - PYTHONPATH=$PYTHONPATH:/builds/sweng25_group13/sweng25_group13_pubgamenightfinder/backend
     #- pip install -r requirements.txt  # Install dependencies
-
-variables:
-  GIT_DEPTH: 1
-
   script:
     - pytest backend/tests/ --cov=backend/ --junitxml=report.xml # Run tests
   coverage: '/^TOTAL.*\s+(\d+%)$/'
   artifacts:
     reports:
       junit: report.xml
+
+variables:
+  GIT_DEPTH: 1
 
 lint-test-job: # This job also runs in the test stage.
   stage: test # It can run at the same time as unit-test-job (in parallel).
