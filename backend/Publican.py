@@ -8,7 +8,7 @@ class Publican:
         self.password = password
         self.address = address
         self.xcoord = xcoord
-        self.ycoord = ycoord
+        self.ycoord = ycoord 
         self.tables = tables
         self.events = []
         self.pub_image = pub_image
