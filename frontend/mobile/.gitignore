@@ -1,5 +1,3 @@
-node_modules/
-
 # Expo
 .expo/
 dist/
@@ -30,3 +28,6 @@ yarn-error.*
 
 # typescript
 *.tsbuildinfo
+
+#other
+node_modules/
