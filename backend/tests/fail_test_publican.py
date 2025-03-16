@@ -12,7 +12,7 @@ def test_fail_cancel_reservation():
     a success message, but the test asserts an error message.
     """
     pub = Publican("Pub D", "pubd@example.com", "ID004", "password111", "111 Street", 12.0, 22.0, 5)
-    result = pub.cancel_reservation(2)
+    result = pub.cancel_reservation(2) 
     # Intentionally expecting an error message even though cancellation always succeeds.
     assert result["message"] == "Reservation cancellation failed.", \
         "Expected cancel reservation to fail, but it succeeded."
