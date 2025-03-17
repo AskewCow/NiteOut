@@ -31,3 +31,4 @@ yarn-error.*
 
 #other
 node_modules/
+config.json

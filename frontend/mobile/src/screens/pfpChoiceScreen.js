@@ -57,7 +57,7 @@ const pfpChoiceScreen = ({ route, navigation }) => {
             });
 
             Alert.alert("Success", "Profile updated!");
-            navigation.navigate("Main");
+            navigation.navigate("Drawer", { screen: "Home" });
         } catch (error) {
             console.error("Error updating profile:", error);
             Alert.alert("Error", "Could not update profile. Try again.");

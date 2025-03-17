@@ -196,14 +196,6 @@ export default function App() {
                                 gestureEnabled: false,
                             }}
                         />
-                        {/* <Stack.Screen
-                        name="Profile"
-                        component={ProfileScreen}
-                        options={{
-                            headerShown: false,
-                            gestureEnabled: false, // Prevent swiping back from Profile
-                        }}
-                    /> */}
                         <Stack.Screen
                             name="Profile"
                             component={ProfileScreen}
