@@ -1,11 +1,19 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ActivityIndicator, 
+  ScrollView, 
+  TouchableOpacity, 
+  SafeAreaView 
+} from 'react-native';
 import { db } from '../firebaseConfig';
 import { useGamer } from '../contexts/GamerContext'; 
 import { getDoc, doc } from 'firebase/firestore';
 import { SvgXml } from "react-native-svg";
 import { logoXml } from "../utils/logo";
-import { DrawerActions } from '@react-navigation/native';
+import { DrawerActions, useFocusEffect } from '@react-navigation/native';
 import { Calendar } from 'react-native-calendars';
 
 const ReservedEvents = ({ navigation }) => {
@@ -15,7 +23,6 @@ const ReservedEvents = ({ navigation }) => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [markedDates, setMarkedDates] = useState({});
 
-  useEffect(() => {
   const fetchReservations = async () => {
     try {
       console.log("gamerId: ", gamerId);
@@ -30,9 +37,12 @@ const ReservedEvents = ({ navigation }) => {
           })
         );
 
+
+
         const gameDocs = await Promise.all(gamePromises);
         const newEvents = {};
         const newMarkedDates = {};
+        console.log("games: ", gameDocs);
 
         gameDocs.forEach(doc => {
           if (doc.exists()) {
@@ -41,7 +51,7 @@ const ReservedEvents = ({ navigation }) => {
             const dateObj = new Date(start_time);
             const formattedDate = dateObj.toISOString().split('T')[0];  
             const time = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
+            console.log("game: ", gameData);
             if (!newEvents[formattedDate]) {
               newEvents[formattedDate] = [];
             }
@@ -65,8 +75,11 @@ const ReservedEvents = ({ navigation }) => {
     }
   };
 
-    fetchReservations();
-  }, [gamerId]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchReservations();
+    }, [gamerId])
+  );
 
   if (loading) {
     return (
@@ -79,21 +92,20 @@ const ReservedEvents = ({ navigation }) => {
 
   const handleDateSelect = (date) => {
     const newSelectedDate = date.dateString;
-      const updatedMarkedDates = Object.keys(markedDates).reduce((acc, key) => {
+    const updatedMarkedDates = Object.keys(markedDates).reduce((acc, key) => {
       acc[key] = { ...markedDates[key], selected: false }; 
       return acc;
     }, {});
-  
+
     updatedMarkedDates[newSelectedDate] = {
       ...updatedMarkedDates[newSelectedDate],
       selected: true,
       selectedColor: '#00B4D8',
     };
-  
+
     setSelectedDate(newSelectedDate);
     setMarkedDates(updatedMarkedDates);
   };
-  
 
   const handleProfilePress = (gamerId) => {
     console.log("GamerId: ", gamerId);
@@ -104,17 +116,17 @@ const ReservedEvents = ({ navigation }) => {
         navigation.navigate("Login");
         return;
     }
-};
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-          <View>
-              <TouchableOpacity onPress={handleProfilePress}>
-                  <SvgXml xml={logoXml} width={40} height={40} />
-              </TouchableOpacity>
-          </View>
-          <Text style={styles.headerText}>My Games</Text>
+        <View>
+          <TouchableOpacity onPress={handleProfilePress}>
+            <SvgXml xml={logoXml} width={40} height={40} />
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.headerText}>My Games</Text>
       </View>
       {/* Calendar View */}
       <Calendar

@@ -137,6 +137,8 @@ const MainScreen = ({ navigation }) => {
                 expires: doc.data().expires,
                 max_players: doc.data().max_players,
                 participants: doc.data().participants,
+                host: doc.data().host,
+                game_desc: doc.data().game_desc,
             }));
 
             setGames(gameList);
