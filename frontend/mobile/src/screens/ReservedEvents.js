@@ -1,73 +1,85 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, ActivityIndicator, ScrollView, TouchableOpacity, SafeAreaView } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  ActivityIndicator, 
+  ScrollView, 
+  TouchableOpacity, 
+  SafeAreaView 
+} from 'react-native';
 import { db } from '../firebaseConfig';
 import { useGamer } from '../contexts/GamerContext'; 
 import { getDoc, doc } from 'firebase/firestore';
 import { SvgXml } from "react-native-svg";
 import { logoXml } from "../utils/logo";
-import { DrawerActions } from '@react-navigation/native';
+import { DrawerActions, useFocusEffect } from '@react-navigation/native';
+import { Calendar } from 'react-native-calendars';
 
 const ReservedEvents = ({ navigation }) => {
   const { gamerId } = useGamer();
   const [eventsByDate, setEventsByDate] = useState({});
   const [loading, setLoading] = useState(true);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [markedDates, setMarkedDates] = useState({});
 
-  useEffect(() => {
-    const fetchReservations = async () => {
-      try {
-        console.log("gamerId: ", gamerId);
-        const userDoc = await getDoc(doc(db, "gamers", gamerId));
-        console.log("here");
+  const fetchReservations = async () => {
+    try {
+      console.log("gamerId: ", gamerId);
+      const userDoc = await getDoc(doc(db, "gamers", gamerId));
 
-        const userData = userDoc.data();
-        console.log("Fetched userData ", userData);
-        
-        if (userData && userData.joined_games) {
-            const gamePromises = userData.joined_games.map(gameId => {
-            console.log('Fetching game with ID:', gameId);
-            
-            return getDoc(doc(db, 'games', gameId))  
-                .then(docSnapshot => {
-                console.log("Got doc: ", docSnapshot);
-                return docSnapshot;
-                })
-                .catch(error => {
-                console.error("Error fetching game: ", error);
-                return undefined;  
-                });
-            });
+      const userData = userDoc.data();
+      if (userData && userData.joined_games) {
+        const gamePromises = userData.joined_games.map(gameId => 
+          getDoc(doc(db, 'games', gameId)).catch(error => {
+            console.error("Error fetching game: ", error);
+            return undefined;
+          })
+        );
 
-            console.log("game promises: ", gamePromises);
 
-            const gameDocs = await Promise.all(gamePromises);
-            console.log("gameDocs: ", gameDocs);
-            const newEvents = {};
 
-            gameDocs.forEach(doc => {
-                if (doc.exists()) {
-                    const gameData = doc.data();
-                    const { start_time, game_name, location } = gameData;  
-                    const date = new Date(start_time);
-                    const formattedDate = new Intl.DateTimeFormat('en-US', { weekday: 'long', day: 'numeric', month: 'long' }).format(date);
-                    const time = date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });  
+        const gameDocs = await Promise.all(gamePromises);
+        const newEvents = {};
+        const newMarkedDates = {};
+        console.log("games: ", gameDocs);
 
-                    if (!newEvents[formattedDate]) {
-                        newEvents[formattedDate] = [];
-                    }
-                    newEvents[formattedDate].push({ game_name, start_time, location, time });
-                }
-            });
-          setEventsByDate(newEvents);
-        }
-      } catch (error) {
-        console.error('Error fetching reservations:', error);
-      } finally {
-        setLoading(false);
+        gameDocs.forEach(doc => {
+          if (doc.exists()) {
+            const gameData = doc.data();
+            const { start_time, game_name, location } = gameData;  
+            const dateObj = new Date(start_time);
+            const formattedDate = dateObj.toISOString().split('T')[0];  
+            const time = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            console.log("game: ", gameData);
+            if (!newEvents[formattedDate]) {
+              newEvents[formattedDate] = [];
+            }
+            newEvents[formattedDate].push({ game_name, start_time, location, time });
+
+            newMarkedDates[formattedDate] = {
+              marked: true,
+              dotColor: '#FF006E', 
+              selectedColor: selectedDate === formattedDate ? '#90E0EF' : undefined,
+            };
+          }
+        });
+
+        setEventsByDate(newEvents);
+        setMarkedDates(newMarkedDates);
       }
-    };
+    } catch (error) {
+      console.error('Error fetching reservations:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    fetchReservations();
-  }, [gamerId]);
+  useFocusEffect(
+    useCallback(() => {
+      fetchReservations();
+    }, [gamerId])
+  );
 
   if (loading) {
     return (
@@ -78,6 +90,23 @@ const ReservedEvents = ({ navigation }) => {
     );
   }
 
+  const handleDateSelect = (date) => {
+    const newSelectedDate = date.dateString;
+    const updatedMarkedDates = Object.keys(markedDates).reduce((acc, key) => {
+      acc[key] = { ...markedDates[key], selected: false }; 
+      return acc;
+    }, {});
+
+    updatedMarkedDates[newSelectedDate] = {
+      ...updatedMarkedDates[newSelectedDate],
+      selected: true,
+      selectedColor: '#00B4D8',
+    };
+
+    setSelectedDate(newSelectedDate);
+    setMarkedDates(updatedMarkedDates);
+  };
+
   const handleProfilePress = (gamerId) => {
     console.log("GamerId: ", gamerId);
     if (gamerId) {
@@ -87,37 +116,55 @@ const ReservedEvents = ({ navigation }) => {
         navigation.navigate("Login");
         return;
     }
-};
+  };
 
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
-          <View>
-              <TouchableOpacity onPress={handleProfilePress}>
-                  <SvgXml xml={logoXml} width={40} height={40} />
-              </TouchableOpacity>
-          </View>
-          <Text style={styles.headerText}>My Games</Text>
+        <View>
+          <TouchableOpacity onPress={handleProfilePress}>
+            <SvgXml xml={logoXml} width={40} height={40} />
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.headerText}>My Games</Text>
       </View>
+      {/* Calendar View */}
+      <Calendar
+        current={new Date().toISOString().split('T')[0]}
+        markedDates={markedDates}
+        onDayPress={handleDateSelect}
+        style={styles.calendar}
+        theme={{
+          todayTextColor: '#00B4D8',
+        }}
+        renderArrow={(direction) => (
+          <Text style={{ fontSize: 20, color: 'black' }}>
+            {direction === 'left' ? '←' : '→'}
+          </Text>
+        )}
+      />
+
+      {/* Event List */}
       <ScrollView style={styles.scrollView}>
-      {Object.keys(eventsByDate).map(date => (
-          <View key={date} style={styles.dateSection}>
-          <Text style={styles.dateTitle}>{date}</Text>
-          {eventsByDate[date].map((event, index) => (
-              <TouchableOpacity 
+        {selectedDate && eventsByDate[selectedDate] ? (
+          eventsByDate[selectedDate].map((event, index) => (
+            <TouchableOpacity 
               key={index} 
               style={styles.eventItem}
               onPress={() => navigation.navigate('EventDetails', { event })}
-              > 
-                  <View style={styles.eventDetails}>
-                      <Text style={styles.eventTitle}>{event.game_name}</Text>
-                      <Text style={styles.pubName}>{event.location}</Text>
-                  </View>
-                  <Text style={styles.eventTime}>{event.time}</Text>
-              </TouchableOpacity>
-          ))}
-          </View>
-      ))}
+            > 
+              <View style={styles.eventDetails}>
+                <Text style={styles.eventTitle}>{event.game_name}</Text>
+                <Text style={styles.pubName}>{event.location}</Text>
+              </View>
+              <Text style={styles.eventTime}>{event.time}</Text>
+            </TouchableOpacity>
+          ))
+        ) : (
+          <Text style={styles.noEventsText}>
+            {selectedDate ? "You have no games on this day." : "Select a date to view games."}
+          </Text>
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -130,21 +177,23 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
     flex: 1,
   },
+  calendar :{
+    marginTop: 0,
+    alignContent: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+    width: "95%",
+    borderRadius: 10,
+    padding: 10,
+    marginBottom: 10,
+  },
   scrollView: {
     flex: 1,
     backgroundColor: '#90E0EF',
     width: '95%',
     alignSelf: 'center',
     borderRadius: 10,
-  },
-  dateSection: {
-    marginVertical: 10,
-    paddingHorizontal: 20,
-  },
-  dateTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    marginVertical: 10,
+    padding: 10,
   },
   eventItem: {
     backgroundColor: '#f0f0f0',
@@ -164,6 +213,12 @@ const styles = StyleSheet.create({
   eventDetails: {
     flexDirection: 'column',
     flex: 1,
+  },
+  noEventsText: {
+    textAlign: 'center',
+    fontSize: 16,
+    marginTop: 20,
+    color: '#555',
   },
   header: {
     flexDirection: "row",

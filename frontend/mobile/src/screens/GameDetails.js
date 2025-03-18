@@ -1,83 +1,90 @@
-import React, { useState, useEffect, use } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity } from "react-native";
+import React, { useState, useEffect } from "react";
+import { 
+  View, 
+  Text, 
+  StyleSheet, 
+  TouchableOpacity, 
+  Image, 
+  ActivityIndicator, 
+  Alert, 
+} from "react-native";
+import { Ionicons } from '@expo/vector-icons';
 import MapView, { Marker } from 'react-native-maps';
-import { db, doc, getDoc } from "../firebaseConfig";
-import { useLocation } from "../contexts/LocationContext";
+import { db } from "../firebaseConfig";
+import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
 import { useGamer } from "../contexts/GamerContext";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { Ionicons } from '@expo/vector-icons';
-import { Modal } from "react-native";
-import GamesNearYou from "../components/GamesNearYou";
+import profileIcons from "../utils/profileIcons/profileIcons";
+import { SvgXml } from "react-native-svg";
 
 const GameDetails = ({ route, navigation }) => {
   const { game } = route.params;
-  const { userId } = useGamer();
-  const [isModalVisible, setModalVisible] = useState(false);
-  const [confirmingReservation, setConfirmingReservation] = useState(false);
-  const { location } = useLocation();
+  const { gamerId } = useGamer();
+  const [host, setHost] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [hostProfileXml, setHostProfileXml] = useState(null);
+  
   const start_date = new Date(game.start_time);
   const end_date = new Date(game.end_time);
   const start_time = start_date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const end_time = end_date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   const availableSeats = game.max_players - game.participants.length;
 
-  useEffect(() => {
-  }, []);
-
   const formatDate = (date) => {
     const day = date.getDate();
-    const month = date.getMonth() + 1; 
-    const year = date.getFullYear();
-    return `${day}/${month}/${year}`;
+    const month = date.toLocaleString('default', { month: 'long' }); 
+    return `${month} ${day}th`;
   };
+
   const formattedDate = formatDate(start_date);
 
-  const checkUserReservation = async () => {
-    try {
-      const userDoc = await getDoc(doc(db, 'gamers', userId));
-      if (userDoc.exists()) {
-        const userEvents = userDoc.data().joined_games || [];
-        return userEvents.includes(game.id);
+  useEffect(() => {
+    console.log("game host:", game.host);
+    const fetchHost = async () => {
+      try {
+        const hostDoc = await getDoc(doc(db, 'gamers', game.host));
+        if (hostDoc.exists()) {
+          const hostData = hostDoc.data();
+          console.log('Host data:', hostData);
+          setHost(hostData);
+          const hostProfileXml = profileIcons[hostData.profile];
+          setHostProfileXml(hostProfileXml);
+        } else {
+          console.error('Host data not found');
+        }
+      } catch (error) {
+        console.error('Error fetching host data:', error);
+      } finally {
+        setLoading(false);
       }
-    } catch (error) {
-      console.error('Error checking user reservation:', error);
     }
-    return false;
-  };
+
+    fetchHost();
+  }, [game.host]);
+
+  if (loading) {
+      return (
+          <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#00B4D8" />
+          </View>
+      );
+  }
 
   const handleReserveSeat = async () => {
-    // Check if user already has a reservation
-    const hasReservation = await checkUserReservation();
-    if (hasReservation) {
-      alert('You already have a reservation for this game.');
-      setModalVisible(false);
-      return;
-    }
-
-    // Proceed with reservation
     try {
+      // Proceed with reservation
       await updateDoc(doc(db, 'games', game.id), {
-        participants: arrayUnion(userId),
+        participants: arrayUnion(gamerId),
       });
-      await updateDoc(doc(db, 'gamers', userId), {
-        events: arrayUnion(game.id),
+      await updateDoc(doc(db, 'gamers', gamerId), {
+        joined_games: arrayUnion(game.id),
       });
-      setConfirmingReservation(false);
-      setModalVisible(false);
       alert('Reservation confirmed!');
     } catch (error) {
       console.error('Error reserving seat:', error);
       alert('Failed to reserve seat. Please try again.');
     }
   };
-
-  if (!game) {
-    return (
-      <View style={styles.container}>
-        <Text style={styles.errorText}>No game details available.</Text>
-      </View>
-    );
-  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -87,14 +94,34 @@ const GameDetails = ({ route, navigation }) => {
         </TouchableOpacity>
         <Text style={styles.title}>{game.game_name}</Text>
       </View>
-      <Text>IMAGE WILL COME HERE ABOVE DESCRIPTION</Text>
-      <View style={styles.descriptionContainer}>
-        <Text style={styles.description}>Pub: {game.location}</Text>
-        <Text style={styles.description}>Date: {formattedDate}</Text>
-        <Text style={styles.description}>Time: {start_time} - {end_time}</Text>
-        <Text style={styles.description}>Available seats: {availableSeats}</Text>
+
+      {/* Event Details Container */}
+      <View style={styles.detailsContainer}>
+        <View style={styles.leftContainer}>
+          {/* Pub Name */}
+          <Text style={styles.pubName}>{game.location}</Text>
+
+          {/* Game Organizer */}
+          <Text style={styles.hostText}>Hosted by</Text>
+          <View style={styles.organizerContainer}>
+            <SvgXml xml={hostProfileXml} width={40} height={40} />
+            <Text style={styles.organizerName}>{host ? host.fullName : ''}</Text>
+          </View>
+          <Text style={styles.hostText}>Description</Text>
+          <Text style={styles.descriptionText}>{game.game_desc}</Text>
+        </View>
       </View>
-      {/* <Text style={styles.description}>{game.description || 'No description available.'}</Text> */}
+
+      {/* Info Container with Date/Time and Spots Remaining */}
+      <View style={styles.infoContainer}>
+        <View style={styles.pill}>
+          <Text style={styles.dateTimePillText}>{formattedDate}</Text>
+          <Text style={styles.dateTimePillText}>{start_time} - {end_time}</Text>
+        </View>
+        <View style={styles.pill}>
+          <Text style={styles.pillText}>{availableSeats} spots left</Text>
+        </View>
+      </View>
 
       <MapView
         style={styles.map}
@@ -103,41 +130,35 @@ const GameDetails = ({ route, navigation }) => {
           longitude: game.ycoord,
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
-      }}
+        }}
       >
-        { location ? (<Marker
-          coordinate={{ latitude: location.latitude, longitude: location.longitude }}
-          title="You're here!"
-          pinColor="blue"
-        />
-        ) : null}
         <Marker
           coordinate={{ latitude: game.xcoord, longitude: game.ycoord }}
           title={game.location}
           description="Game Location"
         />
-        <Marker
-          coordinate={{ latitude: location.latitude, longitude: location.longitude }}
-          title="You're here!"
-          pinColor="blue"
-        />
       </MapView>
-      {/* <TouchableOpacity title="Reserve Seat" onPress={() => setModalVisible(true)} />
-      <Modal isVisible={isModalVisible}>
-        <View style={styles.modalContainer}>
-          <Text style={styles.modalText}>Do you want to confirm your reservation?</Text>
-          <View style={styles.modalButtons}>
-            <TouchableOpacity
-              title="Cancel"
-              onPress={() => setModalVisible(false)}
-            />
-            <TouchableOpacity
-              title="Confirm"
-              onPress={handleReserveSeat}
-            />
-          </View>
-        </View>
-      </Modal> */}
+
+      {/* Join Event Button */}
+      <TouchableOpacity
+        style={styles.reserveButton}
+        onPress={() => 
+          Alert.alert(
+            "Join Event",
+            "Are you sure you want to join this event?",
+            [
+              {
+                text: "Cancel",
+                onPress: () => console.log("Cancel Pressed"),
+                style: "destructive"
+              },
+              { text: "Join", onPress: () => handleReserveSeat() }
+            ]
+          )
+        }
+      >
+        <Text style={styles.reserveButtonText}>Join Event</Text>
+      </TouchableOpacity>
     </SafeAreaView>
   );
 };
@@ -146,40 +167,7 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#90E0EF",
-    alignContent: "center",
     justifyContent: "flex-start",
-  },
-  container: {
-    flex: 1,
-    padding: 20,
-    backgroundColor: "#fff",
-    marginTop: 100,
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    flexDirection: "row",
-    alignSelf: "center",
-    alignItems: "center",
-  },
-  location: {
-    fontSize: 18,
-    color: "gray",
-    marginBottom: 10,
-    textAlign: "center",
-  },
-  description: {
-    fontSize: 16,
-    textAlign: "center",
-    alignSelf: 'flex-start',
-    marginLeft: 10,
-  },
-  map: {
-    width: "95%",
-    height: "20%",
-    borderRadius: 10,
-    paddingBottom: 0,
-    alignSelf: "center",
   },
   header: {
     flexDirection: "row",
@@ -187,7 +175,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     width: "100%",
     padding: 10,
-    paddingTop: 10,
     position: 'relative'
   },
   backButton: {
@@ -195,14 +182,113 @@ const styles = StyleSheet.create({
     left: 12,
     color: "#FF006E",
   },
-  descriptionContainer: {
-    backgroundColor: "#FFFFFF",
-    width: "95%",
-    alignSelf: "center",
+  title: {
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  detailsContainer: {
+    flexDirection: 'row', 
+    padding: 20,
+    margin: 10,
+    backgroundColor: '#FFFF',
+    borderRadius: 20,
+    alignItems: 'center',
+  },
+  leftContainer: {
+    flex: 1,
+    marginRight: 0,
+    width: '100%',
+  },
+  pubName: {
+    fontSize: 20,
+    fontWeight: 'bold',
     marginBottom: 10,
+    color: '#FF006E',
+  },
+  organizerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  organizerName: {
+    fontSize: 18,
+    marginLeft: 10,
+  },
+  infoContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingHorizontal: 10,
+  },
+  pill: {
+    backgroundColor: '#00B4D8',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 15,
+    marginBottom: 10,
+    alignSelf: 'flex-start',
+    width: '48%', 
+  },
+  dateTimePillText: {
+    color: 'white',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+  pillText: {
+    color: 'white',
+    fontSize: 27,
+    textAlign: 'center',
+  },
+  imageContainer: {
+    width: 120,
+    height: 120,
     borderRadius: 10,
-    paddingTop: 5,
-    paddingBottom: 5,
+  },
+  eventImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  map: {
+    width: "95%",
+    height: 200,
+    borderRadius: 20,
+    paddingBottom: 0,
+    alignSelf: "center",
+  },
+  reserveButton: {
+    position: 'absolute',
+    bottom: 20,
+    alignSelf: 'center',
+    backgroundColor: '#FF006E',
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 20,
+    width: "95%",
+    marginBottom: 8,
+  },
+  reserveButtonText: {
+    color: 'white',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  cancelText: {
+    color: "white",
+    fontSize: 16,
+    fontWeight: "bold",
+},
+  descriptionText: {
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'left',
+    width: '100%',
+  },
+  hostText: {
+    fontSize: 16,
+    marginBottom: 10,
+    textAlign: 'left',
+    width: '100%',
+    color: '#00B4D8',
   },
 });
 
