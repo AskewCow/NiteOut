@@ -24,6 +24,8 @@ import FriendProfile from "./src/screens/FriendProfile";
 import ReservedEvents from "./src/screens/ReservedEvents";
 import MyFriends from "./src/screens/MyFriendsScreen";
 import MyFriendsScreen from "./src/screens/MyFriendsScreen";
+import HostGame from "./src/screens/HostGame";
+import ChosenEvent from "./src/screens/ChosenEvent";
 
 const screenHeight = Dimensions.get("window").height;
 const headerHeight = screenHeight * 0.12;
@@ -114,6 +116,7 @@ function DrawerNavigator() {
                     },
                 })}
             />
+            <Drawer.Screen name="Host Game" component={HostGame} />
         </Drawer.Navigator>
     );
 }
@@ -194,14 +197,6 @@ export default function App() {
                                 gestureEnabled: false,
                             }}
                         />
-                        {/* <Stack.Screen
-                        name="Profile"
-                        component={ProfileScreen}
-                        options={{
-                            headerShown: false,
-                            gestureEnabled: false, // Prevent swiping back from Profile
-                        }}
-                    /> */}
                         <Stack.Screen
                             name="Profile"
                             component={ProfileScreen}
@@ -263,6 +258,13 @@ export default function App() {
                             options={{
                                 headerShown: true,
                                 gestureEnabled: false,
+                            }}
+                        />
+                        <Stack.Screen
+                            name="ChosenEvent"
+                            component={ChosenEvent}
+                            options={{headerShown: false,
+                                gestureEnabled: true,
                             }}
                         />
                     </Stack.Navigator>
