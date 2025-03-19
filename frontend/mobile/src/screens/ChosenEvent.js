@@ -11,7 +11,6 @@ import {
   Keyboard,
 } from "react-native";
 import { Picker } from "@react-native-picker/picker";
-import DateTimePicker from "@react-native-community/datetimepicker";
 import axios from "axios";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useGamer } from "../contexts/GamerContext";
@@ -20,8 +19,8 @@ const ChosenEvent = () => {
   const [gameName, setGameName] = useState("");
   const [gameDescription, setGameDescription] = useState("");
   const [gameType, setGameType] = useState("Seat Based");
-  const [startTime, setStartTime] = useState(new Date());
-  const [endTime, setEndTime] = useState(new Date());
+  const [startTime, setStartTime] = useState("");
+  const [endTime, setEndTime] = useState("");
   const [expires, setExpires] = useState(new Date());
   const [numPlayers, setNumPlayers] = useState(1);
   const navigation = useNavigation();
@@ -45,14 +44,22 @@ const ChosenEvent = () => {
     if (
       !gameName ||
       !gameDescription ||
+      !gameType ||
       !startTime ||
       !endTime ||
       !expires ||
-      !numPlayers
+      !numPlayers ||
+      !gamerId ||
+      !event.pub_details.pub_id ||
+      !event.expires
     ) {
       Alert.alert("Error", "Please fill in all fields.");
       return;
     }
+
+    const eventDate = event.start_time.split('T')[0]; // Extracts "YYYY-MM-DD"
+    const combinedStartTime = `${eventDate}T${startTime}:00Z`;
+    const combinedEndTime = `${eventDate}T${endTime}:00Z`;
 
     console.log("handling submit");
 
@@ -60,10 +67,10 @@ const ChosenEvent = () => {
       game_name: gameName,
       game_desc: gameDescription,
       game_type: gameType,
-      start_time: startTime.toISOString(),
-      end_time: endTime.toISOString(),
+      start_time: new Date(combinedStartTime).toISOString(),
+      end_time: new Date(combinedEndTime).toISOString(),
       expires: event.expires,
-      pub_id: event.pub_id,
+      pub_id: event.pub_details.pub_id,
       gamer_id: gamerId,
       max_players: parseInt(numPlayers, 10),
     };
