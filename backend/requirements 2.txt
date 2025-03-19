@@ -1,5 +1,0 @@
-firebase-admin
-pytest
-pytest-cov
-requests
-flask
