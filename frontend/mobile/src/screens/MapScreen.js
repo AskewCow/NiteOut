@@ -10,24 +10,33 @@ import {
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import { SvgXml } from "react-native-svg";
-import { logoXml } from "../utils/logo";
+
 import { db } from "../firebaseConfig";
 import { collection, getDocs } from "firebase/firestore";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import GamesList from "../components/GamesList";
+import { logoXml } from "../utils/logo";
+import LoadingAnimation from "../components/LoadingAnimation";
 
 const MapScreen = ({ navigation }) => {
     const [currentLocation, setCurrentLocation] = useState(null);
     const [pubs, setPubs] = useState([]);
     const [selectedTag, setSelectedTag] = useState("All");
     const [games, setGames] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         getLocation();
         fetchPubs();
         fetchGames();
     }, []);
+
+    useEffect(() => {
+        if (currentLocation && pubs.length > 0 && games.length > 0) {
+            setLoading(false);
+        }
+    }, [currentLocation, pubs, games]);
 
     const getLocation = async () => {
         try {
@@ -69,6 +78,14 @@ const MapScreen = ({ navigation }) => {
             console.error("Error fetching games: ", error);
         }
     };
+
+    if (loading) {
+        return (
+            <View style={styles.loadingContainer}>
+                <LoadingAnimation />
+            </View>
+        );
+    }
 
     return (
         <View style={styles.container}>
@@ -144,7 +161,7 @@ const MapScreen = ({ navigation }) => {
                         <Marker
                             coordinate={currentLocation}
                             title="You are here"
-                            pinColor="blue"
+                            pinColor="#FF006E"
                         />
                     )}
                     {pubs.map((pub) => (
@@ -156,12 +173,13 @@ const MapScreen = ({ navigation }) => {
                             }}
                             title={pub.pub_name}
                             description={pub.address}
+                            pinColor="#90E0EF"
                         />
                     ))}
                     <View style={styles.gamesListContainer}>
                         <ScrollView
                             horizontal
-                            showsHorizontalScrollIndicator={false} // Hides the scrollbar for a cleaner UI
+                            showsHorizontalScrollIndicator={false}
                             contentContainerStyle={styles.gamesListScrollView}
                         >
                             <GamesList games={games} />
@@ -177,6 +195,11 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: "#00B4D8",
+    },
+    loadingContainer: {
+        flex: 1,
+        justifyContent: "center",
+        alignItems: "center",
     },
     header: {
         flexDirection: "row",

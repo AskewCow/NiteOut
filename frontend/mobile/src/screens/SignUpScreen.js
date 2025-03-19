@@ -44,6 +44,19 @@ const SignUpScreen = ({ navigation }) => {
         return unsubscribe;
     }, [navigation]);
 
+    const checkIfEmailExists = async (email) => {
+        try {
+            const querySnapshot = await db
+                .collection("users")
+                .where("email", "==", email)
+                .get();
+            return !querySnapshot.empty; // returns true if the email exists
+        } catch (error) {
+            console.error("Error checking email in Firestore:", error);
+            return false;
+        }
+    };
+
     const handleSignUp = async () => {
         // Reset errors when user starts new input
         setFullNameError("");
@@ -71,6 +84,13 @@ const SignUpScreen = ({ navigation }) => {
         }
         if (!validateEmail(trimmedEmail)) {
             setEmailError("Please enter a valid email address.");
+            return;
+        }
+
+        // Check if email exists in Firestore (without creating user yet)
+        const emailExists = await checkIfEmailExists(trimmedEmail);
+        if (emailExists) {
+            setEmailError("Email already in use. Please try another one.");
             return;
         }
 

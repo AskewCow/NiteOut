@@ -22,7 +22,6 @@ import pfpChoiceScreen from "./src/screens/pfpChoiceScreen";
 import GameDetails from "./src/screens/GameDetails";
 import FriendProfile from "./src/screens/FriendProfile";
 import ReservedEvents from "./src/screens/ReservedEvents";
-import MyFriends from "./src/screens/MyFriendsScreen";
 import MyFriendsScreen from "./src/screens/MyFriendsScreen";
 import HostGame from "./src/screens/HostGame";
 import ChosenEvent from "./src/screens/ChosenEvent";
@@ -163,6 +162,7 @@ export default function App() {
                             options={{
                                 headerShown: true,
                                 gestureEnabled: false,
+                                headerLeft: () => null,
                             }}
                         />
                         <Stack.Screen
@@ -171,6 +171,7 @@ export default function App() {
                             options={{
                                 headerShown: true,
                                 gestureEnabled: false,
+                                headerLeft: () => null,
                             }}
                         />
                         <Stack.Screen
@@ -179,6 +180,7 @@ export default function App() {
                             options={{
                                 headerShown: true,
                                 gestureEnabled: false,
+                                headerLeft: () => null,
                             }}
                         />
                         <Stack.Screen
