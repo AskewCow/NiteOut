@@ -140,7 +140,7 @@ const CreateEventScreen = ({ navigation }) => {
       });
 
       Alert.alert("Success", "Event created successfully!");
-      navigation.navigate("MyGames");
+      navigation.navigate("PublicanMainScreen");
     } catch (error) {
       console.error("Error creating event:", error);
       Alert.alert("Error", "Failed to create event. Please try again.");
@@ -203,17 +203,24 @@ const CreateEventScreen = ({ navigation }) => {
               </Text>
             </TouchableOpacity>
             {showStartPicker && (
-              <DateTimePicker
-                value={startDateTime}
-                mode="datetime"
-                display="spinner"
-                onChange={(event, selectedDate) => {
-                  if (event.type === "set") {
-                    setStartDateTime(selectedDate);
-                  }
-                  setShowStartPicker(false);
-                }}
-              />
+              <View style={styles.pickerContainer}>
+                <DateTimePicker
+                  value={startDateTime}
+                  mode="datetime"
+                  display="spinner"
+                  onChange={(event, selectedDate) => {
+                    if (selectedDate) {
+                      setStartDateTime(selectedDate);
+                    }
+                  }}
+                />
+                <TouchableOpacity
+                  style={styles.doneButton}
+                  onPress={() => setShowStartPicker(false)}
+                >
+                  <Text style={styles.doneButtonText}>Done</Text>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
 
@@ -226,17 +233,24 @@ const CreateEventScreen = ({ navigation }) => {
               <Text style={styles.dateText}>{formatDateTime(endDateTime)}</Text>
             </TouchableOpacity>
             {showEndPicker && (
-              <DateTimePicker
-                value={endDateTime}
-                mode="datetime"
-                display="spinner"
-                onChange={(event, selectedDate) => {
-                  if (event.type === "set") {
-                    setEndDateTime(selectedDate);
-                  }
-                  setShowEndPicker(false);
-                }}
-              />
+              <View style={styles.pickerContainer}>
+                <DateTimePicker
+                  value={endDateTime}
+                  mode="datetime"
+                  display="spinner"
+                  onChange={(event, selectedDate) => {
+                    if (selectedDate) {
+                      setEndDateTime(selectedDate);
+                    }
+                  }}
+                />
+                <TouchableOpacity
+                  style={styles.doneButton}
+                  onPress={() => setShowEndPicker(false)}
+                >
+                  <Text style={styles.doneButtonText}>Done</Text>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
 
@@ -251,17 +265,24 @@ const CreateEventScreen = ({ navigation }) => {
               </Text>
             </TouchableOpacity>
             {showExpirePicker && (
-              <DateTimePicker
-                value={expireDateTime}
-                mode="datetime"
-                display="spinner"
-                onChange={(event, selectedDate) => {
-                  if (event.type === "set") {
-                    setExpireDateTime(selectedDate);
-                  }
-                  setShowExpirePicker(false);
-                }}
-              />
+              <View style={styles.pickerContainer}>
+                <DateTimePicker
+                  value={expireDateTime}
+                  mode="datetime"
+                  display="spinner"
+                  onChange={(event, selectedDate) => {
+                    if (selectedDate) {
+                      setExpireDateTime(selectedDate);
+                    }
+                  }}
+                />
+                <TouchableOpacity
+                  style={styles.doneButton}
+                  onPress={() => setShowExpirePicker(false)}
+                >
+                  <Text style={styles.doneButtonText}>Done</Text>
+                </TouchableOpacity>
+              </View>
             )}
           </View>
         </View>
@@ -333,6 +354,7 @@ const styles = StyleSheet.create({
     borderRadius: 13,
     flexDirection: "row",
     alignItems: "center",
+    marginBottom: 15,
   },
   dateText: {
     fontSize: 16,
@@ -392,6 +414,30 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
     backgroundColor: "#00B4D8",
+  },
+  pickerContainer: {
+    backgroundColor: "#fff",
+    padding: 16,
+    borderRadius: 10,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  doneButton: {
+    marginTop: 10,
+    backgroundColor: "#FF007A",
+    padding: 10,
+    borderRadius: 10,
+    alignItems: "center",
+    width: "80%",
+  },
+  doneButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
   },
 });
 

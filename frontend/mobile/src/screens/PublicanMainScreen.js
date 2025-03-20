@@ -335,7 +335,7 @@ const PublicanMainScreen = ({ navigation }) => {
                   : styles.unselectedTag,
               ]}
             >
-              <Text style={styles.tagText}>Favourites Publican</Text>
+              <Text style={styles.tagText}>Favourites</Text>
             </TouchableOpacity>
           </View>
 

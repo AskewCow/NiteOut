@@ -288,6 +288,11 @@ export default function App() {
               options={{ headerShown: false, gestureEnabled: true }}
             />
             <Stack.Screen
+              name="PublicanMainScreen"
+              component={PublicanMainScreen}
+              options={{ headerShown: false, gestureEnabled: true }}
+            />
+            <Stack.Screen
               name="CreateEvent"
               component={CreateEvent}
               options={{ headerShown: false, gestureEnabled: true }}
