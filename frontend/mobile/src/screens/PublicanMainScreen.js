@@ -16,6 +16,7 @@ import { DrawerActions } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import moment from "moment";
 import { Ionicons } from "@expo/vector-icons";
+import { Calendar } from "react-native-calendars"; // Import Calendar Component
 
 // Contexts
 import { useGamer } from "../contexts/GamerContext";
@@ -43,6 +44,7 @@ const PublicanMainScreen = ({ navigation }) => {
   const [currentLocation, setCurrentLocation] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
   const [games, setGames] = useState([]);
+  const [events, setEvents] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [fetchingUser, setFetchingUser] = useState(false);
   const [pubs, setPubs] = useState(null);
@@ -53,15 +55,22 @@ const PublicanMainScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredResults, setFilteredResults] = useState([]);
   const searchBarRef = useRef(null);
+  const [eventsByDate, setEventsByDate] = useState({});
+  const [markedDates, setMarkedDates] = useState({});
   const [isSearchActive, setIsSearchActive] = useState(false);
   const [mapRegion, setMapRegion] = useState(null);
   const mapRef = useRef(null);
+  const [selectedDate, setSelectedDate] = useState(
+    moment().format("YYYY-MM-DD")
+  ); // Add State for Selected Date
+  const [filteredEvents, setFilteredEvents] = useState([]);
 
   useEffect(() => {
     getLocation();
     fetchPubs();
     fetchUserInfo();
     fetchGames();
+    fetchEvents();
   }, []);
 
   useEffect(() => {
@@ -91,6 +100,23 @@ const PublicanMainScreen = ({ navigation }) => {
       navigation.navigate("Login");
       return;
     }
+  };
+
+  const handleDateSelect = (date) => {
+    const newSelectedDate = date.dateString;
+    const updatedMarkedDates = Object.keys(markedDates).reduce((acc, key) => {
+      acc[key] = { ...markedDates[key], selected: false };
+      return acc;
+    }, {});
+
+    updatedMarkedDates[newSelectedDate] = {
+      ...updatedMarkedDates[newSelectedDate],
+      selected: true,
+      selectedColor: "#00B4D8",
+    };
+
+    setSelectedDate(newSelectedDate);
+    setMarkedDates(updatedMarkedDates);
   };
 
   // Get current location
@@ -165,6 +191,66 @@ const PublicanMainScreen = ({ navigation }) => {
     } catch (error) {
       console.error("Error fetching games: ", error);
     }
+  };
+
+  // Fetch events created by the logged-in publican from Firestore
+  const fetchEvents = async () => {
+    try {
+      const eventsRef = collection(db, "events");
+      const q = query(eventsRef, where("pub_id", "==", gamerId));
+      const querySnapshot = await getDocs(q);
+      const eventList = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        event_name: doc.data().event_name,
+        location: doc.data().location,
+        start_time: doc.data().start_time,
+        end_time: doc.data().end_time,
+        expires: doc.data().expires,
+        num_seats: doc.data().num_seats,
+      }));
+
+      setEvents(eventList);
+
+      const newEvents = {};
+      const newMarkedDates = {};
+
+      eventList.forEach((event) => {
+        const eventStart = moment(event.start_time).format("YYYY-MM-DD");
+        const eventExpire = moment(event.expires).format("YYYY-MM-DD");
+
+        for (
+          let date = moment(eventStart);
+          date.isSameOrBefore(moment(eventExpire));
+          date.add(1, "day")
+        ) {
+          const formattedDate = date.format("YYYY-MM-DD");
+          if (!newEvents[formattedDate]) newEvents[formattedDate] = [];
+          newEvents[formattedDate].push(event);
+
+          newMarkedDates[formattedDate] = {
+            marked: true,
+            dotColor: "#FF006E",
+            selectedColor:
+              selectedDate === formattedDate ? "#90E0EF" : undefined,
+          };
+        }
+      });
+
+      setEventsByDate(newEvents);
+      setMarkedDates(newMarkedDates);
+    } catch (error) {
+      console.error("Error fetching Events: ", error);
+    }
+  };
+
+  // Filter events by date
+  const filterEventsByDate = (date, events) => {
+    const filtered = events.filter(
+      (event) =>
+        moment(date).isSameOrAfter(moment(event.start_time), "day") &&
+        moment(date).isSameOrBefore(moment(event.expires), "day")
+    );
+    setFilteredEvents(filtered);
   };
 
   // Fetch User Info from Firestore
@@ -276,107 +362,93 @@ const PublicanMainScreen = ({ navigation }) => {
       }}
     >
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.container}>
-          <View style={styles.header}>
-            <View>
-              <TouchableOpacity onPress={handleProfilePress}>
-                <SvgXml xml={logoXml} width={40} height={40} />
-              </TouchableOpacity>
+        <ScrollView
+          contentContainerStyle={styles.scrollContainer}
+          keyboardShouldPersistTaps="handled"
+        >
+          <View style={styles.container}>
+            <View style={styles.header}>
+              <View style={styles.userIconContainer}>
+                <TouchableOpacity onPress={handleProfilePress}>
+                  <SvgXml xml={logoXml} width={40} height={40} />
+                </TouchableOpacity>
+
+                <Text style={{ fontSize: 24, color: "black" }}>
+                  {userInfo.fullName}
+                </Text>
+              </View>
             </View>
-            <TextInput
-              ref={searchBarRef}
-              style={styles.searchBar}
-              placeholder="Search pubs and games"
-              placeholderTextColor="#999"
-              value={searchQuery}
-              onChangeText={setSearchQuery}
-              onFocus={() => setIsSearchActive(true)} // Set active on focus
+          </View>
+
+          <View style={styles.createEventContainer}>
+            <TouchableOpacity
+              style={styles.createEventButton}
+              onPress={() => navigation.navigate("CreateEvent")}
+            >
+              <Ionicons name="add" size={30} color="white" />
+              <Text style={styles.createEventText}>Create Event</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.calendarContainer}>
+            <Calendar
+              current={moment().format("YYYY-MM-DD")}
+              markedDates={markedDates}
+              onDayPress={handleDateSelect}
+              style={styles.calendar}
+              theme={{
+                todayTextColor: "#00B4D8",
+              }}
+              renderArrow={(direction) => (
+                <Text style={{ fontSize: 20, color: "black" }}>
+                  {direction === "left" ? "←" : "→"}
+                </Text>
+              )}
             />
           </View>
 
-          {searchQuery.length > 0 && (
-            <View style={styles.searchResultsContainer}>
-              <ScrollView style={styles.scrollView} nestedScrollEnabled={true}>
-                {filteredResults.map((item) => (
-                  <TouchableOpacity
-                    key={item.id}
-                    style={styles.searchResult}
-                    onPress={() => handleResultPress(item)}
-                  >
-                    <Text style={styles.resultText}>
-                      {item.type === "pub" ? "🍺 " : "🎲 "}
-                      {item.pub_name || item.game_name}
+          {/* Event List */}
+          <ScrollView style={styles.scrollView}>
+            {selectedDate && eventsByDate[selectedDate] ? (
+              eventsByDate[selectedDate].map((event, index) => (
+                <View key={index} style={styles.eventItem}>
+                  <View style={styles.eventDetails}>
+                    <Text style={styles.eventInfo}>
+                      <Text style={styles.boldText}>Start Time:</Text>{" "}
+                      {moment(event.start_time).format("hh:mm A")}
                     </Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-
-          <View style={styles.tagContainer}>
-            <TouchableOpacity
-              onPress={() => setSelectedTag("All")}
-              style={[
-                styles.tagButton,
-                selectedTag === "All"
-                  ? styles.selectedTag
-                  : styles.unselectedTag,
-              ]}
-            >
-              <Text style={styles.tagText}>All</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-              onPress={() => setSelectedTag("Favourites")}
-              style={[
-                styles.tagButton,
-                selectedTag === "Favourites"
-                  ? styles.selectedTag
-                  : styles.unselectedTag,
-              ]}
-            >
-              <Text style={styles.tagText}>Favourites</Text>
-            </TouchableOpacity>
-          </View>
-
-          <MapView
-            ref={mapRef}
-            style={styles.map}
-            initialRegion={mapRegion}
-            onLongPress={() => navigation.navigate("Map")}
-          >
-            {currentLocation && (
-              <Marker
-                coordinate={currentLocation}
-                title="You are here"
-                pinColor="#FF006E"
-              />
+                    <Text style={styles.eventInfo}>
+                      <Text style={styles.boldText}>End Time:</Text>{" "}
+                      {moment(event.end_time).format("hh:mm A")}
+                    </Text>
+                    <Text style={styles.eventInfo}>
+                      <Text style={styles.boldText}>Seats Available:</Text>{" "}
+                      {event.num_seats}
+                    </Text>
+                  </View>
+                  <View style={styles.buttonContainer}>
+                    <TouchableOpacity
+                      style={styles.moreDetailsButton}
+                      onPress={() =>
+                        navigation.navigate("EventDetails", { event })
+                      }
+                    >
+                      <Text style={styles.moreDetailsButtonText}>
+                        More Details
+                      </Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <Text style={styles.noEventsText}>
+                {selectedDate
+                  ? "No events on this day."
+                  : "Select a date to view events."}
+              </Text>
             )}
-            {pubs &&
-              pubs.map((pub) => (
-                <Marker
-                  key={pub.id}
-                  coordinate={{
-                    latitude: pub.xcoord,
-                    longitude: pub.ycoord,
-                  }}
-                  title={pub.pub_name}
-                  description={pub.address}
-                  pinColor="#90E0EF"
-                />
-              ))}
-          </MapView>
-        </View>
-
-        <View style={styles.createEventContainer}>
-          <TouchableOpacity
-            style={styles.createEventButton}
-            onPress={() => navigation.navigate("CreateEvent")}
-          >
-            <Ionicons name="add" size={30} color="white" />
-            <Text style={styles.createEventText}>Create Event</Text>
-          </TouchableOpacity>
-        </View>
+          </ScrollView>
+        </ScrollView>
       </SafeAreaView>
     </TouchableWithoutFeedback>
   );
@@ -387,6 +459,10 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#00B4D8",
     justifyContent: "flex-start",
+  },
+  scrollContainer: {
+    flexGrow: 1,
+    paddingBottom: 20, // Ensures content is not cut off at the bottom
   },
   container: {
     flex: 1,
@@ -400,9 +476,17 @@ const styles = StyleSheet.create({
     padding: 10,
   },
   userIconContainer: {
-    backgroundColor: "white",
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
     padding: 10,
+    gap: 10,
     borderRadius: 20,
+  },
+  calendarContainer: {
+    marginVertical: 20,
+    width: "95%",
+    alignSelf: "center",
   },
   searchBar: {
     flex: 1,
@@ -503,11 +587,94 @@ const styles = StyleSheet.create({
     color: "gray",
     textAlign: "center",
   },
-  createEventContainer: {
-    flex: 1,
-    width: "100%",
-    flexDirection: "coloumn",
+  calendar: {
+    marginTop: 0,
+    alignContent: "center",
+    justifyContent: "center",
+    alignSelf: "center",
+    width: "95%",
+    borderRadius: 10,
     padding: 10,
+    marginBottom: 10,
+  },
+
+  scrollView: {
+    flex: 1,
+    backgroundColor: "#90E0EF",
+    width: "95%",
+    alignSelf: "center",
+    borderRadius: 10,
+    padding: 20,
+  },
+
+  eventItem: {
+    backgroundColor: "#f0f0f0",
+    padding: 10,
+    borderRadius: 5,
+    marginVertical: 5,
+    flexDirection: "row",
+  },
+
+  eventName: {
+    fontSize: 16,
+  },
+
+  eventLocation: {
+    fontSize: 14,
+    color: "#555",
+  },
+
+  eventTime: {
+    fontSize: 14,
+    color: "#555",
+    alignSelf: "center",
+  },
+
+  eventDetails: {
+    flexDirection: "column",
+    flex: 1,
+    padding: 10,
+  },
+
+  noEventsText: {
+    textAlign: "center",
+    fontSize: 16,
+    marginTop: 20,
+    color: "#555",
+  },
+  eventsContainer: {
+    width: "95%",
+    alignSelf: "center",
+    marginTop: 20,
+  },
+  eventInfo: {
+    fontSize: 14,
+    color: "#333",
+    marginTop: 2,
+  },
+  boldText: {
+    fontWeight: "bold",
+  },
+  moreDetailsButton: {
+    backgroundColor: "#FF007A",
+    padding: 10,
+    borderRadius: 5,
+    justifyContent: "center",
+    alignSelf: "center",
+  },
+  moreDetailsButtonText: {
+    color: "white",
+    fontWeight: "bold",
+    textAlign: "center",
+  },
+  buttonContainer: {
+    flex: 1,
+    justifyContent: "center",
+  },
+  createEventContainer: {
+    width: "95%",
+    alignSelf: "center",
+    marginBottom: 10,
   },
   createEventButton: {
     backgroundColor: "#FF006E",
