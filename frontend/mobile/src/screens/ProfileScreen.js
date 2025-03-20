@@ -18,6 +18,7 @@ import { useGamer } from "../contexts/GamerContext";
 const ProfileScreen = ({ navigation }) => {
   const { gamerId } = useGamer();
   const [userInfo, setUserInfo] = useState(null);
+  const [isPublican, setIsPublican] = useState(false);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -34,6 +35,7 @@ const ProfileScreen = ({ navigation }) => {
         if (userSnap.exists() && userSnap.data().publicanId) {
           userData = userSnap.data();
           userIdToDisplay = userSnap.data().publicanId;
+          setIsPublican(true);
         } else {
           // If no publicanId, fetch from "gamers" collection
           const gamerRef = doc(db, "gamers", gamerId);
@@ -83,7 +85,9 @@ const ProfileScreen = ({ navigation }) => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Gamer Profile</Text>
+      <Text style={styles.title}>
+        {isPublican ? "Publican Profile" : "Gamer Profile"}
+      </Text>
 
       {/* Profile Picture Section */}
       <View style={styles.profileContainer}>
@@ -98,7 +102,7 @@ const ProfileScreen = ({ navigation }) => {
 
       {/* User Info Section */}
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>Name</Text>
+        <Text style={styles.label}> {isPublican ? "Pub Name" : "Name"}</Text>
         <TextInput
           style={styles.input}
           value={userInfo.fullName}
@@ -116,7 +120,9 @@ const ProfileScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.inputContainer}>
-        <Text style={styles.label}>User ID</Text>
+        <Text style={styles.label}>
+          {isPublican ? "Publican ID" : "User ID"}
+        </Text>
         <TextInput
           style={styles.input}
           value={userInfo.userIdToDisplay}

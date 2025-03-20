@@ -7,25 +7,79 @@ import {
   StyleSheet,
   SafeAreaView,
   Alert,
+  ScrollView,
 } from "react-native";
 import { logoXml } from "../utils/logo";
 import { SvgXml } from "react-native-svg";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { db } from "../firebaseConfig";
-import { collection, addDoc, doc, updateDoc } from "firebase/firestore";
+import { collection, addDoc, doc, updateDoc, getDoc } from "firebase/firestore";
 import { useGamer } from "../contexts/GamerContext";
 
 const CreateEventScreen = ({ navigation }) => {
   const { gamerId } = useGamer();
   const [gameType] = useState("Seat Based");
-  const [numSeats, setNumSeats] = useState("");
+  const [numSeats, setNumSeats] = useState("1");
   const [showStartPicker, setShowStartPicker] = useState(false);
   const [showEndPicker, setShowEndPicker] = useState(false);
   const [showExpirePicker, setShowExpirePicker] = useState(false);
   const [startDateTime, setStartDateTime] = useState(new Date());
-  const [endDateTime, setEndDateTime] = useState(new Date());
-  const [expireDateTime, setExpireDateTime] = useState(new Date());
+  const [endDateTime, setEndDateTime] = useState(
+    new Date(Date.now() + 3600000)
+  );
+  const [expireDateTime, setExpireDateTime] = useState(
+    new Date(Date.now() + 86400000)
+  );
   const [loading, setLoading] = useState(false);
+
+  // Format date for display
+  const formatDateTime = (date) => {
+    return date.toLocaleString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+  };
+
+  const incrementSeats = () => {
+    const current = parseInt(numSeats) || 0;
+    setNumSeats((current + 1).toString());
+  };
+
+  const decrementSeats = () => {
+    const current = parseInt(numSeats) || 0;
+    if (current > 1) {
+      setNumSeats((current - 1).toString());
+    }
+  };
+
+  const generateAvailableSlots = (start, end, maxSeats) => {
+    let slots = {};
+    let current = new Date(start);
+
+    while (current < end) {
+      let nextHour = new Date(current);
+      nextHour.setHours(current.getHours() + 1);
+
+      if (nextHour > end) break;
+
+      const slotKey = `${current.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}-${nextHour.toLocaleTimeString([], {
+        hour: "2-digit",
+        minute: "2-digit",
+      })}`;
+      slots[slotKey] = maxSeats;
+
+      current = nextHour;
+    }
+
+    return slots;
+  };
 
   const handleCreateEvent = async () => {
     if (!numSeats || !startDateTime || !endDateTime || !expireDateTime) {
@@ -33,12 +87,44 @@ const CreateEventScreen = ({ navigation }) => {
       return;
     }
 
+    // Ensure start and end are on the same day
+    if (startDateTime.toDateString() !== endDateTime.toDateString()) {
+      Alert.alert("Error", "Start time and end time must be on the same day.");
+      return;
+    }
+
+    const publicanRef = doc(db, "publicans", gamerId);
+    const publicanSnap = await getDoc(publicanRef);
+
+    if (!publicanSnap.exists()) {
+      Alert.alert("Error", "Publican details not found.");
+      return;
+    }
+
+    const publicanData = publicanSnap.data();
+    const pubDetails = {
+      pub_id: gamerId,
+      pub_name: publicanData.pub_name || "Unknown Pub",
+      pub_address: publicanData.address || "Address not available",
+      xcoord: publicanData.xcoord || "0",
+      ycoord: publicanData.ycoord || "0",
+    };
+
+    // Generate available slots
+    const availableSlots = generateAvailableSlots(
+      startDateTime,
+      endDateTime,
+      parseInt(numSeats)
+    );
+
     let eventData = {
       game_type: gameType,
       start_time: startDateTime.toISOString(),
       end_time: endDateTime.toISOString(),
       expires: expireDateTime.toISOString(),
       pub_id: gamerId,
+      pub_details: pubDetails,
+      available_slots: availableSlots,
     };
 
     if (gameType === "Seat Based") {
@@ -73,87 +159,111 @@ const CreateEventScreen = ({ navigation }) => {
         </View>
         <Text style={styles.headerText}>Create Events</Text>
       </View>
-      <View style={styles.scrollView}>
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Game Type</Text>
-          <TextInput
-            style={styles.input}
-            value={gameType}
-            editable={false} // Make the input read-only
-          />
-        </View>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={styles.card}>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Game Type</Text>
+            <View style={styles.input}>
+              <Text style={styles.inputText}>{gameType}</Text>
+            </View>
+          </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Number of Seats</Text>
-          <TextInput
-            style={styles.input}
-            keyboardType="numeric"
-            value={numSeats}
-            onChangeText={setNumSeats}
-          />
-        </View>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Number of Seats</Text>
+            <View style={styles.numberPickerContainer}>
+              <TouchableOpacity
+                style={styles.numberButton}
+                onPress={decrementSeats}
+              >
+                <Text style={styles.numberButtonText}>-</Text>
+              </TouchableOpacity>
+              <View style={styles.numberInputContainer}>
+                <Text style={styles.numberInputText}>{numSeats}</Text>
+              </View>
+              <TouchableOpacity
+                style={styles.numberButton}
+                onPress={incrementSeats}
+              >
+                <Text style={styles.numberButtonText}>+</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Start Time</Text>
-          <TouchableOpacity
-            style={styles.input}
-            onPress={() => setShowStartPicker(true)}
-          >
-            <Text>{startDateTime.toLocaleString()}</Text>
-          </TouchableOpacity>
-          {showStartPicker && (
-            <DateTimePicker
-              value={startDateTime}
-              mode="datetime"
-              display="default"
-              onChange={(event, selectedDate) => {
-                setShowStartPicker(false);
-                if (selectedDate) setStartDateTime(selectedDate);
-              }}
-            />
-          )}
-        </View>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Start Time</Text>
+            <TouchableOpacity
+              style={styles.dateInput}
+              onPress={() => setShowStartPicker(true)}
+            >
+              <Text style={styles.dateText}>
+                {formatDateTime(startDateTime)}
+              </Text>
+            </TouchableOpacity>
+            {showStartPicker && (
+              <DateTimePicker
+                value={startDateTime}
+                mode="datetime"
+                display="spinner"
+                onChange={(event, selectedDate) => {
+                  if (event.type === "set") {
+                    setStartDateTime(selectedDate);
+                  }
+                  setShowStartPicker(false);
+                }}
+              />
+            )}
+          </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>End Time</Text>
-          <TouchableOpacity
-            style={styles.input}
-            onPress={() => setShowEndPicker(true)}
-          >
-            <Text>{endDateTime.toLocaleString()}</Text>
-          </TouchableOpacity>
-          {showEndPicker && (
-            <DateTimePicker
-              value={endDateTime}
-              mode="datetime"
-              display="default"
-              onChange={(event, selectedDate) => {
-                setShowEndPicker(false);
-                if (selectedDate) setEndDateTime(selectedDate);
-              }}
-            />
-          )}
-        </View>
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>End Time</Text>
+            <TouchableOpacity
+              style={styles.dateInput}
+              onPress={() => setShowEndPicker(true)}
+            >
+              <Text style={styles.dateText}>{formatDateTime(endDateTime)}</Text>
+            </TouchableOpacity>
+            {showEndPicker && (
+              <DateTimePicker
+                value={endDateTime}
+                mode="datetime"
+                display="spinner"
+                onChange={(event, selectedDate) => {
+                  if (event.type === "set") {
+                    setEndDateTime(selectedDate);
+                  }
+                  setShowEndPicker(false);
+                }}
+              />
+            )}
+          </View>
 
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Expiration Time</Text>
-          <TouchableOpacity
-            style={styles.input}
-            onPress={() => setShowExpirePicker(true)}
-          >
-            <Text>{expireDateTime.toLocaleString()}</Text>
-          </TouchableOpacity>
-          {showExpirePicker && (
-            <DateTimePicker
-              value={expireDateTime}
-              mode="datetime"
-              display="default"
-              onChange={(event, selectedDate) => {
-                setShowExpirePicker(false);
-                if (selectedDate) setExpireDateTime(selectedDate);
-              }}
-            />
-          )}
+          <View style={styles.inputContainer}>
+            <Text style={styles.label}>Expiration Time</Text>
+            <TouchableOpacity
+              style={styles.dateInput}
+              onPress={() => setShowExpirePicker(true)}
+            >
+              <Text style={styles.dateText}>
+                {formatDateTime(expireDateTime)}
+              </Text>
+            </TouchableOpacity>
+            {showExpirePicker && (
+              <DateTimePicker
+                value={expireDateTime}
+                mode="datetime"
+                display="spinner"
+                onChange={(event, selectedDate) => {
+                  if (event.type === "set") {
+                    setExpireDateTime(selectedDate);
+                  }
+                  setShowExpirePicker(false);
+                }}
+              />
+            )}
+          </View>
         </View>
 
         <TouchableOpacity
@@ -165,7 +275,7 @@ const CreateEventScreen = ({ navigation }) => {
             {loading ? "Creating..." : "Create Event"}
           </Text>
         </TouchableOpacity>
-      </View>
+      </ScrollView>
     </SafeAreaView>
   );
 };
@@ -176,50 +286,112 @@ const styles = StyleSheet.create({
     fontWeight: "bold",
     paddingLeft: 10,
     flex: 1,
+    color: "#000",
   },
   scrollView: {
     flex: 1,
-    backgroundColor: "#ffffff",
     width: "100%",
-    alignSelf: "center",
-    padding: 10,
+  },
+  scrollContent: {
+    padding: 16,
+    paddingBottom: 30,
+  },
+  card: {
+    backgroundColor: "#ffffff",
+    borderRadius: 15,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   inputContainer: {
+    width: "100%",
     marginBottom: 15,
   },
   label: {
     fontSize: 16,
-    marginBottom: 5,
+    fontWeight: "600",
+    marginBottom: 8,
+    color: "#333",
   },
   input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 5,
-    padding: 10,
-    backgroundColor: "#fff",
+    backgroundColor: "#eef0f2",
+    padding: 14,
+    borderRadius: 13,
+    fontSize: 16,
+  },
+  inputText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  dateInput: {
+    backgroundColor: "#eef0f2",
+    padding: 14,
+    borderRadius: 13,
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  dateText: {
+    fontSize: 16,
+    color: "#333",
+  },
+  numberPickerContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+  },
+  numberButton: {
+    backgroundColor: "#FF007A",
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  numberButtonText: {
+    color: "#fff",
+    fontSize: 24,
+    fontWeight: "bold",
+  },
+  numberInputContainer: {
+    backgroundColor: "#eef0f2",
+    flex: 1,
+    height: 50,
+    borderRadius: 13,
+    marginHorizontal: 10,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  numberInputText: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#333",
   },
   createEventButton: {
     backgroundColor: "#FF007A",
-    borderRadius: 5,
-    padding: 15,
+    borderRadius: 13,
+    padding: 16,
     alignItems: "center",
   },
   createEventButtonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: 18,
     fontWeight: "bold",
   },
   header: {
     flexDirection: "row",
     alignItems: "center",
     width: "100%",
-    padding: 10,
+    padding: 16,
     paddingTop: 10,
+    backgroundColor: "#00B4D8",
   },
   safeArea: {
     flex: 1,
     backgroundColor: "#00B4D8",
-    justifyContent: "flex-start",
   },
 });
 

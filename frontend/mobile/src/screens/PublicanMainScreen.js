@@ -368,12 +368,12 @@ const PublicanMainScreen = ({ navigation }) => {
           </MapView>
         </View>
 
-        <View style={styles.eventContainer}>
+        <View style={styles.createEventContainer}>
           <TouchableOpacity
             style={styles.createEventButton}
             onPress={() => navigation.navigate("CreateEvent")}
           >
-            <Ionicons name="add" size={20} color="white" />
+            <Ionicons name="add" size={30} color="white" />
             <Text style={styles.createEventText}>Create Event</Text>
           </TouchableOpacity>
         </View>
@@ -503,24 +503,24 @@ const styles = StyleSheet.create({
     color: "gray",
     textAlign: "center",
   },
-  eventContainer: {
+  createEventContainer: {
+    flex: 1,
     width: "100%",
-    alignItems: "center",
-    marginVertical: 10,
+    flexDirection: "coloumn",
+    padding: 10,
   },
   createEventButton: {
     backgroundColor: "#FF006E",
-    borderRadius: 10,
-    paddingVertical: 12,
-    paddingHorizontal: 20,
+    borderRadius: 25,
+    padding: 15,
     flexDirection: "row",
     alignItems: "center",
-    justifyContent: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 3.84,
     elevation: 5,
+    width: "100%",
   },
   createEventText: {
     color: "white",
