@@ -10,52 +10,39 @@ import {
 } from "react-native";
 import { logoXml } from "../utils/logo";
 import { SvgXml } from "react-native-svg";
-import { Picker } from "@react-native-picker/picker";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { db } from "../firebaseConfig";
 import { collection, addDoc, doc, updateDoc } from "firebase/firestore";
 import { useGamer } from "../contexts/GamerContext";
 
 const CreateEventScreen = ({ navigation }) => {
   const { gamerId } = useGamer();
-  const [gameType, setGameType] = useState("Seat Based");
+  const [gameType] = useState("Seat Based");
   const [numSeats, setNumSeats] = useState("");
-  const [numTables, setNumTables] = useState("");
-  const [tableCapacity, setTableCapacity] = useState("");
-  const [startTime, setStartTime] = useState("");
-  const [endTime, setEndTime] = useState("");
-  const [expires, setExpires] = useState("");
+  const [showStartPicker, setShowStartPicker] = useState(false);
+  const [showEndPicker, setShowEndPicker] = useState(false);
+  const [showExpirePicker, setShowExpirePicker] = useState(false);
+  const [startDateTime, setStartDateTime] = useState(new Date());
+  const [endDateTime, setEndDateTime] = useState(new Date());
+  const [expireDateTime, setExpireDateTime] = useState(new Date());
   const [loading, setLoading] = useState(false);
 
   const handleCreateEvent = async () => {
-    if (!startTime || !endTime || !expires) {
+    if (!numSeats || !startDateTime || !endDateTime || !expireDateTime) {
       Alert.alert("Error", "Please fill in all required fields.");
       return;
     }
 
     let eventData = {
       game_type: gameType,
-      start_time: startTime,
-      end_time: endTime,
-      expires: expires,
+      start_time: startDateTime.toISOString(),
+      end_time: endDateTime.toISOString(),
+      expires: expireDateTime.toISOString(),
       pub_id: gamerId,
     };
 
     if (gameType === "Seat Based") {
-      if (!numSeats) {
-        Alert.alert("Error", "Please specify the number of seats.");
-        return;
-      }
       eventData.num_seats = parseInt(numSeats);
-    } else if (gameType === "Table Based") {
-      if (!numTables || !tableCapacity) {
-        Alert.alert(
-          "Error",
-          "Please specify the number of tables and table capacity."
-        );
-        return;
-      }
-      eventData.num_tables = parseInt(numTables);
-      eventData.table_capacity = parseInt(tableCapacity);
     }
 
     setLoading(true);
@@ -86,43 +73,99 @@ const CreateEventScreen = ({ navigation }) => {
         </View>
         <Text style={styles.headerText}>Create Events</Text>
       </View>
-      {/* Calendar View */}
-      {/* <Calendar
-        current={new Date().toISOString().split('T')[0]}
-        markedDates={markedDates}
-        onDayPress={handleDateSelect}
-        style={styles.calendar}
-        theme={{
-          todayTextColor: '#00B4D8',
-        }}
-        renderArrow={(direction) => (
-          <Text style={{ fontSize: 20, color: 'black' }}>
-            {direction === 'left' ? '←' : '→'}
-          </Text>
-        )}
-      /> */}
+      <View style={styles.scrollView}>
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Game Type</Text>
+          <TextInput
+            style={styles.input}
+            value={gameType}
+            editable={false} // Make the input read-only
+          />
+        </View>
 
-      {/* <ScrollView style={styles.scrollView}>
-        {selectedDate && eventsByDate[selectedDate] ? (
-          eventsByDate[selectedDate].map((event, index) => (
-            <TouchableOpacity 
-              key={index} 
-              style={styles.eventItem}
-              onPress={() => navigation.navigate('EventDetails', { event })}
-            > 
-              <View style={styles.eventDetails}>
-                <Text style={styles.eventTitle}>{event.game_name}</Text>
-                <Text style={styles.pubName}>{event.location}</Text>
-              </View>
-              <Text style={styles.eventTime}>{event.time}</Text>
-            </TouchableOpacity>
-          ))
-        ) : (
-          <Text style={styles.noEventsText}>
-            {selectedDate ? "You have no games on this day." : "Select a date to view games."}
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Number of Seats</Text>
+          <TextInput
+            style={styles.input}
+            keyboardType="numeric"
+            value={numSeats}
+            onChangeText={setNumSeats}
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Start Time</Text>
+          <TouchableOpacity
+            style={styles.input}
+            onPress={() => setShowStartPicker(true)}
+          >
+            <Text>{startDateTime.toLocaleString()}</Text>
+          </TouchableOpacity>
+          {showStartPicker && (
+            <DateTimePicker
+              value={startDateTime}
+              mode="datetime"
+              display="default"
+              onChange={(event, selectedDate) => {
+                setShowStartPicker(false);
+                if (selectedDate) setStartDateTime(selectedDate);
+              }}
+            />
+          )}
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>End Time</Text>
+          <TouchableOpacity
+            style={styles.input}
+            onPress={() => setShowEndPicker(true)}
+          >
+            <Text>{endDateTime.toLocaleString()}</Text>
+          </TouchableOpacity>
+          {showEndPicker && (
+            <DateTimePicker
+              value={endDateTime}
+              mode="datetime"
+              display="default"
+              onChange={(event, selectedDate) => {
+                setShowEndPicker(false);
+                if (selectedDate) setEndDateTime(selectedDate);
+              }}
+            />
+          )}
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Text style={styles.label}>Expiration Time</Text>
+          <TouchableOpacity
+            style={styles.input}
+            onPress={() => setShowExpirePicker(true)}
+          >
+            <Text>{expireDateTime.toLocaleString()}</Text>
+          </TouchableOpacity>
+          {showExpirePicker && (
+            <DateTimePicker
+              value={expireDateTime}
+              mode="datetime"
+              display="default"
+              onChange={(event, selectedDate) => {
+                setShowExpirePicker(false);
+                if (selectedDate) setExpireDateTime(selectedDate);
+              }}
+            />
+          )}
+        </View>
+
+        <TouchableOpacity
+          style={styles.createEventButton}
+          onPress={handleCreateEvent}
+          disabled={loading}
+        >
+          <Text style={styles.createEventButtonText}>
+            {loading ? "Creating..." : "Create Event"}
           </Text>
-        )}
-      </ScrollView> */}
+        </TouchableOpacity>
+      </View>
     </SafeAreaView>
   );
 };
@@ -134,48 +177,37 @@ const styles = StyleSheet.create({
     paddingLeft: 10,
     flex: 1,
   },
-  calendar: {
-    marginTop: 0,
-    alignContent: "center",
-    justifyContent: "center",
-    alignSelf: "center",
-    width: "95%",
-    borderRadius: 10,
-    padding: 10,
-    marginBottom: 10,
-  },
   scrollView: {
     flex: 1,
-    backgroundColor: "#90E0EF",
-    width: "95%",
+    backgroundColor: "#ffffff",
+    width: "100%",
     alignSelf: "center",
-    borderRadius: 10,
     padding: 10,
   },
-  eventItem: {
-    backgroundColor: "#f0f0f0",
-    padding: 10,
+  inputContainer: {
+    marginBottom: 15,
+  },
+  label: {
+    fontSize: 16,
+    marginBottom: 5,
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: "#ccc",
     borderRadius: 5,
-    marginVertical: 5,
-    flexDirection: "row",
+    padding: 10,
+    backgroundColor: "#fff",
   },
-  eventTitle: {
+  createEventButton: {
+    backgroundColor: "#FF007A",
+    borderRadius: 5,
+    padding: 15,
+    alignItems: "center",
+  },
+  createEventButtonText: {
+    color: "#fff",
     fontSize: 16,
-  },
-  eventTime: {
-    fontSize: 14,
-    color: "#555",
-    alignSelf: "center",
-  },
-  eventDetails: {
-    flexDirection: "column",
-    flex: 1,
-  },
-  noEventsText: {
-    textAlign: "center",
-    fontSize: 16,
-    marginTop: 20,
-    color: "#555",
+    fontWeight: "bold",
   },
   header: {
     flexDirection: "row",
