@@ -29,6 +29,7 @@ import HostGame from "./src/screens/HostGame";
 import ChosenEvent from "./src/screens/ChosenEvent";
 import PublicanMainScreen from "./src/screens/PublicanMainScreen";
 import CreateEvent from "./src/screens/CreateEventScreen";
+import BannedPlayers from "./src/screens/BannedPlayers";
 
 const screenHeight = Dimensions.get("window").height;
 const headerHeight = screenHeight * 0.12;
@@ -108,40 +109,81 @@ function DrawerNavigator() {
           },
         })}
       />
-      <Drawer.Screen name="My Games" component={ReservedEvents} />
-      <Drawer.Screen
-        name="My Friends"
-        component={MyFriendsScreen}
-        initialParams={{ gamerId: null }}
-        options={({ navigation }) => ({
-          headerTitle: "",
-          headerTitleAlign: "center",
-          headerShown: true,
-          headerLeft: () => (
-            <TouchableOpacity onPress={() => navigation.openDrawer()}>
-              <SvgXml
-                xml={logoXml}
-                width={40}
-                height={40}
-                style={{ marginLeft: 10 }}
-              />
-            </TouchableOpacity>
-          ),
-          headerStyle: {
-            elevation: 0,
-            shadowOpacity: 0,
-            height: headerHeight,
-            backgroundColor: "#00B4D8",
-          },
-          headerTitleContainerStyle: {
-            justifyContent: "center",
-            alignItems: "center",
-            flex: 1,
-          },
-        })}
-      />
-      <Drawer.Screen name="Host Game" component={HostGame} />
-      <Drawer.Screen name="Create Event" component={CreateEvent} />
+      {!isPublican && (
+        <Drawer.Screen name="My Games" component={ReservedEvents} />
+      )}
+
+      {!isPublican && (
+        <Drawer.Screen
+          name="My Friends"
+          component={MyFriendsScreen}
+          initialParams={{ gamerId: null }}
+          options={({ navigation }) => ({
+            headerTitle: "",
+            headerTitleAlign: "center",
+            headerShown: true,
+            headerLeft: () => (
+              <TouchableOpacity onPress={() => navigation.openDrawer()}>
+                <SvgXml
+                  xml={logoXml}
+                  width={40}
+                  height={40}
+                  style={{ marginLeft: 10 }}
+                />
+              </TouchableOpacity>
+            ),
+            headerStyle: {
+              elevation: 0,
+              shadowOpacity: 0,
+              height: headerHeight,
+              backgroundColor: "#00B4D8",
+            },
+            headerTitleContainerStyle: {
+              justifyContent: "center",
+              alignItems: "center",
+              flex: 1,
+            },
+          })}
+        />
+      )}
+
+      {!isPublican && <Drawer.Screen name="Host Game" component={HostGame} />}
+      {isPublican && (
+        <Drawer.Screen name="Create Event" component={CreateEvent} />
+      )}
+      {isPublican && (
+        <Drawer.Screen
+          name="Banned Players"
+          component={BannedPlayers}
+          initialParams={{ gamerId: null }}
+          options={({ navigation }) => ({
+            headerTitle: "",
+            headerTitleAlign: "center",
+            headerShown: true,
+            headerLeft: () => (
+              <TouchableOpacity onPress={() => navigation.openDrawer()}>
+                <SvgXml
+                  xml={logoXml}
+                  width={40}
+                  height={40}
+                  style={{ marginLeft: 10 }}
+                />
+              </TouchableOpacity>
+            ),
+            headerStyle: {
+              elevation: 0,
+              shadowOpacity: 0,
+              height: headerHeight,
+              backgroundColor: "#00B4D8",
+            },
+            headerTitleContainerStyle: {
+              justifyContent: "center",
+              alignItems: "center",
+              flex: 1,
+            },
+          })}
+        />
+      )}
     </Drawer.Navigator>
   );
 }
@@ -295,6 +337,11 @@ export default function App() {
             <Stack.Screen
               name="CreateEvent"
               component={CreateEvent}
+              options={{ headerShown: false, gestureEnabled: true }}
+            />
+            <Stack.Screen
+              name="BannedPlayers"
+              component={BannedPlayers}
               options={{ headerShown: false, gestureEnabled: true }}
             />
           </Stack.Navigator>
