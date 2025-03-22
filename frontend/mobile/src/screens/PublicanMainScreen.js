@@ -21,9 +21,6 @@ import { Calendar } from "react-native-calendars"; // Import Calendar Component
 // Contexts
 import { useGamer } from "../contexts/GamerContext";
 
-// Components
-import GamesNearYou from "../components/GamesNearYou";
-import Friends from "../components/Friends";
 import LoadingAnimation from "../components/LoadingAnimation";
 import { logoXml } from "../utils/logo";
 import { SvgXml } from "react-native-svg";
@@ -387,6 +384,16 @@ const PublicanMainScreen = ({ navigation }) => {
             >
               <Ionicons name="add" size={30} color="white" />
               <Text style={styles.createEventText}>Create Event</Text>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.createEventContainer}>
+            <TouchableOpacity
+              style={styles.createEventButton}
+              onPress={() => navigation.navigate("BannedPlayersScreen")}
+            >
+              <Ionicons name="add" size={30} color="white" />
+              <Text style={styles.createEventText}>Ban Player</Text>
             </TouchableOpacity>
           </View>
 

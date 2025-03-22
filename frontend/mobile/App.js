@@ -30,6 +30,7 @@ import ChosenEvent from "./src/screens/ChosenEvent";
 import PublicanMainScreen from "./src/screens/PublicanMainScreen";
 import CreateEvent from "./src/screens/CreateEventScreen";
 import BannedPlayers from "./src/screens/BannedPlayers";
+import BannedPlayersScreen from "./src/screens/BannedPlayersScreen";
 
 const screenHeight = Dimensions.get("window").height;
 const headerHeight = screenHeight * 0.12;
@@ -342,6 +343,11 @@ export default function App() {
             <Stack.Screen
               name="BannedPlayers"
               component={BannedPlayers}
+              options={{ headerShown: false, gestureEnabled: true }}
+            />
+            <Stack.Screen
+              name="BannedPlayersScreen"
+              component={BannedPlayersScreen}
               options={{ headerShown: false, gestureEnabled: true }}
             />
           </Stack.Navigator>
