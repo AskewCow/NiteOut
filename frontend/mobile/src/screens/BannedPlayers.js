@@ -1,8 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { View, Text, StyleSheet, ActivityIndicator, Image } from "react-native";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  Image,
+  SafeAreaView,
+  ScrollView,
+  TouchableOpacity,
+} from "react-native";
 import { doc, getDoc } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 import { useGamer } from "../contexts/GamerContext";
+import { logoXml } from "../utils/logo";
+import { SvgXml } from "react-native-svg";
 
 const BannedPlayers = () => {
   const [bannedPlayers, setBannedPlayers] = useState([]);
@@ -102,51 +113,84 @@ const BannedPlayers = () => {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Banned Players</Text>
-      {bannedPlayers.length === 0 ? (
-        <Text style={styles.emptyText}>No players banned.</Text>
-      ) : (
-        bannedPlayers.map((player, index) => (
-          <View key={player.id || index} style={styles.playerItem}>
-            <View style={styles.playerHeader}>
-              <Text style={styles.playerName}>
-                {player.fullName || "Unknown Player"}
-              </Text>
-              <Text style={styles.playerBadge}>Banned</Text>
-            </View>
-
-            <View style={styles.playerDetails}>
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Gamer ID:</Text>
-                <Text style={styles.detailValue}>{player.gamerId}</Text>
-              </View>
-
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Email:</Text>
-                <Text style={styles.detailValue}>{player.email}</Text>
-              </View>
-
-              <View style={styles.detailRow}>
-                <Text style={styles.detailLabel}>Profile:</Text>
-                <Text style={styles.detailValue}>{player.profile}</Text>
-              </View>
-
-              {player.createdAt && (
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Joined:</Text>
-                  <Text style={styles.detailValue}>{player.createdAt}</Text>
+    <SafeAreaView style={styles.safeArea}>
+      <View style={styles.header}>
+        <View>
+          <TouchableOpacity>
+            <SvgXml xml={logoXml} width={40} height={40} />
+          </TouchableOpacity>
+        </View>
+        <Text style={styles.headerText}>Banned Player</Text>
+      </View>
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <View style={styles.container}>
+          {bannedPlayers.length === 0 ? (
+            <Text style={styles.emptyText}>No players banned.</Text>
+          ) : (
+            bannedPlayers.map((player, index) => (
+              <View key={player.id || index} style={styles.playerItem}>
+                <View style={styles.playerHeader}>
+                  <Text style={styles.playerName}>
+                    {player.fullName || "Unknown Player"}
+                  </Text>
+                  <Text style={styles.playerBadge}>Banned</Text>
                 </View>
-              )}
-            </View>
-          </View>
-        ))
-      )}
-    </View>
+
+                <View style={styles.playerDetails}>
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Gamer ID:</Text>
+                    <Text style={styles.detailValue}>{player.gamerId}</Text>
+                  </View>
+
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Email:</Text>
+                    <Text style={styles.detailValue}>{player.email}</Text>
+                  </View>
+
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>Profile:</Text>
+                    <Text style={styles.detailValue}>{player.profile}</Text>
+                  </View>
+
+                  {player.createdAt && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Joined:</Text>
+                      <Text style={styles.detailValue}>{player.createdAt}</Text>
+                    </View>
+                  )}
+                </View>
+              </View>
+            ))
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
   );
 };
 
 const styles = StyleSheet.create({
+  header: {
+    flexDirection: "row",
+    alignItems: "center",
+    width: "100%",
+    padding: 16,
+    paddingTop: 10,
+    backgroundColor: "#00B4D8",
+  },
+  headerText: {
+    fontSize: 24,
+    fontWeight: "bold",
+    paddingLeft: 10,
+    flex: 1,
+    color: "#000",
+  },
+  safeArea: {
+    flex: 1,
+    backgroundColor: "#00B4D8",
+  },
   container: {
     width: "100%",
     marginTop: 20,

@@ -49,11 +49,10 @@ function DrawerNavigator() {
       if (user) {
         const userRef = doc(db, "users", user.uid);
         const userSnap = await getDoc(userRef);
-        if (userSnap.exists() && userSnap.data().publicanId) {
-          setIsPublican(true);
-        } else {
-          setIsPublican(false);
-        }
+        const isUserPublican = userSnap.exists() && userSnap.data().publicanId;
+        setIsPublican((prev) =>
+          prev !== isUserPublican ? isUserPublican : prev
+        );
       } else {
         setIsPublican(false);
       }
@@ -157,32 +156,6 @@ function DrawerNavigator() {
           name="Banned Players"
           component={BannedPlayers}
           initialParams={{ gamerId: null }}
-          options={({ navigation }) => ({
-            headerTitle: "",
-            headerTitleAlign: "center",
-            headerShown: true,
-            headerLeft: () => (
-              <TouchableOpacity onPress={() => navigation.openDrawer()}>
-                <SvgXml
-                  xml={logoXml}
-                  width={40}
-                  height={40}
-                  style={{ marginLeft: 10 }}
-                />
-              </TouchableOpacity>
-            ),
-            headerStyle: {
-              elevation: 0,
-              shadowOpacity: 0,
-              height: headerHeight,
-              backgroundColor: "#00B4D8",
-            },
-            headerTitleContainerStyle: {
-              justifyContent: "center",
-              alignItems: "center",
-              flex: 1,
-            },
-          })}
         />
       )}
     </Drawer.Navigator>
