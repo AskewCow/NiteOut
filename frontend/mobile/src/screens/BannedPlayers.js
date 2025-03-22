@@ -8,8 +8,9 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
+  Alert,
 } from "react-native";
-import { doc, getDoc } from "firebase/firestore";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 import { useGamer } from "../contexts/GamerContext";
 import { logoXml } from "../utils/logo";
@@ -95,6 +96,40 @@ const BannedPlayers = () => {
     }
   }, [gamerId]);
 
+  const handleUnban = async (playerId) => {
+    try {
+      const publicanRef = doc(db, "publicans", gamerId);
+      const publicanSnap = await getDoc(publicanRef);
+
+      if (!publicanSnap.exists()) {
+        console.warn("Publican document not found");
+        return;
+      }
+
+      const publicanData = publicanSnap.data();
+      const bannedList = publicanData.bannedPlayers || [];
+
+      if (!bannedList.includes(playerId)) {
+        console.warn("Player is not in the banned list");
+        return;
+      }
+
+      const updatedList = bannedList.filter((id) => id !== playerId);
+
+      await updateDoc(publicanRef, {
+        bannedPlayers: updatedList,
+      });
+
+      setBannedPlayers((prev) =>
+        prev.filter((player) => player.id !== playerId)
+      );
+      console.log(`Successfully unbanned player with ID: ${playerId}`);
+      Alert.alert("Player unbanned successfully");
+    } catch (error) {
+      console.error("Error removing player from banned list:", error);
+    }
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -136,7 +171,12 @@ const BannedPlayers = () => {
                   <Text style={styles.playerName}>
                     {player.fullName || "Unknown Player"}
                   </Text>
-                  <Text style={styles.playerBadge}>Banned</Text>
+                  <Text
+                    onPress={() => handleUnban(player.id)}
+                    style={styles.playerBadge}
+                  >
+                    Remove
+                  </Text>
                 </View>
 
                 <View style={styles.playerDetails}>
