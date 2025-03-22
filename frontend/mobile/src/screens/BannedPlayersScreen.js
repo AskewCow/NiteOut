@@ -11,141 +11,65 @@ import {
 } from "react-native";
 import { logoXml } from "../utils/logo";
 import { SvgXml } from "react-native-svg";
-import DateTimePicker from "@react-native-community/datetimepicker";
+import {
+  collection,
+  addDoc,
+  doc,
+  updateDoc,
+  getDoc,
+  where,
+  getDocs,
+  query,
+} from "firebase/firestore";
 import { db } from "../firebaseConfig";
-import { collection, addDoc, doc, updateDoc, getDoc } from "firebase/firestore";
 import { useGamer } from "../contexts/GamerContext";
 
 const BannedPlayersScreen = ({ navigation }) => {
   const { gamerId } = useGamer();
-  const [gameType] = useState("Seat Based");
-  const [numSeats, setNumSeats] = useState("1");
-  const [showStartPicker, setShowStartPicker] = useState(false);
-  const [showEndPicker, setShowEndPicker] = useState(false);
-  const [showExpirePicker, setShowExpirePicker] = useState(false);
-  const [startDateTime, setStartDateTime] = useState(new Date());
-  const [endDateTime, setEndDateTime] = useState(
-    new Date(Date.now() + 3600000)
-  );
-  const [expireDateTime, setExpireDateTime] = useState(
-    new Date(Date.now() + 86400000)
-  );
-  const [loading, setLoading] = useState(false);
+  const [gamerIdInput, setGamerIdInput] = useState("");
 
-  // Format date for display
-  const formatDateTime = (date) => {
-    return date.toLocaleString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-      hour: "numeric",
-      minute: "2-digit",
-      hour12: true,
-    });
-  };
-
-  const incrementSeats = () => {
-    const current = parseInt(numSeats) || 0;
-    setNumSeats((current + 1).toString());
-  };
-
-  const decrementSeats = () => {
-    const current = parseInt(numSeats) || 0;
-    if (current > 1) {
-      setNumSeats((current - 1).toString());
-    }
-  };
-
-  const generateAvailableSlots = (start, end, maxSeats) => {
-    let slots = {};
-    let current = new Date(start);
-
-    while (current < end) {
-      let nextHour = new Date(current);
-      nextHour.setHours(current.getHours() + 1);
-
-      if (nextHour > end) break;
-
-      const slotKey = `${current.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}-${nextHour.toLocaleTimeString([], {
-        hour: "2-digit",
-        minute: "2-digit",
-      })}`;
-      slots[slotKey] = maxSeats;
-
-      current = nextHour;
-    }
-
-    return slots;
-  };
-
-  const handleCreateEvent = async () => {
-    if (!numSeats || !startDateTime || !endDateTime || !expireDateTime) {
-      Alert.alert("Error", "Please fill in all required fields.");
-      return;
-    }
-
-    // Ensure start and end are on the same day
-    if (startDateTime.toDateString() !== endDateTime.toDateString()) {
-      Alert.alert("Error", "Start time and end time must be on the same day.");
-      return;
-    }
-
-    const publicanRef = doc(db, "publicans", gamerId);
-    const publicanSnap = await getDoc(publicanRef);
-
-    if (!publicanSnap.exists()) {
-      Alert.alert("Error", "Publican details not found.");
-      return;
-    }
-
-    const publicanData = publicanSnap.data();
-    const pubDetails = {
-      pub_id: gamerId,
-      pub_name: publicanData.pub_name || "Unknown Pub",
-      pub_address: publicanData.address || "Address not available",
-      xcoord: publicanData.xcoord || "0",
-      ycoord: publicanData.ycoord || "0",
-    };
-
-    // Generate available slots
-    const availableSlots = generateAvailableSlots(
-      startDateTime,
-      endDateTime,
-      parseInt(numSeats)
-    );
-
-    let eventData = {
-      game_type: gameType,
-      start_time: startDateTime.toISOString(),
-      end_time: endDateTime.toISOString(),
-      expires: expireDateTime.toISOString(),
-      pub_id: gamerId,
-      pub_details: pubDetails,
-      available_slots: availableSlots,
-    };
-
-    if (gameType === "Seat Based") {
-      eventData.num_seats = parseInt(numSeats);
-    }
-
-    setLoading(true);
-
+  const banPlayer = async () => {
     try {
-      const eventRef = await addDoc(collection(db, "events"), eventData);
-      await updateDoc(doc(db, "publicans", gamerId), {
-        events: eventRef.id,
-      });
+      if (!gamerIdInput) {
+        Alert.alert("Error", "Please enter a valid Gamer ID");
+        console.log("Please enter a valid Gamer ID");
+        return;
+      } else {
+        const gamersRef = collection(db, "gamers");
+        const q = query(gamersRef, where("gamerId", "==", gamerIdInput));
+        const querySnapshot = await getDocs(q);
 
-      Alert.alert("Success", "Event created successfully!");
-      navigation.navigate("PublicanMainScreen");
+        if (querySnapshot.empty) {
+          Alert.alert("Error", "Player not found");
+          console.log("Player not found");
+          return;
+        }
+
+        const gamerDoc = querySnapshot.docs[0];
+        const gamerUid = gamerDoc.id;
+        const publicanRef = doc(db, "publicans", gamerId);
+        const publicanSnap = await getDoc(publicanRef);
+
+        const publicanData = publicanSnap.data();
+        const bannedPlayers = publicanData.bannedPlayers || [];
+
+        // Check if the player is already banned
+        if (bannedPlayers.includes(gamerUid)) {
+          Alert.alert("Error", "Player is already banned");
+          return;
+        }
+
+        bannedPlayers.push(gamerUid);
+        await updateDoc(publicanRef, {
+          bannedPlayers,
+        });
+
+        Alert.alert("Success", "Player has been banned successfully");
+        setGamerIdInput("");
+      }
     } catch (error) {
-      console.error("Error creating event:", error);
-      Alert.alert("Error", "Failed to create event. Please try again.");
-    } finally {
-      setLoading(false);
+      console.error("Error banning player:", error);
+      Alert.alert("Error", "Failed to ban player");
     }
   };
 
@@ -157,7 +81,7 @@ const BannedPlayersScreen = ({ navigation }) => {
             <SvgXml xml={logoXml} width={40} height={40} />
           </TouchableOpacity>
         </View>
-        <Text style={styles.headerText}>Create Events</Text>
+        <Text style={styles.headerText}>Ban Player</Text>
       </View>
       <ScrollView
         style={styles.scrollView}
@@ -165,136 +89,18 @@ const BannedPlayersScreen = ({ navigation }) => {
       >
         <View style={styles.card}>
           <View style={styles.inputContainer}>
-            <Text style={styles.label}>Game Type</Text>
-            <View style={styles.input}>
-              <Text style={styles.inputText}>{gameType}</Text>
-            </View>
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Number of Seats</Text>
-            <View style={styles.numberPickerContainer}>
-              <TouchableOpacity
-                style={styles.numberButton}
-                onPress={decrementSeats}
-              >
-                <Text style={styles.numberButtonText}>-</Text>
-              </TouchableOpacity>
-              <View style={styles.numberInputContainer}>
-                <Text style={styles.numberInputText}>{numSeats}</Text>
-              </View>
-              <TouchableOpacity
-                style={styles.numberButton}
-                onPress={incrementSeats}
-              >
-                <Text style={styles.numberButtonText}>+</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Start Time</Text>
-            <TouchableOpacity
-              style={styles.dateInput}
-              onPress={() => setShowStartPicker(true)}
-            >
-              <Text style={styles.dateText}>
-                {formatDateTime(startDateTime)}
-              </Text>
-            </TouchableOpacity>
-            {showStartPicker && (
-              <View style={styles.pickerContainer}>
-                <DateTimePicker
-                  value={startDateTime}
-                  mode="datetime"
-                  display="spinner"
-                  onChange={(event, selectedDate) => {
-                    if (selectedDate) {
-                      setStartDateTime(selectedDate);
-                    }
-                  }}
-                />
-                <TouchableOpacity
-                  style={styles.doneButton}
-                  onPress={() => setShowStartPicker(false)}
-                >
-                  <Text style={styles.doneButtonText}>Done</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>End Time</Text>
-            <TouchableOpacity
-              style={styles.dateInput}
-              onPress={() => setShowEndPicker(true)}
-            >
-              <Text style={styles.dateText}>{formatDateTime(endDateTime)}</Text>
-            </TouchableOpacity>
-            {showEndPicker && (
-              <View style={styles.pickerContainer}>
-                <DateTimePicker
-                  value={endDateTime}
-                  mode="datetime"
-                  display="spinner"
-                  onChange={(event, selectedDate) => {
-                    if (selectedDate) {
-                      setEndDateTime(selectedDate);
-                    }
-                  }}
-                />
-                <TouchableOpacity
-                  style={styles.doneButton}
-                  onPress={() => setShowEndPicker(false)}
-                >
-                  <Text style={styles.doneButtonText}>Done</Text>
-                </TouchableOpacity>
-              </View>
-            )}
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Text style={styles.label}>Expiration Time</Text>
-            <TouchableOpacity
-              style={styles.dateInput}
-              onPress={() => setShowExpirePicker(true)}
-            >
-              <Text style={styles.dateText}>
-                {formatDateTime(expireDateTime)}
-              </Text>
-            </TouchableOpacity>
-            {showExpirePicker && (
-              <View style={styles.pickerContainer}>
-                <DateTimePicker
-                  value={expireDateTime}
-                  mode="datetime"
-                  display="spinner"
-                  onChange={(event, selectedDate) => {
-                    if (selectedDate) {
-                      setExpireDateTime(selectedDate);
-                    }
-                  }}
-                />
-                <TouchableOpacity
-                  style={styles.doneButton}
-                  onPress={() => setShowExpirePicker(false)}
-                >
-                  <Text style={styles.doneButtonText}>Done</Text>
-                </TouchableOpacity>
-              </View>
-            )}
+            <Text style={styles.label}>Enter Gamer ID</Text>
+            <TextInput
+              style={styles.input}
+              value={gamerIdInput}
+              onChangeText={setGamerIdInput}
+              placeholder="Enter Gamer ID"
+              placeholderTextColor="#333"
+            />
           </View>
         </View>
-
-        <TouchableOpacity
-          style={styles.createEventButton}
-          onPress={handleCreateEvent}
-          disabled={loading}
-        >
-          <Text style={styles.createEventButtonText}>
-            {loading ? "Creating..." : "Create Event"}
-          </Text>
+        <TouchableOpacity onPress={banPlayer} style={styles.createEventButton}>
+          <Text style={styles.createEventButtonText}>Ban Player</Text>
         </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>

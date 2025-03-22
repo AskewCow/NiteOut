@@ -377,24 +377,26 @@ const PublicanMainScreen = ({ navigation }) => {
             </View>
           </View>
 
-          <View style={styles.createEventContainer}>
-            <TouchableOpacity
-              style={styles.createEventButton}
-              onPress={() => navigation.navigate("CreateEvent")}
-            >
-              <Ionicons name="add" size={30} color="white" />
-              <Text style={styles.createEventText}>Create Event</Text>
-            </TouchableOpacity>
-          </View>
+          <View style={styles.tagContainer}>
+            <View style={styles.createEventContainer}>
+              <TouchableOpacity
+                style={styles.createEventButton}
+                onPress={() => navigation.navigate("CreateEvent")}
+              >
+                <Ionicons name="add" size={30} color="white" />
+                <Text style={styles.createEventText}>Create Event</Text>
+              </TouchableOpacity>
+            </View>
 
-          <View style={styles.createEventContainer}>
-            <TouchableOpacity
-              style={styles.createEventButton}
-              onPress={() => navigation.navigate("BannedPlayersScreen")}
-            >
-              <Ionicons name="add" size={30} color="white" />
-              <Text style={styles.createEventText}>Ban Player</Text>
-            </TouchableOpacity>
+            <View style={styles.createEventContainer}>
+              <TouchableOpacity
+                style={styles.createEventButton}
+                onPress={() => navigation.navigate("BannedPlayersScreen")}
+              >
+                <Ionicons name="ban" size={30} color="white" />
+                <Text style={styles.createEventText}>Ban Player</Text>
+              </TouchableOpacity>
+            </View>
           </View>
 
           <View style={styles.calendarContainer}>
@@ -529,10 +531,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   tagContainer: {
+    flex: 1,
+    gap: 10,
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
-    width: "98%", // Same width as the map
+    width: "90%",
     alignSelf: "center",
     marginBottom: 7,
   },
@@ -679,14 +682,15 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   createEventContainer: {
+    flex: 1,
     width: "95%",
     alignSelf: "center",
     marginBottom: 10,
   },
   createEventButton: {
     backgroundColor: "#FF006E",
-    borderRadius: 25,
-    padding: 15,
+    borderRadius: 15,
+    padding: 10,
     flexDirection: "row",
     alignItems: "center",
     shadowColor: "#000",
