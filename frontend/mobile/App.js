@@ -264,7 +264,7 @@ export default function App() {
                             name="ChosenEvent"
                             component={ChosenEvent}
                             options={{headerShown: false,
-                                gestureEnabled: true,
+                                gestureEnabled: false,
                             }}
                         />
                     </Stack.Navigator>
