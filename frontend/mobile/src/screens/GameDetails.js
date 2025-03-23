@@ -31,30 +31,27 @@ const GameDetails = ({ route, navigation }) => {
       const gamerRef = doc(db, "gamers", gamerId);
 
       if (isJoined) {
-        // User is leaving the event
         const gamerDoc = await getDoc(gamerRef);
         const gamerData = gamerDoc.data();
-        const currentJoinedGames = gamerData.joined_games || []; // ✅ Get user's joined_games array
-
+        const currentJoinedGames = gamerData.joined_games || []; 
         await updateDoc(gamerRef, {
-          joined_games: currentJoinedGames.filter((id) => id !== game.id), // ✅ Now this works!
+          joined_games: currentJoinedGames.filter((id) => id !== game.id), 
         });
         await updateDoc(gameRef, {
           participants: game.participants.filter((id) => id !== gamerId),
         });
+
         alert("You have left the event.");
       } else {
-        // User is joining the event
         await updateDoc(gameRef, {
           participants: arrayUnion(gamerId),
         });
         await updateDoc(gamerRef, {
           joined_games: arrayUnion(game.id),
         });
+        
         alert("You have joined the event");
       }
-
-      // Toggle state
       setIsJoined(!isJoined);
     } catch (error) {
       console.error("Error updating participation:", error);
