@@ -54,7 +54,14 @@ def refresh_data():
 scheduler.add_job(id='Scheduled Task', func=refresh_data, trigger='interval', minutes=30)
 
 
-## GET REQUESTS
+"""
+Summary: 
+    API "GET" call to get all gamer data from firebase
+
+Returns:
+    .JSON + HTTP Status: Returns a .JSON file with the specified
+    data of all gamers and HTTP status 200 if successful
+"""
 @app.route("/gamer", methods=["GET"])
 def get_gamer():
     gamer_ref = db_firestore.collection('gamers')
@@ -68,7 +75,14 @@ def get_gamer():
 
     return jsonify(gamers), 200
 
+"""
+Summary: 
+    API "GET" call to get all publican data from firebase
 
+Returns:
+    .JSON + HTTP Status: Returns a .JSON file with the specified
+    data of all publicans and HTTPS status 200 if successful
+"""
 @app.route("/publican", methods=["GET"])
 def get_publican():
     publican_ref = db_firestore.collection('publicans')
@@ -81,7 +95,14 @@ def get_publican():
     
     return jsonify(publicans), 200
 
+"""
+Summary: 
+    API "GET" call to get all game data from firebase
 
+Returns:
+    .JSON + HTTPS Status: Returns a .JSON file with the specified
+    data of all games and HTTPS status 200 if successful
+"""
 @app.route("/game", methods=["GET"])
 def get_game():
     games_ref = db_firestore.collection('games')
@@ -95,7 +116,21 @@ def get_game():
 
     return jsonify(games), 200
 
+"""
+Summary: 
+    API "POST" call that registers a gamer ID as a friend 
 
+Args:
+    .JSON: A .JSON file that has the necessary attributes to add a friend
+    String gamer_id: A unique ID for the user entry adding a friend
+
+Returns:
+    .JSON + HTTP Status: On successful request, it returns
+    a .JSON file with a confirmation message along with HTTP
+    status 200. Failure to find a gamer ID or friend ID results in
+    a .JSON file with an error message accustomed by the HTTP status
+    404 for "NOT FOUND".
+"""
 @app.route("/add_friend/<string:gamer_id>", methods=["POST"])
 def add_friend(gamer_id):
     data = request.get_json()
@@ -139,7 +174,20 @@ def add_friend(gamer_id):
     return jsonify({"message": "Friend added successfully for both users!"}), 200
 
 
+"""
+Summary: 
+    API "POST" request that removes a friend entry from user
 
+Args:
+    .JSON: A .JSON file that has the necessary attributes to remove a friend
+    String gamer_id: A unique ID for the user entry removing a friend
+
+Returns:
+    .JSON + HTTP Status: On successful request, it returns a .JSON
+    file with a success message and HTTP status 200 for "OK". On a
+    failed request for missing friend/gamer, it returns a .JSON file
+    with an error message and HTTP status 404 for "NOT FOUND"
+"""
 @app.route("/remove_friend/<string:gamer_id>", methods=["POST"])
 def remove_friend(gamer_id):
     data = request.get_json()
@@ -182,9 +230,23 @@ def remove_friend(gamer_id):
 
     return jsonify({"message": "Friend removed successfully for both users!"}), 200
 
+"""
+Summary: 
+    API "POST" request that takes input data and creates a new gamer entry
 
+Args:
+    .JSON: A file with all the necessary data needed for a new gamer entry.
 
-## POST REQUESTS
+Returns:
+    .JSON + HTTP Status: Upon successful request, returns a .JSON file with
+    a success message and HTTP status 201 for "CREATED". Upon fail, it returns an
+    error message with HTTP status 400 for "BAD REQUEST" if an attribute is missing
+    
+Exception:
+    .JSON + HTTP Status: Upon failed communication with the firebase database
+    a .JSON file with an error message including the exception is returned along 
+    with HTTP status 500 for "INTERNAL SERVER ERROR"
+"""
 @app.route("/create_gamer", methods=["POST"])
 def create_gamer():
     data = request.get_json()
@@ -207,7 +269,23 @@ def create_gamer():
     except Exception as e:
         return jsonify({"error": f"Failed to create gamer: {str(e)}"}), 500
 
+"""
+Summary: 
+    API "POST" request that creates a database entry for a new publican entry
 
+Args:
+    .JSON: A file which holds the necessary documentation and attributes
+
+Returns:
+    .JSON + HTTP Status: On a successful request, returns a .JSON file
+    with a success message and HTTP status 201 for "CREATED". Otherwise, it returns
+    a .JSON file with an error message on what is missing along with HTTP status 400
+    for "BAD REQUEST".
+    
+Exception:
+    If there is difficulty in communicating with the database, a .JSON file with
+    the exception gets raised along with HTTP status 500 for "INTERNAL SERVER ERROR"
+"""
 @app.route('/create_publican', methods=['POST']) 
 def create_publican(): 
     if 'image_file' not in request.files: 
@@ -273,7 +351,18 @@ def create_publican():
         return jsonify({"message": "Publican created", "pub_id": new_publican_ref[1].id}), 201 
     except Exception as e: 
         return jsonify({"error": f"Failed to create publican: {str(e)}"}), 500
+
+"""
+Summary: 
+    Function that creates a URL for a given file in the database
+
+Args:
+    file: file object with the necessary data
+    String storage_path: URL to the database where you want to store the file
     
+Returns:
+    String: Complete URL to the uploaded file from database
+""" 
 def generate_url(file, storage_path):
     # Use the existing bucket variable that was initialized at the top level
     # No need to call storage.bucket() again
@@ -289,6 +378,22 @@ def generate_url(file, storage_path):
     # Get the public URL
     return blob.public_url
 
+"""
+Summary: 
+    API "POST" call that makes an "event" entry in the database under a pub's ID
+    
+Args:
+    .JSON: A file with all the necessary data from the frontend "create event" option
+
+Returns:
+    .JSON + HTTP Status: Returns a success message with HTTP status 201 for "CREATED"
+    if the request is successful. For any invalid/missing inputs it returns a .JSON
+    file with an error message and HTTP status 400 for "BAD REQUEST" or 404 for "NOT FOUND"
+    
+Exception:
+    .JSON + HTTP Status: A .JSON file with an error message and a HTTP status of 500 for
+    "INTERNAL SERVER ERROR" if no connection can be established with the firebase database
+"""
 @app.route("/create_event", methods=["POST"])
 def create_event():
     data = request.get_json()
@@ -364,7 +469,24 @@ def create_event():
         return jsonify({"error": f"Failed to create event: {str(e)}"}), 500
 
 
-# Create a game for during a pub event
+"""
+Summary: 
+    API "POST" call that takes the necessary input data to make a game entry in the database
+
+Args:
+    .JSON: Takes in a .JSON file with all the user input values and extracts it to create 
+    the necessary entry in the database.
+
+Returns:
+    .JSON + HTTP Status: Returns a .JSON success message and HTTP status 201 for "CREATED"
+    upon a successful request. In the scenario of missing/invalid attribute properties it returns
+    a .JSON file with and error message along with HTTP status 400 for "BAD REQUEST" if there are missing
+    attributes or 404 for "NOT FOUND" is there are missing database entries 
+    
+Exception:
+    .JSON + HTTP Status: If there are difficulties communicating with the database, there is an exception
+    that returns an error message in a .JSON file and HTTP status 500 for "INTERNAL SERVER ERROR"
+"""
 @app.route("/create_game", methods=["POST"])
 def create_game():
     data = request.get_json()
@@ -469,6 +591,21 @@ def create_game():
     except Exception as e:
         return jsonify({"error": f"Failed to create game: {str(e)}"}), 500
 
+"""
+Summary:
+    API "POST" call that registers a user to join a game event in the database 
+    
+Args:
+    .JSON: A .JSON file with the necessary attributes to fully register a gamer as
+    "signed up" for a game event
+
+Returns:
+    .JSON + HTTP Status: Upon a successful join request, a .JSON file with a success
+    message is returned along with HTTP Status 200 for "OK". In the scenario that
+    there are any missing/invalid attributes, a respective error message in .JSON format is
+    returned along with HTTP status 404 for "NOT FOUND" or 400 for "BAD REQUEST" dependind
+    on the error type
+"""
 @app.route("/join_game", methods=["POST"])
 def join_game():
     data = request.get_json()
@@ -504,7 +641,21 @@ def join_game():
 
     return jsonify({"message": "Joined game"}), 200
 
+"""
+Summary:
+    API "POST" call that removes a player entry from a game
 
+Args:
+    .JSON: A file which contains the necessary fields to unregister a gamer from
+    a game event
+
+Returns:
+    .JSON + HTTP Status: Upon a successful request, a success message returns in
+    .JSON file format accompanied with th HTTP status of 200 for "OK". In the scenario 
+    that there are missing or invalid attributes, an error message is instead returned in
+    the same file format along with HTTP status 404 for "NOT FOUND" or 400 for "BAD REQUEST"
+    respectively
+"""
 @app.route("/leave_game", methods=["POST"])
 def leave_game():
     data = request.get_json()
@@ -538,7 +689,21 @@ def leave_game():
     return jsonify({"message": "Left the game"}), 200
 
 
-## PATCH REQUESTS
+"""
+Summary:
+    API "PATCH" call that updates an existing gamer profile
+    
+Args:
+    .JSON: A file containing the necessary fields to change in
+    the database's sleected gamer profile entry
+    String gamer_id: A unique string given to the gamer class entry
+
+Returns:
+    .JSON + HTTP Status: Upon a successful request, a success message is returned in .JSON
+    formet with HTTP status 200 for "OK". In the scenario that there are any missing fields or
+    invalid fields in the input, an error message in .JSON format is returned with HTTP status
+    404 for "NOT FOUND" or 400 for "BAD REQUEST" respectively
+"""
 @app.route("/update_profile/<string:gamer_id>", methods=["PATCH"])
 def update_profile(gamer_id):
     data = request.get_json()
@@ -564,6 +729,18 @@ def update_profile(gamer_id):
         "new_profile": f"/static/icons/{new_profile}.png"
     }), 200
 
+"""
+Summary:
+    API "PATCH" call that allows file type inputs to be uploaded to the database
+
+Args:
+    file: A file object that has necessary legality information regarding publican user class
+
+Returns:
+    .JSON + HTTP Status: Upon a successful request, a success message in .JSON format gets returned
+    with HTTP status 200 fo "OK". For an missing or invalid file input, an error message in .JSON format
+    is returned with HTTP status 404 for "NOT FOUND" or 400 for "BAD REQUEST" respectively
+"""
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if 'file' not in request.files:
@@ -576,7 +753,24 @@ def upload_file():
         file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
         file.save(file_path)
         return jsonify({"message": "File uploaded successfully", "file_path": file_path}), 200
+
+"""
+Summary:
+    API "PATCH" call that stores an image file in the database under a specific publican entry
+
+Args:
+    file: An image based file of presumably the publican's pub
+    String publican_id: A specific unique ID given to the publican class entry
+
+Returns:
+    .JSON + HTTP Status: Upon a successful request, a success message is returned in .JSON format
+    and HTTP status 200 for "OK". In the scenario that the input file is missing, an error
+    message in .JSON format is returned with either HTTP status 404 for "NOT FOUND".
     
+Exception:
+    .JSON + HTTP Status: In case there is difficulty reaching the database, and error message
+    in .JSON format is returned with HTTP status 500 for "INTERNAL SERVER ERROR"
+"""
 @app.route('/update_pub_image/<string:publican_id>', methods=['POST'])
 def update_pub_image(publican_id):
     if 'file' not in request.files:
@@ -595,7 +789,18 @@ def update_pub_image(publican_id):
         except Exception as e:
             return jsonify({"error": f"Failed to update pub image: {str(e)}"}), 500
 
+"""
+Summary:
+    API "PATCH" call that updates a publican user entry in the database
 
+Args:
+    .JSON: A .JSON file of attributes with all the desired changes for the user
+    String publican_id: A unique string ID give to the publican class entry
+
+Returns:
+    .JSON + HTTP Status: On a successful request, a success message gets returned in
+    .JSON format along with HTTP status 200 for "OK"
+"""
 @app.route("/update_publican/<string:publican_id>", methods=["PATCH"])
 def update_publican(publican_id):
     data = request.get_json()
@@ -604,6 +809,18 @@ def update_publican(publican_id):
     publican_ref.update(data)
     return jsonify({"message": "Publican updated successfully!"}), 200
 
+"""
+Summary:
+    API "PATCH" call that updates a game entry in the database
+
+Args:
+    .JSON: A .JSON file that has all the necessary updates for the given game entry
+    String game_id: A unique string ID given to the game class entry
+
+Returns:
+    .JSON + HTTP Status: Upon a successful request, a success message is returned in
+    .JSON format along with HTTP status 200 for "OK"
+"""
 @app.route("/update_game/<string:game_id>", methods=["PATCH"])
 def update_game(game_id):
     data = request.get_json()
@@ -614,6 +831,17 @@ def update_game(game_id):
 
     return jsonify({"message": "Game updated successfully!"}), 200
 
+"""
+Summary:
+    API "DELETE" call that removes a publican entry from the database
+
+Args:
+    String publican_id: A string variable that is unique to the publican entry
+
+Returns:
+    .JSON + HTTP Status: Upon a successful request, a success message is returned in
+    .JSON format with HTTP status 200 for "OK"
+"""
 @app.route("/delete_publican/<string:publican_id>", methods=["DELETE"])
 def delete_publican(publican_id):
     publican_ref = db_firestore.collection('publicans').document(publican_id)
