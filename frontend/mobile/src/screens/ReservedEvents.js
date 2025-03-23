@@ -109,24 +109,20 @@ const ReservedEvents = ({ navigation }) => {
           newEvents[formattedDate] = [];
         }
         
-        // Check if this game is already in the list (might be both hosted and joined)
         const existingGameIndex = newEvents[formattedDate].findIndex(game => game.id === doc.id);
         if (existingGameIndex >= 0) {
-          // Update the existing entry to mark as hosted
           newEvents[formattedDate][existingGameIndex].isHosted = true;
         } else {
-          // Add as a new hosted game
           newEvents[formattedDate].push({ 
             id: doc.id,
             game_name, 
             start_time, 
             location, 
             time,
-            isHosted: true // Mark as hosted by the user
+            isHosted: true 
           });
         }
         
-        // Mark hosted games with light pink in the calendar
         if (!newMarkedDates[formattedDate]) {
           newMarkedDates[formattedDate] = {
             dots: [{ color: '#FFB6C1', key: 'hosted' }],
@@ -213,18 +209,6 @@ const ReservedEvents = ({ navigation }) => {
           </TouchableOpacity>
         </View>
         <Text style={styles.headerText}>My Games</Text>
-      </View>
-
-      {/* Legend for the different game types */}
-      <View style={styles.legend}>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: '#FF006E' }]} />
-          <Text style={styles.legendText}>Games I've Joined</Text>
-        </View>
-        <View style={styles.legendItem}>
-          <View style={[styles.legendDot, { backgroundColor: '#FFB6C1' }]} />
-          <Text style={styles.legendText}>Games I'm Hosting</Text>
-        </View>
       </View>
       
       {/* Calendar View */}
