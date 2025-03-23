@@ -37,8 +37,6 @@ const ReservedEvents = ({ navigation }) => {
           })
         );
 
-
-
         const gameDocs = await Promise.all(gamePromises);
         const newEvents = {};
         const newMarkedDates = {};

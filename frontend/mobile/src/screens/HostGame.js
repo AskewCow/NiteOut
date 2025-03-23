@@ -39,7 +39,7 @@ const HostGame = ({ navigation }) => {
         if (!newEvents[formattedDate]) {
           newEvents[formattedDate] = [];
         }
-        newEvents[formattedDate].push({ ...eventData, startTime, endTime });
+        newEvents[formattedDate].push({ id: doc.id, ...eventData, startTime, endTime });
 
         newMarkedDates[formattedDate] = {
           marked: true,

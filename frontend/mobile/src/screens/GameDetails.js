@@ -32,10 +32,20 @@ const GameDetails = ({ route, navigation }) => {
 
   const formatDate = (date) => {
     const day = date.getDate();
-    const month = date.toLocaleString('default', { month: 'long' }); 
-    return `${month} ${day}th`;
-  };
+    const month = date.toLocaleString('default', { month: 'long' });
 
+    const getOrdinalSuffix = (n) => {
+        if (n >= 11 && n <= 13) return "th";
+        switch (n % 10) {
+            case 1: return "st";
+            case 2: return "nd";
+            case 3: return "rd";
+            default: return "th";
+        }
+    };
+
+    return `${month} ${day}${getOrdinalSuffix(day)}`;
+};
   const formattedDate = formatDate(start_date);
 
   useEffect(() => {
