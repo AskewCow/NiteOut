@@ -49,7 +49,7 @@ const GameDetails = ({ route, navigation }) => {
         await updateDoc(gamerRef, {
           joined_games: arrayUnion(game.id),
         });
-        
+
         alert("You have joined the event");
       }
       setIsJoined(!isJoined);
@@ -206,7 +206,7 @@ const GameDetails = ({ route, navigation }) => {
       <TouchableOpacity
         style={[
           styles.reserveButton,
-          { backgroundColor: "#FF006E" }, // Red if leaving, pink if joining
+          { backgroundColor: "#FF006E" }, 
         ]}
         onPress={() =>
           Alert.alert(
