@@ -35,6 +35,7 @@ const JoinGame = () => {
     joined: [],
     fullGameInfo: null,
   });
+  const [selectedGameId, setSelectedGameId] = useState(null);
 
   const fetchGameDetails = async (gameIds) => {
     console.log("Fetching game details for IDs:", gameIds);
@@ -91,6 +92,7 @@ const JoinGame = () => {
           availableSlots: gameData.available_slots,
         },
       });
+      setSelectedGameId(gameDoc.id);
 
       setIsLoading(false);
     } catch (error) {
@@ -102,18 +104,34 @@ const JoinGame = () => {
 
   const confirmJoinGame = async () => {
     try {
+      if (!selectedGameId) {
+        Alert.alert("Error", "No game selected to join.");
+        return;
+      }
+
+      console.log(
+        "Attempting to join game:",
+        selectedGameId,
+        "with gamerId:",
+        gamerId
+      );
+
       setIsLoading(true);
-      const gameRef = doc(db, "games", gameDetails.fullGameInfo.id);
+      const gameRef = doc(db, "games", selectedGameId);
       await updateDoc(gameRef, {
         participants: arrayUnion(gamerId),
       });
 
       const gamerRef = doc(db, "gamers", gamerId);
       await updateDoc(gamerRef, {
-        joined_games: arrayUnion(gameDetails.fullGameInfo.id),
+        joined_games: arrayUnion(selectedGameId),
       });
 
-      Alert.alert("Success", "You have joined the game successfully");
+      Alert.alert(
+        "Game Joined!",
+        "You've successfully joined the game. Have fun!",
+        [{ text: "OK" }]
+      );
       setGameCodeInput("");
       setGamerDetails(null);
       setGameDetails({ hosted: [], joined: [], fullGameInfo: null });
@@ -181,61 +199,16 @@ const JoinGame = () => {
             </View>
           </View>
 
-          {!gameDetails.fullGameInfo ? (
-            <TouchableOpacity
-              onPress={fetchGameByCode}
-              style={[styles.createEventButton, { marginTop: 10 }]}
-              disabled={isLoading || !gameCodeInput}
-            >
-              {isLoading ? (
-                <ActivityIndicator color="#fff" size="small" />
-              ) : (
-                <Text style={styles.createEventButtonText}>Search</Text>
-              )}
-            </TouchableOpacity>
-          ) : (
-            <View style={styles.playerDetailsContainer}>
-              <View style={styles.divider} />
-              <View style={styles.playerInfoItem}>
-                <Text style={styles.playerInfoLabel}>Game Name</Text>
-                <Text style={styles.playerInfoValue}>
-                  {gameDetails.fullGameInfo.name}
-                </Text>
-              </View>
-              <View style={styles.playerInfoItem}>
-                <Text style={styles.playerInfoLabel}>Location</Text>
-                <Text style={styles.playerInfoValue}>
-                  {gameDetails.fullGameInfo.location}
-                </Text>
-              </View>
-              <View style={styles.playerInfoItem}>
-                <Text style={styles.playerInfoLabel}>Host</Text>
-                <Text style={styles.playerInfoValue}>
-                  {gameDetails.fullGameInfo.hostName}
-                </Text>
-              </View>
-              <View style={styles.playerInfoItem}>
-                <Text style={styles.playerInfoLabel}>Available Slots</Text>
-                <Text style={styles.playerInfoValue}>
-                  {gameDetails.fullGameInfo.availableSlots}
-                </Text>
-              </View>
-
-              <TouchableOpacity
-                onPress={confirmJoinGame}
-                style={[styles.createEventButton, { marginTop: 16 }]}
-                disabled={isLoading}
-              >
-                {isLoading ? (
-                  <ActivityIndicator color="#fff" size="small" />
-                ) : (
-                  <Text style={styles.createEventButtonText}>
-                    Confirm Join Game
-                  </Text>
-                )}
-              </TouchableOpacity>
-            </View>
-          )}
+          <TouchableOpacity
+            onPress={() => {
+              fetchGameByCode();
+              confirmJoinGame();
+            }}
+            style={[styles.createEventButton, { marginTop: 10 }]}
+            disabled={isLoading || !gameCodeInput}
+          >
+            <Text style={styles.createEventButtonText}>Join Game</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
     </SafeAreaView>

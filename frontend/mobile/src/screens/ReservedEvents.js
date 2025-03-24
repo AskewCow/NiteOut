@@ -29,8 +29,13 @@ const ReservedEvents = ({ navigation }) => {
       const userDoc = await getDoc(doc(db, "gamers", gamerId));
 
       const userData = userDoc.data();
-      if (userData && userData.hosted_games) {
-        const gamePromises = userData.hosted_games.map((gameId) =>
+      if (userData && (userData.hosted_games || userData.joined_games)) {
+        const allGameIds = [
+          ...(userData.hosted_games || []),
+          ...(userData.joined_games || []),
+        ];
+
+        const gamePromises = allGameIds.map((gameId) =>
           getDoc(doc(db, "games", gameId)).catch((error) => {
             console.error("Error fetching game: ", error);
             return undefined;

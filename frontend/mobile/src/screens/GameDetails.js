@@ -28,6 +28,7 @@ const GameDetails = ({ route, navigation }) => {
   const [owner, setOwner] = useState(false);
   const [showCode, setShowCode] = useState(false);
   const [gameCode, setGameCode] = useState("");
+  const [joinedGame, setJoinedGame] = useState(false);
 
   const start_date = new Date(game.start_time);
   const end_date = new Date(game.end_time);
@@ -79,6 +80,9 @@ const GameDetails = ({ route, navigation }) => {
           setHostProfileXml(hostProfileXml);
           if (game.host === gamerId) {
             setOwner(true);
+          }
+          if (game.participants.includes(gamerId)) {
+            setJoinedGame(true);
           }
         } else {
           console.error("Host data not found");
@@ -207,26 +211,37 @@ const GameDetails = ({ route, navigation }) => {
       </MapView>
 
       {/* Join Event Button */}
-      <TouchableOpacity
-        style={styles.reserveButton}
-        onPress={
-          owner
-            ? handleShowCode
-            : () =>
-                Alert.alert(
-                  "Join Event",
-                  "Are you sure you want to join this event?",
-                  [
-                    { text: "Cancel", style: "destructive" },
-                    { text: "Join", onPress: () => handleReserveSeat() },
-                  ]
-                )
-        }
-      >
-        <Text style={styles.reserveButtonText}>
-          {owner ? "Share Code" : "Join Event"}
-        </Text>
-      </TouchableOpacity>
+      {!joinedGame && (
+        <TouchableOpacity
+          style={styles.reserveButton}
+          onPress={
+            owner
+              ? handleShowCode
+              : () =>
+                  Alert.alert(
+                    "Join Event",
+                    "Are you sure you want to join this event?",
+                    [
+                      { text: "Cancel", style: "destructive" },
+                      { text: "Join", onPress: () => handleReserveSeat() },
+                    ]
+                  )
+          }
+        >
+          <Text style={styles.reserveButtonText}>
+            {owner ? "Share Code" : "Join"}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {joinedGame && (
+        <TouchableOpacity
+          style={styles.reserveButton}
+          onPress={() => alert("You have already joined this game.")}
+        >
+          <Text style={styles.reserveButtonText}>Joined</Text>
+        </TouchableOpacity>
+      )}
 
       <Modal
         visible={showCode}
