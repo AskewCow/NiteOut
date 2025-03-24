@@ -1,20 +1,20 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ActivityIndicator, 
-  ScrollView, 
-  TouchableOpacity, 
-  SafeAreaView 
-} from 'react-native';
-import { db } from '../firebaseConfig';
-import { useGamer } from '../contexts/GamerContext'; 
-import { getDoc, doc } from 'firebase/firestore';
+import React, { useState, useEffect, useCallback } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ActivityIndicator,
+  ScrollView,
+  TouchableOpacity,
+  SafeAreaView,
+} from "react-native";
+import { db } from "../firebaseConfig";
+import { useGamer } from "../contexts/GamerContext";
+import { getDoc, doc } from "firebase/firestore";
 import { SvgXml } from "react-native-svg";
 import { logoXml } from "../utils/logo";
-import { DrawerActions, useFocusEffect } from '@react-navigation/native';
-import { Calendar } from 'react-native-calendars';
+import { DrawerActions, useFocusEffect } from "@react-navigation/native";
+import { Calendar } from "react-native-calendars";
 
 const ReservedEvents = ({ navigation }) => {
   const { gamerId } = useGamer();
@@ -29,9 +29,9 @@ const ReservedEvents = ({ navigation }) => {
       const userDoc = await getDoc(doc(db, "gamers", gamerId));
 
       const userData = userDoc.data();
-      if (userData && userData.joined_games) {
-        const gamePromises = userData.joined_games.map(gameId => 
-          getDoc(doc(db, 'games', gameId)).catch(error => {
+      if (userData && userData.hosted_games) {
+        const gamePromises = userData.hosted_games.map((gameId) =>
+          getDoc(doc(db, "games", gameId)).catch((error) => {
             console.error("Error fetching game: ", error);
             return undefined;
           })
@@ -42,23 +42,30 @@ const ReservedEvents = ({ navigation }) => {
         const newMarkedDates = {};
         console.log("games: ", gameDocs);
 
-        gameDocs.forEach(doc => {
+        gameDocs.forEach((doc) => {
           if (doc.exists()) {
             const gameData = doc.data();
-            const { start_time, game_name, location } = gameData;  
+            const { start_time, game_name, location } = gameData;
             const dateObj = new Date(start_time);
-            const formattedDate = dateObj.toISOString().split('T')[0];  
-            const time = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const formattedDate = dateObj.toISOString().split("T")[0];
+            const time = dateObj.toLocaleTimeString([], {
+              hour: "2-digit",
+              minute: "2-digit",
+            });
             console.log("game: ", gameData);
             if (!newEvents[formattedDate]) {
               newEvents[formattedDate] = [];
             }
-            newEvents[formattedDate].push({ game_name, start_time, location, time });
+            newEvents[formattedDate].push({
+              ...gameData, // include all Firestore game fields
+              time, // override or append any custom fields
+            });
 
             newMarkedDates[formattedDate] = {
               marked: true,
-              dotColor: '#FF006E', 
-              selectedColor: selectedDate === formattedDate ? '#90E0EF' : undefined,
+              dotColor: "#FF006E",
+              selectedColor:
+                selectedDate === formattedDate ? "#90E0EF" : undefined,
             };
           }
         });
@@ -67,7 +74,7 @@ const ReservedEvents = ({ navigation }) => {
         setMarkedDates(newMarkedDates);
       }
     } catch (error) {
-      console.error('Error fetching reservations:', error);
+      console.error("Error fetching hosted games:", error);
     } finally {
       setLoading(false);
     }
@@ -82,7 +89,9 @@ const ReservedEvents = ({ navigation }) => {
   if (loading) {
     return (
       <View style={styles.container}>
-        <Text style={{ fontSize: 24, fontWeight: 'bold', marginBottom: 20 }}>Upcoming reservations</Text>
+        <Text style={{ fontSize: 24, fontWeight: "bold", marginBottom: 20 }}>
+          Upcoming reservations
+        </Text>
         <ActivityIndicator size="large" color="#0000ff" />
       </View>
     );
@@ -91,14 +100,14 @@ const ReservedEvents = ({ navigation }) => {
   const handleDateSelect = (date) => {
     const newSelectedDate = date.dateString;
     const updatedMarkedDates = Object.keys(markedDates).reduce((acc, key) => {
-      acc[key] = { ...markedDates[key], selected: false }; 
+      acc[key] = { ...markedDates[key], selected: false };
       return acc;
     }, {});
 
     updatedMarkedDates[newSelectedDate] = {
       ...updatedMarkedDates[newSelectedDate],
       selected: true,
-      selectedColor: '#00B4D8',
+      selectedColor: "#00B4D8",
     };
 
     setSelectedDate(newSelectedDate);
@@ -108,11 +117,11 @@ const ReservedEvents = ({ navigation }) => {
   const handleProfilePress = (gamerId) => {
     console.log("GamerId: ", gamerId);
     if (gamerId) {
-        navigation.dispatch(DrawerActions.openDrawer());
+      navigation.dispatch(DrawerActions.openDrawer());
     } else {
-        alert("Please log in again.");
-        navigation.navigate("Login");
-        return;
+      alert("Please log in again.");
+      navigation.navigate("Login");
+      return;
     }
   };
 
@@ -128,16 +137,16 @@ const ReservedEvents = ({ navigation }) => {
       </View>
       {/* Calendar View */}
       <Calendar
-        current={new Date().toISOString().split('T')[0]}
+        current={new Date().toISOString().split("T")[0]}
         markedDates={markedDates}
         onDayPress={handleDateSelect}
         style={styles.calendar}
         theme={{
-          todayTextColor: '#00B4D8',
+          todayTextColor: "#00B4D8",
         }}
         renderArrow={(direction) => (
-          <Text style={{ fontSize: 20, color: 'black' }}>
-            {direction === 'left' ? '←' : '→'}
+          <Text style={{ fontSize: 20, color: "black" }}>
+            {direction === "left" ? "←" : "→"}
           </Text>
         )}
       />
@@ -146,11 +155,13 @@ const ReservedEvents = ({ navigation }) => {
       <ScrollView style={styles.scrollView}>
         {selectedDate && eventsByDate[selectedDate] ? (
           eventsByDate[selectedDate].map((event, index) => (
-            <TouchableOpacity 
-              key={index} 
+            <TouchableOpacity
+              key={index}
               style={styles.eventItem}
-              onPress={() => navigation.navigate('EventDetails', { event })}
-            > 
+              onPress={() =>
+                navigation.navigate("GameDetails", { game: event })
+              }
+            >
               <View style={styles.eventDetails}>
                 <Text style={styles.eventTitle}>{event.game_name}</Text>
                 <Text style={styles.pubName}>{event.location}</Text>
@@ -160,7 +171,9 @@ const ReservedEvents = ({ navigation }) => {
           ))
         ) : (
           <Text style={styles.noEventsText}>
-            {selectedDate ? "You have no games on this day." : "Select a date to view games."}
+            {selectedDate
+              ? "You have no games on this day."
+              : "Select a date to view games."}
           </Text>
         )}
       </ScrollView>
@@ -171,11 +184,11 @@ const ReservedEvents = ({ navigation }) => {
 const styles = StyleSheet.create({
   headerText: {
     fontSize: 24,
-    fontWeight: 'bold',
+    fontWeight: "bold",
     paddingLeft: 10,
     flex: 1,
   },
-  calendar :{
+  calendar: {
     marginTop: 0,
     alignContent: "center",
     justifyContent: "center",
@@ -187,36 +200,36 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
-    backgroundColor: '#90E0EF',
-    width: '95%',
-    alignSelf: 'center',
+    backgroundColor: "#90E0EF",
+    width: "95%",
+    alignSelf: "center",
     borderRadius: 10,
     padding: 10,
   },
   eventItem: {
-    backgroundColor: '#f0f0f0',
+    backgroundColor: "#f0f0f0",
     padding: 10,
     borderRadius: 5,
     marginVertical: 5,
-    flexDirection: 'row',
+    flexDirection: "row",
   },
   eventTitle: {
     fontSize: 16,
   },
   eventTime: {
     fontSize: 14,
-    color: '#555',
+    color: "#555",
     alignSelf: "center",
   },
   eventDetails: {
-    flexDirection: 'column',
+    flexDirection: "column",
     flex: 1,
   },
   noEventsText: {
-    textAlign: 'center',
+    textAlign: "center",
     fontSize: 16,
     marginTop: 20,
-    color: '#555',
+    color: "#555",
   },
   header: {
     flexDirection: "row",

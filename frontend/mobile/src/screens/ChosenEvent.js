@@ -14,8 +14,14 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useGamer } from "../contexts/GamerContext";
 import { db } from "../firebaseConfig";
-import { collection, writeBatch, doc } from "firebase/firestore";
-import TimeRangeSlider from "../components/TimeRangeSlider"; // Import the new component
+import TimeRangeSlider from "../components/TimeRangeSlider";
+import {
+  collection,
+  writeBatch,
+  doc,
+  updateDoc,
+  arrayUnion,
+} from "firebase/firestore"; // Import the new component
 
 const ChosenEvent = () => {
   const [gameName, setGameName] = useState("");
@@ -35,7 +41,7 @@ const ChosenEvent = () => {
       const slotsArray = Object.entries(event.available_slots).map(
         ([timeString, capacity]) => ({
           time: timeString,
-          capacity: typeof capacity === "number" ? capacity : capacity.capacity, 
+          capacity: typeof capacity === "number" ? capacity : capacity.capacity,
         })
       );
 
@@ -76,7 +82,7 @@ const ChosenEvent = () => {
 
     const start_time = timeSlots[startTime].time.split("-")[0].trim();
     const end_time = timeSlots[endTime].time.split("-")[1].trim();
-    const formattedStartTime = `${dateString}T${start_time}:00`; 
+    const formattedStartTime = `${dateString}T${start_time}:00`;
     const formattedEndTime = `${dateString}T${end_time}:00`;
 
     console.log("formattedStartTime: ", formattedStartTime);
@@ -130,6 +136,11 @@ const ChosenEvent = () => {
       });
 
       await batch.commit();
+
+      const hostDocRef = doc(db, "gamers", gamerId);
+      await updateDoc(hostDocRef, {
+        hosted_games: arrayUnion(gameDocRef.id),
+      });
 
       Alert.alert("Success", "Game created successfully!");
       navigation.goBack();
