@@ -14,6 +14,7 @@ import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import { DrawerActions } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { SvgXml } from "react-native-svg";
 import moment from "moment";
 
 // Contexts
@@ -24,8 +25,7 @@ import GamesNearYou from "../components/GamesNearYou";
 import Friends from "../components/Friends";
 import LoadingAnimation from "../components/LoadingAnimation";
 import { logoXml } from "../utils/logo";
-import { SvgXml } from "react-native-svg";
-
+import { expandIconXml } from "../utils/expandIcon";
 
 // Firebase Import
 import { db } from "../firebaseConfig";
@@ -193,7 +193,7 @@ const MainScreen = ({ navigation }) => {
                     gamer_id: gamerId,
                 });
                 setFriends(userData.friends_list || []);
-                
+
                 setGamerId(gamerId);
             } else {
                 console.log("No user document found with ID:", gamerId);
@@ -344,34 +344,46 @@ const MainScreen = ({ navigation }) => {
                             <Text style={styles.tagText}>Favourites</Text>
                         </TouchableOpacity>
                     </View>
-
-                    <MapView
-                        ref={mapRef}
-                        style={styles.map}
-                        initialRegion={mapRegion}
-                        onLongPress={() => navigation.navigate("Map")}
-                    >
-                        {currentLocation && (
-                            <Marker
-                                coordinate={currentLocation}
-                                title="You are here"
-                                pinColor="#FF006E"
-                            />
-                        )}
-                        {pubs &&
-                            pubs.map((pub) => (
+                    <View style={styles.mapWrapper}>
+                        <MapView
+                            ref={mapRef}
+                            style={styles.map}
+                            initialRegion={mapRegion}
+                            onLongPress={() => navigation.navigate("Map")}
+                        >
+                            {currentLocation && (
                                 <Marker
-                                    key={pub.id}
-                                    coordinate={{
-                                        latitude: pub.xcoord,
-                                        longitude: pub.ycoord,
-                                    }}
-                                    title={pub.pub_name}
-                                    description={pub.address}
-                                    pinColor="#90E0EF"
+                                    coordinate={currentLocation}
+                                    title="You are here"
+                                    pinColor="#FF006E"
                                 />
-                            ))}
-                    </MapView>
+                            )}
+                            {pubs &&
+                                pubs.map((pub) => (
+                                    <Marker
+                                        key={pub.id}
+                                        coordinate={{
+                                            latitude: pub.xcoord,
+                                            longitude: pub.ycoord,
+                                        }}
+                                        title={pub.pub_name}
+                                        description={pub.address}
+                                        pinColor="#90E0EF"
+                                    />
+                                ))}
+                        </MapView>
+
+                        <TouchableOpacity
+                            style={styles.expandIconContainer}
+                            onPress={() => navigation.navigate("Map")}
+                        >
+                            <SvgXml
+                                xml={expandIconXml}
+                                width={20}
+                                height={20}
+                            />
+                        </TouchableOpacity>
+                    </View>
                 </View>
 
                 <View style={styles.friendsAndGamesContainer}>
@@ -469,6 +481,19 @@ const styles = StyleSheet.create({
         height: "71%",
         borderRadius: 10,
         paddingBottom: 0,
+    },
+    mapWrapper: {
+        alignItems: "center",
+        width: "100%",
+        height: "100%",
+        overflow: "hidden",
+        position: "relative",
+    },
+    expandIconContainer: {
+        position: "absolute",
+        top: 10,
+        right: 10,
+        marginRight: 10,
     },
     closeButton: {
         marginTop: 20,
