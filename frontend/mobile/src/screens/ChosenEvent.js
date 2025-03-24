@@ -59,6 +59,10 @@ const ChosenEvent = () => {
     console.log(`Index ${index}: ${slot.time}`);
   });
 
+  const generateGameCode = () => {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+  };
+
   const handleSubmit = async () => {
     console.log("Submitting game...");
     console.log("startTime: ", startTime);
@@ -110,6 +114,7 @@ const ChosenEvent = () => {
       updatedSlots[key] = updatedSlots[key] - numPlayers;
     });
 
+    const game_code = generateGameCode();
     const gameData = {
       game_name: gameName,
       game_desc: gameDescription,
@@ -123,6 +128,7 @@ const ChosenEvent = () => {
       participants: [],
       xcoord: event.pub_details.xcoord,
       ycoord: event.pub_details.ycoord,
+      game_code,
     };
 
     try {
@@ -191,7 +197,7 @@ const ChosenEvent = () => {
               style={styles.input}
               value={gameName}
               onChangeText={setGameName}
-              placeholder="Enter game name"
+              placeholder="Enter Game Name"
               placeholderTextColor={"#888"}
             />
 
@@ -200,7 +206,7 @@ const ChosenEvent = () => {
               style={[styles.input, styles.gameDescriptionInput]}
               value={gameDescription}
               onChangeText={setGameDescription}
-              placeholder="Enter game description"
+              placeholder="Enter Game Description"
               placeholderTextColor={"#888"}
               multiline
               maxLength={400}

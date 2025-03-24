@@ -45,6 +45,7 @@ const ReservedEvents = ({ navigation }) => {
         gameDocs.forEach((doc) => {
           if (doc.exists()) {
             const gameData = doc.data();
+            const gameId = doc.id;
             const { start_time, game_name, location } = gameData;
             const dateObj = new Date(start_time);
             const formattedDate = dateObj.toISOString().split("T")[0];
@@ -57,6 +58,7 @@ const ReservedEvents = ({ navigation }) => {
               newEvents[formattedDate] = [];
             }
             newEvents[formattedDate].push({
+              id: gameId,
               ...gameData, // include all Firestore game fields
               time, // override or append any custom fields
             });

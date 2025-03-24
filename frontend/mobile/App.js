@@ -31,6 +31,7 @@ import PublicanMainScreen from "./src/screens/PublicanMainScreen";
 import CreateEvent from "./src/screens/CreateEventScreen";
 import BannedPlayers from "./src/screens/BannedPlayers";
 import BannedPlayersScreen from "./src/screens/BannedPlayersScreen";
+import JoinGame from "./src/screens/JoinGame";
 
 const screenHeight = Dimensions.get("window").height;
 const headerHeight = screenHeight * 0.12;
@@ -109,6 +110,8 @@ function DrawerNavigator() {
           },
         })}
       />
+      {!isPublican && <Drawer.Screen name="Host Game" component={HostGame} />}
+      {!isPublican && <Drawer.Screen name="Join Game" component={JoinGame} />}
       {!isPublican && (
         <Drawer.Screen name="My Games" component={ReservedEvents} />
       )}
@@ -147,7 +150,6 @@ function DrawerNavigator() {
         />
       )}
 
-      {!isPublican && <Drawer.Screen name="Host Game" component={HostGame} />}
       {isPublican && (
         <Drawer.Screen name="Create Event" component={CreateEvent} />
       )}
@@ -321,6 +323,11 @@ export default function App() {
             <Stack.Screen
               name="BannedPlayersScreen"
               component={BannedPlayersScreen}
+              options={{ headerShown: false, gestureEnabled: true }}
+            />
+            <Stack.Screen
+              name="JoinGame"
+              component={JoinGame}
               options={{ headerShown: false, gestureEnabled: true }}
             />
           </Stack.Navigator>
