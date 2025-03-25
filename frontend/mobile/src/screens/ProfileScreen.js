@@ -30,6 +30,34 @@ import { pinkEditIconXml } from "../utils/pinkEditIcon";
 import { editIconXml } from "../utils/editIcon";
 import { useGamer } from "../contexts/GamerContext";
 
+<<<<<<< frontend/mobile/src/screens/ProfileScreen.js
+const ProfileScreen = ({ route, navigation }) => {
+  const { gamerId: navigatedGamerId } = route.params || {};
+  const { gamerId: currentUserId } = useGamer();
+  const [userInfo, setUserInfo] = useState(null);
+  const [isPublican, setIsPublican] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [nameInput, setNameInput] = useState("");
+  const [emailInput, setEmailInput] = useState("");
+  const nameInputRef = useRef(null);
+  const emailInputRef = useRef(null);
+
+
+  const [gamerId, setGamerId] = useState(navigatedGamerId || currentUserId);
+
+  useEffect(() => {
+    if (navigatedGamerId) {
+      setGamerId(navigatedGamerId || currentUserId);
+    }
+  }, [navigatedGamerId, currentUserId]);
+
+  useEffect(() => {
+    const fetchUserInfo = async () => {
+      try {
+        let userData = {};
+        let userProfile = "01"; // Default profile
+        let userIdToDisplay = "";
+=======
 const ProfileScreen = ({ navigation }) => {
     const { gamerId } = useGamer();
     const [userInfo, setUserInfo] = useState(null);
@@ -46,6 +74,7 @@ const ProfileScreen = ({ navigation }) => {
                 let userData = {};
                 let userProfile = "01";
                 let userIdToDisplay = "";
+>>>>>>> frontend/mobile/src/screens/ProfileScreen.js
 
                 const userRef = doc(db, "users", gamerId);
                 const userSnap = await getDoc(userRef);
