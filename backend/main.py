@@ -64,34 +64,55 @@ Returns:
     data of all gamers and HTTP status 200 if successful
 """
 
+@app.route("/get_gamer_by_uid/<string:uid>", methods=["GET"])
+def get_gamer_by_uid(uid):
+    try:
+        gamer_ref = db_firestore.collection("gamers").document(uid)
+        gamer_doc = gamer_ref.get()
+
+        if not gamer_doc.exists:
+            return jsonify({"error": "Gamer not found"}), 404
+
+        gamer_data = gamer_doc.to_dict()
+        gamer_data["id"] = gamer_doc.id
+
+        return jsonify(gamer_data), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
 
 @app.route("/gamer_login", methods=["POST"])
 def gamer_login():
     data = request.get_json()
-    email = data.get("email")
-    password = data.get("password")
+    email = data.get("email", "").strip().lower()
+    password = data.get("password", "").strip()
 
     if not email or not password:
         return jsonify({"error": "Email and password required"}), 400
 
-    gamers_ref = db_firestore.collection("gamers")
-    query = gamers_ref.where("email", "==", email).stream()
+    try:
+        # Query gamers where email matches
+        gamers_ref = db_firestore.collection("gamers")
+        query = gamers_ref.where("email", "==", email).stream()
+        gamer_doc = next(query, None)
 
-    gamer_doc = next(query, None)
+        if not gamer_doc or not gamer_doc.exists:
+            return jsonify({"error": "User not found"}), 404
 
-    if not gamer_doc:
-        return jsonify({"error": "User not found"}), 404
+        gamer_data = gamer_doc.to_dict()
 
-    gamer_data = gamer_doc.to_dict()
+        # Password match check (plaintext — for demo/dev only)
+        stored_password = gamer_data.get("password", "").strip()
+        if stored_password != password:
+            return jsonify({"error": "Incorrect password"}), 401
 
-    if gamer_data.get("password") != password:
-        return jsonify({"error": "Incorrect password"}), 401
+        return jsonify({
+            "message": "Login successful",
+            "gamerId": gamer_data.get("gamerId", gamer_doc.id),
+            "name": gamer_data.get("name", "")
+        }), 200
 
-    return jsonify({
-        "message": "Login successful",
-        "gamerId": gamer_data.get("gamerId"),
-        "name": gamer_data.get("name")
-    }), 200
+    except Exception as e:
+        return jsonify({"error": f"Server error: {str(e)}"}), 500
 
 
 @app.route("/gamer", methods=["GET"])
@@ -736,31 +757,31 @@ Returns:
     invalid fields in the input, an error message in .JSON format is returned with HTTP status
     404 for "NOT FOUND" or 400 for "BAD REQUEST" respectively
 """
+
+@app.route("/profile/<string:gamer_id>", methods=["GET"])
+def get_profile(gamer_id):
+    try:
+        user_ref = db_firestore.collection("gamers").document(gamer_id)
+        user_doc = user_ref.get()
+
+        if not user_doc.exists:
+            return jsonify({"error": "Gamer not found"}), 404
+
+        user_data = user_doc.to_dict()
+        user_data["id"] = gamer_id
+        return jsonify(user_data), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
 @app.route("/update_profile/<string:gamer_id>", methods=["PATCH"])
-def update_profile(gamer_id):
-    data = request.get_json()
-    new_profile = data.get("profile")
-
-    if new_profile not in [str(i).zfill(2) for i in range(1, 13)]:
-        return jsonify({"error": "Invalid profile ID. Choose between '01' and '12'."}), 400
-
-    gamers_ref = db_firestore.collection("gamers")
-    gamer_query = gamers_ref.where("gamerId", "==", gamer_id).stream()
-    gamer_doc = next(gamer_query, None)
-
-    if not gamer_doc:
-        return jsonify({"error": "Gamer not found"}), 404
-
-    # Update the profile icon
-    db_firestore.collection("gamers").document(gamer_doc.id).update({
-        "profile": new_profile
-    })
-
-    return jsonify({
-        "message": "Profile updated successfully!", 
-        "new_profile": f"/static/icons/{new_profile}.png"
-    }), 200
-
+def patch_profile(gamer_id):
+    try:
+        data = request.get_json()
+        db_firestore.collection("gamers").document(gamer_id).update(data)
+        return jsonify({"message": "Profile updated successfully"}), 200
+    except Exception as e:
+        return jsonify({"error": str(e)}), 500
+    
 """
 Summary:
     API "PATCH" call that allows file type inputs to be uploaded to the database

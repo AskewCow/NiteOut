@@ -45,39 +45,43 @@ const LoginScreen = ({ navigation }) => {
     }
 
     try {
-      const response = await fetch(
-        "https://d1ff-185-134-146-110.ngrok-free.app/gamer_login",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            email: email.trim(),
-            password,
-          }),
-        }
+      const userCredential = await signInWithEmailAndPassword(
+        auth,
+        email.trim(),
+        password
       );
+      const user = userCredential.user;
 
+      // Use UID to fetch gamer profile from Flask backend
+      const response = await fetch(
+        `https://d1ff-185-134-146-110.ngrok-free.app/get_gamer_by_uid/${user.uid}`
+      );
       const data = await response.json();
 
       if (!response.ok) {
-        if (response.status === 404)
-          setEmailError("No user found with this email.");
-        else if (response.status === 401)
-          setPasswordError("Incorrect password.");
-        else setEmailError(data.error || "Login failed");
-        return;
+        throw new Error(data.error || "Failed to load user.");
       }
 
-      // Save gamerId to AsyncStorage
-      await AsyncStorage.setItem("gamerId", data.gamerId);
-      console.log("Gamer ID stored successfully:", data.gamerId);
+      // Store the gamer's info (ID or anything else needed)
+      await AsyncStorage.setItem("gamerId", user.uid);
+      console.log("Gamer ID stored successfully:", user.uid);
 
       navigation.navigate("Drawer", { screen: "Home" });
     } catch (error) {
-      console.error("Login error:", error);
-      Alert.alert("Login failed", "Unable to connect to the server.");
+      console.error("Error during login:", error);
+
+      if (error.code === "auth/user-not-found") {
+        setEmailError("No user found with this email.");
+      } else if (error.code === "auth/invalid-email") {
+        setEmailError("Invalid email format.");
+      } else if (error.code === "auth/wrong-password") {
+        setPasswordError("Incorrect password. Please try again.");
+      } else if (error.code === "auth/invalid-credential") {
+        setEmailError("Invalid email. Please try again.");
+        setPasswordError("Invalid password. Please try again.");
+      } else {
+        setEmailError(error.message || "Something went wrong.");
+      }
     }
   };
 
