@@ -45,6 +45,7 @@ def serve_image(filename):
     return send_from_directory(app.config['UPLOAD_FOLDER'], filename)
 
 
+
 # Define a function to perform the refresh
 def refresh_data():
     # Include logic to refresh or update data here
@@ -62,6 +63,37 @@ Returns:
     .JSON + HTTP Status: Returns a .JSON file with the specified
     data of all gamers and HTTP status 200 if successful
 """
+
+
+@app.route("/gamer_login", methods=["POST"])
+def gamer_login():
+    data = request.get_json()
+    email = data.get("email")
+    password = data.get("password")
+
+    if not email or not password:
+        return jsonify({"error": "Email and password required"}), 400
+
+    gamers_ref = db_firestore.collection("gamers")
+    query = gamers_ref.where("email", "==", email).stream()
+
+    gamer_doc = next(query, None)
+
+    if not gamer_doc:
+        return jsonify({"error": "User not found"}), 404
+
+    gamer_data = gamer_doc.to_dict()
+
+    if gamer_data.get("password") != password:
+        return jsonify({"error": "Incorrect password"}), 401
+
+    return jsonify({
+        "message": "Login successful",
+        "gamerId": gamer_data.get("gamerId"),
+        "name": gamer_data.get("name")
+    }), 200
+
+
 @app.route("/gamer", methods=["GET"])
 def get_gamer():
     gamer_ref = db_firestore.collection('gamers')
