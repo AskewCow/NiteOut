@@ -117,6 +117,7 @@ const ChosenEvent = () => {
       participants: [],
       xcoord: event.pub_details.xcoord,
       ycoord: event.pub_details.ycoord,
+      event_id: event.id,
     };
 
     try {

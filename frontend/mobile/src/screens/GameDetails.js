@@ -11,7 +11,14 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import MapView, { Marker } from "react-native-maps";
 import { db } from "../firebaseConfig";
-import { doc, getDoc, updateDoc, arrayUnion } from "firebase/firestore";
+import {
+  arrayRemove,
+  doc,
+  getDoc,
+  updateDoc,
+  arrayUnion,
+  deleteDoc,
+} from "firebase/firestore";
 import { useGamer } from "../contexts/GamerContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import profileIcons from "../utils/profileIcons/profileIcons";
@@ -33,15 +40,15 @@ const GameDetails = ({ route, navigation }) => {
       if (isJoined) {
         const gamerDoc = await getDoc(gamerRef);
         const gamerData = gamerDoc.data();
-        const currentJoinedGames = gamerData.joined_games || []; 
+        const currentJoinedGames = gamerData.joined_games || [];
         await updateDoc(gamerRef, {
-          joined_games: currentJoinedGames.filter((id) => id !== game.id), 
+          joined_games: currentJoinedGames.filter((id) => id !== game.id),
         });
         await updateDoc(gameRef, {
           participants: game.participants.filter((id) => id !== gamerId),
         });
 
-        alert("You have left the event.");
+        alert("You have left the game.");
       } else {
         await updateDoc(gameRef, {
           participants: arrayUnion(gamerId),
@@ -50,12 +57,111 @@ const GameDetails = ({ route, navigation }) => {
           joined_games: arrayUnion(game.id),
         });
 
-        alert("You have joined the event");
+        alert("You have joined the game!");
       }
       setIsJoined(!isJoined);
     } catch (error) {
       console.error("Error updating participation:", error);
       alert("Something went wrong. Please try again.");
+    }
+  };
+
+  const handleCancelGame = async () => {
+    try {
+      // Get reference to the event document using game.event_id
+      const eventRef = doc(db, "events", game.event_id);
+      const eventDoc = await getDoc(eventRef);
+
+      if (eventDoc.exists()) {
+        const eventData = eventDoc.data();
+        console.log("eventData:", eventData);
+
+        // Check if time slots exist in the event data
+        if (!eventData.available_slots) {
+          console.error("No time_slots found in event data.");
+          alert("Error: Time slots not found in the event.");
+          return;
+        }
+
+        // Convert start and end times to integers (e.g., 19:00 → 19)
+        const startHour = new Date(game.start_time).getHours();
+        const endHour = new Date(game.end_time).getHours();
+
+        // Create an update object for Firestore
+        let updatedSlots = { ...eventData.available_slots }; 
+
+        for (let hour = startHour; hour < endHour; hour++) {
+          const slotKey = `${hour}:00-${hour + 1}:00`; 
+          if (updatedSlots[slotKey] !== undefined) {
+            updatedSlots[slotKey] += game.max_players; 
+          }
+        }
+
+        // Update the event document in Firestore
+        await updateDoc(eventRef, { available_slots: updatedSlots });
+
+        // Remove the game ID from the host's hosted_games array
+        const hostRef = doc(db, "gamers", game.host);
+        const hostDoc = await getDoc(hostRef);
+        const hostData = hostDoc.data();
+        console.log("Before Removal - Hosted Games:", hostData.hosted_games);
+
+        // Check if the game ID exists in the array
+        if (
+          hostData.hosted_games.includes(game.id) ||
+          hostData.hosted_games.includes(String(game.id))
+        ) {
+          console.log(
+            "Game ID exists in hosted_games. Proceeding with removal..."
+          );
+
+          await updateDoc(hostRef, {
+            hosted_games: arrayRemove(String(game.id)),
+          });
+
+          console.log("Game ID removed successfully.");
+        } else {
+          console.warn("Game ID not found in hosted_games. Nothing to remove.");
+        }
+
+        const updatedHostDoc = await getDoc(hostRef);
+        console.log(
+          "hosted_games (after):",
+          updatedHostDoc.data().hosted_games
+        );
+
+        // Remove game ID from each participant's joined_games array
+        if (game.participants && game.participants.length > 0) {
+          console.log("Removing game ID from participants' joined_games...");
+
+          const removeFromParticipants = game.participants.map(
+            async (participantId) => {
+              const participantRef = doc(db, "gamers", participantId);
+              await updateDoc(participantRef, {
+                joined_games: arrayRemove(String(game.id)),
+              });
+              console.log(
+                `Game ID removed from ${participantId}'s joined_games`
+              );
+            }
+          );
+          await Promise.all(removeFromParticipants);
+
+          console.log("game id:", game.id);
+          const gameRef = doc(db, "games", game.id);
+          await deleteDoc(gameRef);
+          console.log("Game document deleted successfully.");
+        }
+
+        alert("Game canceled successfully.");
+        navigation.goBack();
+      } else {
+        console.error("Event not found.");
+        alert("Error: Event not found.");
+      }
+    } catch (error) {
+      console.log("ERROR canceling event:", error);
+      alert("Failed to cancel event. Please try again.");
     }
   };
 
@@ -202,12 +308,28 @@ const GameDetails = ({ route, navigation }) => {
         />
       </MapView>
 
+      {/* Cancel Event Button */}
+      {game.host === gamerId && (
+        <TouchableOpacity
+          style={styles.cancelButton}
+          onPress={() =>
+            Alert.alert(
+              "Cancel Event",
+              "Are you sure you want to cancel this event? This action cannot be undone.",
+              [
+                { text: "No", style: "cancel" },
+                { text: "Yes", onPress: () => handleCancelGame() },
+              ]
+            )
+          }
+        >
+          <Text style={styles.cancelButtonText}>Cancel Game</Text>
+        </TouchableOpacity>
+      )}
+
       {/* Join Event Button */}
       <TouchableOpacity
-        style={[
-          styles.reserveButton,
-          { backgroundColor: "#FF006E" }, 
-        ]}
+        style={[styles.reserveButton, { backgroundColor: "#FF006E" }]}
         onPress={() =>
           Alert.alert(
             isJoined ? "Leave Event" : "Join Event",
@@ -222,7 +344,7 @@ const GameDetails = ({ route, navigation }) => {
         }
       >
         <Text style={styles.reserveButtonText}>
-          {isJoined ? "Leave Event" : "Join Event"}
+          {isJoined ? "Leave Game" : "Join Game"}
         </Text>
       </TouchableOpacity>
     </SafeAreaView>
@@ -355,6 +477,23 @@ const styles = StyleSheet.create({
     textAlign: "left",
     width: "100%",
     color: "#00B4D8",
+  },
+  cancelButton: {
+    position: "absolute",
+    bottom: 20,
+    alignSelf: "center",
+    backgroundColor: "#FFDCEC",
+    paddingVertical: 15,
+    paddingHorizontal: 30,
+    borderRadius: 20,
+    width: "95%",
+    marginBottom: 70,
+  },
+  cancelButtonText: {
+    color: "black",
+    fontSize: 20,
+    fontWeight: "bold",
+    textAlign: "center",
   },
 });
 
