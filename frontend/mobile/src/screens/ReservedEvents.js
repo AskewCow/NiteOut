@@ -23,6 +23,20 @@ const ReservedEvents = ({ navigation }) => {
   const [selectedDate, setSelectedDate] = useState(null);
   const [markedDates, setMarkedDates] = useState({});
 
+  const handleGamePress = async (gameId) => {
+    try {
+      const gameDoc = await getDoc(doc(db, "games", gameId));
+      if (gameDoc.exists()) {
+        const fullGameData = { id: gameDoc.id, ...gameDoc.data() };
+        navigation.navigate("GameDetails", { game: fullGameData });
+      } else {
+        alert("Game not found!");
+      }
+    } catch (error) {
+      console.error("Error fetching game details:", error);
+    }
+  };
+
   const fetchReservations = async () => {
     try {
       console.log("gamerId: ", gamerId);
@@ -43,9 +57,7 @@ const ReservedEvents = ({ navigation }) => {
         );
 
         const gameDocs = await Promise.all(gamePromises);
-        const newEvents = {};
-        const newMarkedDates = {};
-        console.log("games: ", gameDocs);
+        console.log("joined games: ", gameDocs);
 
         gameDocs.forEach((doc) => {
           if (doc.exists()) {
@@ -76,10 +88,52 @@ const ReservedEvents = ({ navigation }) => {
             };
           }
         });
-
-        setEventsByDate(newEvents);
-        setMarkedDates(newMarkedDates);
       }
+      
+      // Fetch hosted games
+      const gamesQuery = query(collection(db, 'games'), where('host', '==', gamerId));
+      const hostedGamesSnapshot = await getDocs(gamesQuery);
+      
+      console.log("hosted games: ", hostedGamesSnapshot.size);
+      
+      hostedGamesSnapshot.forEach(doc => {
+        const gameData = doc.data();
+        const { start_time, game_name, location } = gameData;
+        const dateObj = new Date(start_time);
+        const formattedDate = dateObj.toISOString().split('T')[0];
+        const time = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        
+        if (!newEvents[formattedDate]) {
+          newEvents[formattedDate] = [];
+        }
+        
+        const existingGameIndex = newEvents[formattedDate].findIndex(game => game.id === doc.id);
+        if (existingGameIndex >= 0) {
+          newEvents[formattedDate][existingGameIndex].isHosted = true;
+        } else {
+          newEvents[formattedDate].push({ 
+            id: doc.id,
+            game_name, 
+            start_time, 
+            location, 
+            time,
+            isHosted: true 
+          });
+        }
+        
+        if (!newMarkedDates[formattedDate]) {
+          newMarkedDates[formattedDate] = {
+            dots: [{ color: '#FFB6C1', key: 'hosted' }],
+            selected: selectedDate === formattedDate,
+            selectedColor: '#90E0EF'
+          };
+        } else if (!newMarkedDates[formattedDate].dots.some(dot => dot.key === 'hosted')) {
+          newMarkedDates[formattedDate].dots.push({ color: '#FFB6C1', key: 'hosted' });
+        }
+      });
+
+      setEventsByDate(newEvents);
+      setMarkedDates(newMarkedDates);
     } catch (error) {
       console.error("Error fetching hosted games:", error);
     } finally {
@@ -142,6 +196,7 @@ const ReservedEvents = ({ navigation }) => {
         </View>
         <Text style={styles.headerText}>My Games</Text>
       </View>
+      
       {/* Calendar View */}
       <Calendar
         current={new Date().toISOString().split("T")[0]}
@@ -151,6 +206,7 @@ const ReservedEvents = ({ navigation }) => {
         theme={{
           todayTextColor: "#00B4D8",
         }}
+        markingType={'multi-dot'}
         renderArrow={(direction) => (
           <Text style={{ fontSize: 20, color: "black" }}>
             {direction === "left" ? "←" : "→"}
@@ -172,6 +228,7 @@ const ReservedEvents = ({ navigation }) => {
               <View style={styles.eventDetails}>
                 <Text style={styles.eventTitle}>{event.game_name}</Text>
                 <Text style={styles.pubName}>{event.location}</Text>
+                {event.isHosted && <Text style={styles.hostBadge}>Host</Text>}
               </View>
               <Text style={styles.eventTime}>{event.time}</Text>
             </TouchableOpacity>
@@ -220,6 +277,9 @@ const styles = StyleSheet.create({
     marginVertical: 5,
     flexDirection: "row",
   },
+  hostedEventItem: {
+    backgroundColor: '#FFB6C1', // Light pink color for hosted games
+  },
   eventTitle: {
     fontSize: 16,
   },
@@ -249,6 +309,42 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: "#00B4D8",
     justifyContent: "flex-start",
+  },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  pubName: {
+    fontSize: 14,
+    color: '#555',
+  },
+  hostBadge: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#FF006E',
+    marginTop: 2,
+  },
+  legend: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  legendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginHorizontal: 10,
+  },
+  legendDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    marginRight: 5,
+  },
+  legendText: {
+    fontSize: 12,
+    color: '#333',
   },
 });
 
