@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import {
     View,
     Text,
@@ -7,9 +7,39 @@ import {
     TouchableWithoutFeedback,
     StyleSheet,
     Keyboard,
+    Alert,
 } from "react-native";
+import { sendPasswordResetEmail } from "firebase/auth";
+import { auth } from "../firebaseConfig"; // Adjust path based on your project
 
-const PublicanSignUpScreen = ({ navigation }) => {
+const PassResetScreen = ({ navigation }) => {
+    const [email, setEmail] = useState("");
+
+    const handlePasswordReset = async () => {
+        if (!email) {
+            Alert.alert("Oops", "Please enter your email.");
+            return;
+        }
+
+        try {
+            await sendPasswordResetEmail(auth, email.trim().toLowerCase());
+            Alert.alert(
+                "Email Sent",
+                "Check your inbox for a password reset link."
+            );
+            navigation.navigate("Login"); // or wherever you want
+        } catch (error) {
+            console.error(error);
+            let message = "Something went wrong. Try again.";
+            if (error.code === "auth/invalid-email")
+                message = "Invalid email address.";
+            else if (error.code === "auth/user-not-found")
+                message = "No account found with this email.";
+
+            Alert.alert("Error", message);
+        }
+    };
+
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
             <View style={styles.container}>
@@ -17,28 +47,27 @@ const PublicanSignUpScreen = ({ navigation }) => {
                 <View style={[styles.section, styles.backgroundLightBlue]} />
                 <View style={[styles.section, styles.backgroundWhite]} />
 
-                {/* Form Container */}
                 <View style={styles.formContainer}>
                     <Text style={styles.title}>Need a Reset?</Text>
                     <Text style={styles.subtitle}>Let's fix that</Text>
 
-                    {/* Email Input */}
                     <TextInput
                         style={styles.input}
                         placeholder="Email"
                         placeholderTextColor="#999"
                         keyboardType="email-address"
+                        value={email}
+                        onChangeText={setEmail}
+                        autoCapitalize="none"
                     />
 
-                    {/* Sign Up as Publican Button */}
                     <TouchableOpacity
                         style={styles.sendCodeButton}
-                        onPress={() => navigation.navigate("ResetVerification")}
+                        onPress={handlePasswordReset}
                     >
                         <Text style={styles.sendCodeText}>Send Code</Text>
                     </TouchableOpacity>
 
-                    {/* Sign In Link */}
                     <View style={styles.footerContainer}>
                         <Text style={styles.footerText}>
                             Already have an account?{" "}
@@ -140,4 +169,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default PublicanSignUpScreen;
+export default PassResetScreen;

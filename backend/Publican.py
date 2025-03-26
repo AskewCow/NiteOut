@@ -30,6 +30,13 @@ class Publican:
 
         self.events.append(event)
         return {"status": "success", "event": event}
+        
+    def delete_event(self, start_time, game_type):
+        for event in self.events:
+            if event["start_time"] == start_time and event["game_type"] == game_type:
+                self.events.remove(event)
+                return {"status": "success", "message": "Event deleted."}
+        return {"status": "error", "message": "Event not found."}
 
     def reserve_tables(self, num_tables):
         if self.tables >= num_tables:

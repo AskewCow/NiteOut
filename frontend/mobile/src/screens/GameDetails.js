@@ -7,6 +7,7 @@ import {
   Image,
   ActivityIndicator,
   Alert,
+  Modal,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import MapView, { Marker } from "react-native-maps";
@@ -23,6 +24,7 @@ import { useGamer } from "../contexts/GamerContext";
 import { SafeAreaView } from "react-native-safe-area-context";
 import profileIcons from "../utils/profileIcons/profileIcons";
 import { SvgXml } from "react-native-svg";
+import * as Clipboard from "expo-clipboard";
 
 const GameDetails = ({ route, navigation }) => {
   const { game } = route.params;
@@ -31,6 +33,11 @@ const GameDetails = ({ route, navigation }) => {
   const [loading, setLoading] = useState(true);
   const [hostProfileXml, setHostProfileXml] = useState(null);
   const [isJoined, setIsJoined] = useState(game.participants.includes(gamerId));
+
+  const [owner, setOwner] = useState(false);
+  const [showCode, setShowCode] = useState(false);
+  const [gameCode, setGameCode] = useState("");
+  const [joinedGame, setJoinedGame] = useState(false);
 
   const handleToggleJoin = async () => {
     try {
@@ -165,6 +172,7 @@ const GameDetails = ({ route, navigation }) => {
     }
   };
 
+
   const start_date = new Date(game.start_time);
   const end_date = new Date(game.end_time);
   const start_time = start_date.toLocaleTimeString([], {
@@ -175,7 +183,11 @@ const GameDetails = ({ route, navigation }) => {
     hour: "2-digit",
     minute: "2-digit",
   });
-  const availableSeats = game.max_players - game.participants.length;
+
+  const participants = Array.isArray(game.participants)
+    ? game.participants
+    : [];
+  const availableSeats = game.max_players - participants.length;
 
   const formatDate = (date) => {
     const day = date.getDate();
@@ -197,7 +209,6 @@ const GameDetails = ({ route, navigation }) => {
 
     return `${month} ${day}${getOrdinalSuffix(day)}`;
   };
-
   const formattedDate = formatDate(start_date);
 
   useEffect(() => {
@@ -211,6 +222,12 @@ const GameDetails = ({ route, navigation }) => {
           setHost(hostData);
           const hostProfileXml = profileIcons[hostData.profile];
           setHostProfileXml(hostProfileXml);
+          if (game.host === gamerId) {
+            setOwner(true);
+          }
+          if (game.participants.includes(gamerId)) {
+            setJoinedGame(true);
+          }
         } else {
           console.error("Host data not found");
         }
@@ -248,6 +265,33 @@ const GameDetails = ({ route, navigation }) => {
     }
   };
 
+  const handleShowCode = async () => {
+    try {
+      if (!game?.id) {
+        console.warn("Missing game.id");
+        return;
+      }
+      const gameRef = doc(db, "games", game.id);
+      const gameSnap = await getDoc(gameRef);
+      if (gameSnap.exists()) {
+        const data = gameSnap.data();
+        const code = data.game_code || "----";
+        console.log("Fetched gameCode:", code);
+        setGameCode(code);
+        setShowCode(true);
+      } else {
+        console.warn("Game not found in Firestore");
+      }
+    } catch (error) {
+      console.error("Error fetching game code:", error);
+    }
+  };
+
+  const copyToClipboard = () => {
+    Clipboard.setStringAsync(gameCode);
+    Alert.alert("Copied!", "Game code has been copied to clipboard.");
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
@@ -265,13 +309,12 @@ const GameDetails = ({ route, navigation }) => {
         <View style={styles.leftContainer}>
           {/* Pub Name */}
           <Text style={styles.pubName}>{game.location}</Text>
-
           {/* Game Organizer */}
           <Text style={styles.hostText}>Hosted by</Text>
           <View style={styles.organizerContainer}>
             <SvgXml xml={hostProfileXml} width={40} height={40} />
             <Text style={styles.organizerName}>
-              {host ? host.fullName : ""}
+              {host ? `${host.fullName}${owner ? " (You)" : ""}` : ""}
             </Text>
           </View>
           <Text style={styles.hostText}>Description</Text>
@@ -295,14 +338,17 @@ const GameDetails = ({ route, navigation }) => {
       <MapView
         style={styles.map}
         initialRegion={{
-          latitude: game.xcoord,
-          longitude: game.ycoord,
+          latitude: parseFloat(game.xcoord),
+          longitude: parseFloat(game.ycoord),
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
         }}
       >
         <Marker
-          coordinate={{ latitude: game.xcoord, longitude: game.ycoord }}
+          coordinate={{
+            latitude: parseFloat(game.xcoord),
+            longitude: parseFloat(game.ycoord),
+          }}
           title={game.location}
           description="Game Location"
         />
@@ -328,25 +374,134 @@ const GameDetails = ({ route, navigation }) => {
       )}
 
       {/* Join Event Button */}
-      <TouchableOpacity
-        style={[styles.reserveButton, { backgroundColor: "#FF006E" }]}
-        onPress={() =>
-          Alert.alert(
-            isJoined ? "Leave Event" : "Join Event",
-            isJoined
-              ? "Are you sure you want to leave this event?"
-              : "Are you sure you want to join this event?",
-            [
-              { text: "Cancel", style: "destructive" },
-              { text: isJoined ? "Leave" : "Join", onPress: handleToggleJoin },
-            ]
-          )
-        }
+      {!joinedGame && (
+        <TouchableOpacity
+          style={styles.reserveButton}
+          onPress={
+            owner
+              ? handleShowCode
+              : () =>
+                  Alert.alert(
+                    "Join Event",
+                    "Are you sure you want to join this event?",
+                    [
+                      { text: "Cancel", style: "destructive" },
+                      { text: "Join", onPress: () => handleReserveSeat() },
+                    ]
+                  )
+          }
+        >
+          <Text style={styles.reserveButtonText}>
+            {owner ? "Share Code" : "Join"}
+          </Text>
+        </TouchableOpacity>
+      )}
+
+      {joinedGame && (
+        <TouchableOpacity
+          style={styles.reserveButton}
+          onPress={() => alert("You have already joined this game.")}
+        >
+          <Text style={styles.reserveButtonText}>Joined</Text>
+        </TouchableOpacity>
+      )}
+
+      <Modal
+        visible={showCode}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowCode(false)}
       >
-        <Text style={styles.reserveButtonText}>
-          {isJoined ? "Leave Game" : "Join Game"}
-        </Text>
-      </TouchableOpacity>
+        <View
+          style={{
+            flex: 1,
+            backgroundColor: "rgba(0, 0, 0, 0.6)",
+            justifyContent: "center",
+            alignItems: "center",
+          }}
+        >
+          <View
+            style={{
+              backgroundColor: "#90E0EF",
+              padding: 30,
+              borderRadius: 20,
+              alignItems: "center",
+              width: "80%",
+            }}
+          >
+            <Text
+              style={{ fontSize: 22, fontWeight: "bold", marginBottom: 10 }}
+            >
+              Your Game Code
+            </Text>
+            <Text
+              style={{
+                fontSize: 40,
+                backgroundColor: "#ffff",
+                color: "#00B4D8",
+                paddingHorizontal: 25,
+                paddingVertical: 7,
+                borderRadius: 26,
+                marginBottom: 20,
+              }}
+            >
+              {gameCode}
+            </Text>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                width: "100%",
+              }}
+            >
+              <TouchableOpacity
+                style={{
+                  backgroundColor: "#FF006E",
+                  paddingVertical: 10,
+                  paddingHorizontal: 20,
+                  borderRadius: 15,
+                  flex: 1,
+                  marginRight: 10,
+                }}
+                onPress={copyToClipboard}
+              >
+                <Text
+                  style={{
+                    color: "white",
+                    fontWeight: "bold",
+                    fontSize: 16,
+                    textAlign: "center",
+                  }}
+                >
+                  Copy
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{
+                  backgroundColor: "#FF006E",
+                  paddingVertical: 10,
+                  paddingHorizontal: 20,
+                  borderRadius: 15,
+                  flex: 1,
+                  marginLeft: 10,
+                }}
+                onPress={() => setShowCode(false)}
+              >
+                <Text
+                  style={{
+                    color: "white",
+                    fontWeight: "bold",
+                    fontSize: 16,
+                    textAlign: "center",
+                  }}
+                >
+                  Close
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 };
@@ -451,8 +606,8 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     paddingHorizontal: 30,
     borderRadius: 20,
-    width: "95%",
-    marginBottom: 8,
+    width: "90%",
+    marginBottom: 20,
   },
   reserveButtonText: {
     color: "white",

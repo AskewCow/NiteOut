@@ -14,8 +14,14 @@ import {
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useGamer } from "../contexts/GamerContext";
 import { db } from "../firebaseConfig";
-import { collection, writeBatch, doc } from "firebase/firestore";
-import TimeRangeSlider from "../components/TimeRangeSlider"; // Import the new component
+import TimeRangeSlider from "../components/TimeRangeSlider";
+import {
+  collection,
+  writeBatch,
+  doc,
+  updateDoc,
+  arrayUnion,
+} from "firebase/firestore"; // Import the new component
 
 const ChosenEvent = () => {
   const [gameName, setGameName] = useState("");
@@ -35,7 +41,7 @@ const ChosenEvent = () => {
       const slotsArray = Object.entries(event.available_slots).map(
         ([timeString, capacity]) => ({
           time: timeString,
-          capacity: typeof capacity === "number" ? capacity : capacity.capacity, 
+          capacity: typeof capacity === "number" ? capacity : capacity.capacity,
         })
       );
 
@@ -52,6 +58,10 @@ const ChosenEvent = () => {
   timeSlots.forEach((slot, index) => {
     console.log(`Index ${index}: ${slot.time}`);
   });
+
+  const generateGameCode = () => {
+    return Math.floor(1000 + Math.random() * 9000).toString();
+  };
 
   const handleSubmit = async () => {
     console.log("Submitting game...");
@@ -76,7 +86,7 @@ const ChosenEvent = () => {
 
     const start_time = timeSlots[startTime].time.split("-")[0].trim();
     const end_time = timeSlots[endTime].time.split("-")[1].trim();
-    const formattedStartTime = `${dateString}T${start_time}:00`; 
+    const formattedStartTime = `${dateString}T${start_time}:00`;
     const formattedEndTime = `${dateString}T${end_time}:00`;
 
     console.log("formattedStartTime: ", formattedStartTime);
@@ -104,6 +114,7 @@ const ChosenEvent = () => {
       updatedSlots[key] = updatedSlots[key] - numPlayers;
     });
 
+    const game_code = generateGameCode();
     const gameData = {
       game_name: gameName,
       game_desc: gameDescription,
@@ -118,6 +129,7 @@ const ChosenEvent = () => {
       xcoord: event.pub_details.xcoord,
       ycoord: event.pub_details.ycoord,
       event_id: event.id,
+      game_code,
     };
 
     try {
@@ -131,6 +143,11 @@ const ChosenEvent = () => {
       });
 
       await batch.commit();
+
+      const hostDocRef = doc(db, "gamers", gamerId);
+      await updateDoc(hostDocRef, {
+        hosted_games: arrayUnion(gameDocRef.id),
+      });
 
       Alert.alert("Success", "Game created successfully!");
       navigation.goBack();
@@ -181,7 +198,7 @@ const ChosenEvent = () => {
               style={styles.input}
               value={gameName}
               onChangeText={setGameName}
-              placeholder="Enter game name"
+              placeholder="Enter Game Name"
               placeholderTextColor={"#888"}
             />
 
@@ -190,7 +207,7 @@ const ChosenEvent = () => {
               style={[styles.input, styles.gameDescriptionInput]}
               value={gameDescription}
               onChangeText={setGameDescription}
-              placeholder="Enter game description"
+              placeholder="Enter Game Description"
               placeholderTextColor={"#888"}
               multiline
               maxLength={400}

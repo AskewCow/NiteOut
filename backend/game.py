@@ -1,5 +1,6 @@
 class Game:
-    def __init__(self, host, game_name, game_desc, game_type, start_time, end_time, expires, pub_id, location, xcoord, ycoord, max_players):
+    def __init__(self, host, game_name, game_desc, game_type, start_time, end_time, expires,
+                 pub_id, location, xcoord, ycoord, max_players, is_private=False, access_code=None):
         self.set_host(host)
         self.set_game_name(game_name)
         self.set_game_desc(game_desc)
@@ -12,6 +13,8 @@ class Game:
         self.set_xcoord(xcoord)
         self.set_ycoord(ycoord)
         self.set_max_players(max_players)
+        self.__is_private = is_private
+        self.__access_code = access_code
         self.__participants = []
 
     # Get functions
@@ -28,6 +31,8 @@ class Game:
     def get_ycoord(self): return self.__ycoord
     def get_max_players(self): return self.__max_players
     def get_participants(self): return self.__participants
+    def is_private(self): return self.__is_private
+    def get_access_code(self): return self.__access_code
 
     # Set functions
     def set_host(self, host): self.__host = host
@@ -42,9 +47,14 @@ class Game:
     def set_xcoord(self, xcoord): self.__xcoord = xcoord
     def set_ycoord(self, ycoord): self.__ycoord = ycoord
     def set_max_players(self, max_players): self.__max_players = max_players
+    def set_private(self, is_private): self.__is_private = is_private
+    def set_access_code(self, code): self.__access_code = code
 
     # Add participant
-    def add_participant(self, participant):
+    def add_participant(self, participant, code=None):
+        if self.__is_private and self.__access_code != code:
+            return "Access denied. Invalid access code."
+
         if len(self.__participants) < self.__max_players:
             self.__participants.append(participant)
             return f"{participant} has joined the game."
@@ -73,18 +83,24 @@ class Game:
             "ycoord": self.__ycoord,
             "expires": self.__expires,
             "max_players": self.__max_players,
-            "participants": self.__participants
+            "participants": self.__participants,
+            "is_private": self.__is_private,
+            "access_code": self.__access_code
         }
-        
 
 
 class SeatBasedGame(Game):
-    def __init__(self, host, game_name, game_desc, game_type, start_time, end_time, expires, pub_id, location, xcoord, ycoord, max_players):
-        super().__init__(host, game_name, game_desc, game_type, start_time, end_time, expires, pub_id, location, xcoord, ycoord, max_players)
+    def __init__(self, host, game_name, game_desc, game_type, start_time, end_time, expires,
+                 pub_id, location, xcoord, ycoord, max_players, is_private=False, access_code=None):
+        super().__init__(host, game_name, game_desc, game_type, start_time, end_time, expires,
+                         pub_id, location, xcoord, ycoord, max_players, is_private, access_code)
         self.__seats = {i + 1: None for i in range(max_players)}  # Initialize seats
 
     # Reserve a specific seat
-    def reserve_seat(self, participant, seat_number):
+    def reserve_seat(self, participant, seat_number, code=None):
+        if self.is_private() and self.get_access_code() != code:
+            return "Access denied. Invalid access code."
+
         if seat_number not in self.__seats:
             return "Invalid seat number."
         if self.__seats[seat_number] is not None:
@@ -111,13 +127,17 @@ class SeatBasedGame(Game):
 
 
 class TableBasedGame(Game):
-    def __init__(self, host, game_name, game_desc, game_type, start_time, end_time, expires, pub_id, location, xcoord, ycoord, max_players, tables):
-        super().__init__(host, game_name, game_desc, game_type, start_time, end_time, expires, pub_id, location, xcoord, ycoord, max_players)
+    def __init__(self, host, game_name, game_desc, game_type, start_time, end_time, expires,
+                 pub_id, location, xcoord, ycoord, max_players, tables, is_private=False, access_code=None):
+        super().__init__(host, game_name, game_desc, game_type, start_time, end_time, expires,
+                         pub_id, location, xcoord, ycoord, max_players, is_private, access_code)
         self.__tables = {table: [] for table in tables}  # Initialize tables
 
-
     # Reserve a spot at a specific table
-    def reserve_table_spot(self, participant, table_name):
+    def reserve_table_spot(self, participant, table_name, code=None):
+        if self.is_private() and self.get_access_code() != code:
+            return "Access denied. Invalid access code."
+
         if table_name not in self.__tables:
             return "Table not found."
         if len(self.__tables[table_name]) >= (self.get_max_players() // len(self.__tables)):
