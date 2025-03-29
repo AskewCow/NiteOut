@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
-import { useEffect } from "react";
 
 // Firebase Imports
 import { auth } from "../firebaseConfig";
@@ -19,7 +18,7 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 // AsyncStorage Import
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
-const LoginScreen = ({ navigation }) => {
+const PublicanLogin = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [emailError, setEmailError] = useState("");
@@ -34,48 +33,6 @@ const LoginScreen = ({ navigation }) => {
     // Cleanup the listener when the component unmounts or on focus change
     return unsubscribe;
   }, [navigation]);
-
-  const handleLogin = async () => {
-    setEmailError("");
-    setPasswordError("");
-
-    if (!email || !password) {
-      if (!email) setEmailError("*Email is required.");
-      if (!password) setPasswordError("*Password is required.");
-      return;
-    }
-
-    try {
-      const userCredential = await signInWithEmailAndPassword(
-        auth,
-        email.trim(),
-        password
-      );
-      const user = userCredential.user;
-
-      // Store the user's UID (gamerId) in AsyncStorage
-      await AsyncStorage.setItem("gamerId", user.uid);
-      console.log("Gamer ID stored successfully:", user.uid);
-
-      navigation.navigate("Drawer", { screen: "Home" });
-    } catch (error) {
-      console.error("Error during login:", error);
-
-      // Handling specific Firebase auth errors
-      if (error.code === "auth/user-not-found") {
-        setEmailError("No user found with this email.");
-      } else if (error.code === "auth/invalid-email") {
-        setEmailError("Invalid email format.");
-      } else if (error.code === "auth/wrong-password") {
-        setPasswordError("Incorrect password. Please try again.");
-      } else if (error.code === "auth/invalid-credential") {
-        setEmailError("Invalid email. Please try again.");
-        setPasswordError("Invalid password. Please try again.");
-      } else {
-        setEmailError(error.message); // Fallback for unexpected errors
-      }
-    }
-  };
 
   const handlePublicanLogin = async () => {
     setEmailError("");
@@ -94,18 +51,36 @@ const LoginScreen = ({ navigation }) => {
         password
       );
       const user = userCredential.user;
+      console.log("User object after login:", user);
 
       // Store the user's UID and role in AsyncStorage
-      await AsyncStorage.setItem("gamerId", user.uid);
-      await AsyncStorage.setItem("userRole", "publican");
+      await AsyncStorage.setItem("publicanId", user.uid);
+      await AsyncStorage.removeItem("gamerId");
+      await AsyncStorage.setItem("loggedInAs", "publican");
+
+      const storedPublicanId = await AsyncStorage.getItem("publicanId");
+      const loggedInAs = await AsyncStorage.getItem("loggedInAs");
+      console.log("Stored Publican ID:", storedPublicanId);
+      console.log("Logged In As:", loggedInAs);
+
+      // Check if the login is indeed as a publican
+      if (loggedInAs !== "publican" || !storedPublicanId) {
+        console.error("Login failed: Incorrect role or missing publican ID.");
+        Alert.alert("Login Error", "Something went wrong, please try again.");
+        return;
+      }
+
       console.log("Publican ID stored successfully:", user.uid);
 
       // Navigate to the publican dashboard or appropriate screen
-      navigation.navigate("Drawer", { screen: "PublicanDashboard" });
+      navigation.navigate("Drawer", { screen: "Home" });
+      console.log("Navigating to PublicanMainScreen");
     } catch (error) {
-      console.error("Error during publican login:", error);
-
-      // Handling specific Firebase auth errors
+      console.error(
+        "Error during publican login:",
+        error,
+        JSON.stringify(error)
+      );
       if (error.code === "auth/user-not-found") {
         setEmailError("No publican account found with this email.");
       } else if (error.code === "auth/invalid-email") {
@@ -116,7 +91,7 @@ const LoginScreen = ({ navigation }) => {
         setEmailError("Invalid email. Please try again.");
         setPasswordError("Invalid password. Please try again.");
       } else {
-        setEmailError(error.message); // Fallback for unexpected errors
+        setEmailError(error.message);
       }
     }
   };
@@ -184,7 +159,10 @@ const LoginScreen = ({ navigation }) => {
 
           {/* Login Buttons */}
           <View style={{ marginTop: 30, gap: 15 }}>
-            <TouchableOpacity style={styles.logInButton} onPress={handleLogin}>
+            <TouchableOpacity
+              style={styles.logInButton}
+              onPress={handlePublicanLogin}
+            >
               <Text style={styles.logInText}>Log in</Text>
             </TouchableOpacity>
           </View>
@@ -207,9 +185,9 @@ const LoginScreen = ({ navigation }) => {
 
             <TouchableOpacity
               style={styles.publicanButton}
-              onPress={() => navigation.navigate("PublicanLogin")}
+              onPress={() => navigation.navigate("LoginScreen")}
             >
-              <Text style={styles.logInText}>Log in as Publican</Text>
+              <Text style={styles.logInText}>Log in as Gamer</Text>
             </TouchableOpacity>
           </View>
 
@@ -359,4 +337,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default LoginScreen;
+export default PublicanLogin;

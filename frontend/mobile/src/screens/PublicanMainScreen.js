@@ -88,16 +88,22 @@ const PublicanMainScreen = ({ navigation }) => {
     }
   }, [currentLocation, pubs, userInfo]);
 
-  const handleProfilePress = (gamerId) => {
-    console.log("GamerId: ", gamerId);
-    if (gamerId) {
-      navigation.dispatch(DrawerActions.openDrawer());
-    } else {
-      alert("Please log in again.");
-      navigation.navigate("Login");
-      return;
-    }
-  };
+  useEffect(() => {
+    const checkPublican = async () => {
+      const loggedInAs = await AsyncStorage.getItem("loggedInAs");
+      const publicanId = await AsyncStorage.getItem("publicanId");
+      if (loggedInAs !== "publican" || !publicanId) {
+        console.warn("Publican validation failed, redirecting to login.");
+        return;
+      }
+
+      setGamerId(publicanId); // Update gamerId first
+      await fetchUserInfo(); // Fetch user info after setting gamerId
+      await fetchEvents(); // Fetch events after user info is properly loaded
+    };
+
+    checkPublican();
+  }, []);
 
   const handleDateSelect = (date) => {
     const newSelectedDate = date.dateString;
@@ -251,43 +257,38 @@ const PublicanMainScreen = ({ navigation }) => {
   };
 
   // Fetch User Info from Firestore
+  // Fetch User Info from Firestore
   const fetchUserInfo = async () => {
     setFetchingUser(true);
     try {
-      const gamerId = await AsyncStorage.getItem("gamerId");
-      console.log("Retrieved Gamer ID from AsyncStorage:", gamerId);
+      const loggedInAs = await AsyncStorage.getItem("loggedInAs");
+      const publicanId = await AsyncStorage.getItem("publicanId");
 
-      if (!gamerId) {
-        alert("Please log in again.");
-        navigation.navigate("Login");
-        return;
-      }
+      console.log("Retrieved Logged In As from AsyncStorage:", loggedInAs);
+      console.log("Retrieved Publican ID from AsyncStorage:", publicanId);
 
-      setGamerId(gamerId);
-      const userDoc = await getDoc(doc(db, "gamers", gamerId));
+      if (loggedInAs === "publican" && publicanId) {
+        setGamerId(publicanId);
+        const userDoc = await getDoc(doc(db, "publicans", publicanId));
+        if (userDoc.exists()) {
+          const userData = userDoc.data();
+          console.log("Publican Data Retrieved:", userData);
 
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        console.log("User Data Retrieved:", userData);
-
-        setUserInfo({
-          fullName: userData.fullName,
-          gamer_id: gamerId,
-        });
-        setFriends(userData.friends_list || []);
-
-        setGamerId(gamerId);
+          setUserInfo({
+            fullName: userData.pub_name,
+            publican_id: publicanId,
+          });
+        } else {
+          console.log("No publican document found with ID:", publicanId);
+          navigation.navigate("LoginScreen");
+        }
       } else {
-        console.log("No user document found with ID:", gamerId);
-        alert("User data not found. Please log in again.");
-        navigation.navigate("Login");
+        navigation.navigate("LoginScreen");
       }
     } catch (error) {
       console.error("Error fetching user data:", error);
       if (error.code === "unavailable") {
         alert("Network error. Please check your connection.");
-      } else {
-        alert("Failed to load user information.");
       }
     } finally {
       setFetchingUser(false);
@@ -352,8 +353,8 @@ const PublicanMainScreen = ({ navigation }) => {
       onPress={() => {
         if (isSearchActive) {
           setIsSearchActive(false);
-          setSearchQuery(""); // Clear search query
-          setFilteredResults([]); // Hide results
+          setSearchQuery("");
+          setFilteredResults([]);
         }
         Keyboard.dismiss();
       }}
@@ -366,7 +367,7 @@ const PublicanMainScreen = ({ navigation }) => {
           <View style={styles.container}>
             <View style={styles.header}>
               <View style={styles.userIconContainer}>
-                <TouchableOpacity onPress={handleProfilePress}>
+                <TouchableOpacity>
                   <SvgXml xml={logoXml} width={40} height={40} />
                 </TouchableOpacity>
 
@@ -438,9 +439,9 @@ const PublicanMainScreen = ({ navigation }) => {
                   <View style={styles.buttonContainer}>
                     <TouchableOpacity
                       style={styles.moreDetailsButton}
-                      onPress={() =>
-                        navigation.navigate("EventDetails", { event })
-                      }
+                      // onPress={() =>
+                      //   navigation.navigate("EventDetails", { event })
+                      // }
                     >
                       <Text style={styles.moreDetailsButtonText}>
                         More Details

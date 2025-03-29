@@ -72,7 +72,7 @@ const ProfileScreen = ({ route, navigation }) => {
             userIdToDisplay = gamerId;
           } else {
             Alert.alert("Error", "User data not found. Please log in again.");
-            navigation.navigate("Login");
+            navigation.navigate("LoginScreen");
             return;
           }
         }
@@ -89,7 +89,6 @@ const ProfileScreen = ({ route, navigation }) => {
         setEmailInput(userData.email || "");
       } catch (error) {
         console.error("Error fetching user data:", error);
-        Alert.alert("Error", "Failed to load user information.");
       } finally {
         setLoading(false);
       }
@@ -382,7 +381,7 @@ const ProfileScreen = ({ route, navigation }) => {
             {/* Log Out Button */}
             <TouchableOpacity
               style={styles.logoutButton}
-              onPress={() => navigation.navigate("Login")}
+              onPress={() => navigation.navigate("LoginScreen")}
             >
               <Text style={styles.logoutButtonText}>Log Out</Text>
             </TouchableOpacity>

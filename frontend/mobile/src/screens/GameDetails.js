@@ -95,12 +95,12 @@ const GameDetails = ({ route, navigation }) => {
         const endHour = new Date(game.end_time).getHours();
 
         // Create an update object for Firestore
-        let updatedSlots = { ...eventData.available_slots }; 
+        let updatedSlots = { ...eventData.available_slots };
 
         for (let hour = startHour; hour < endHour; hour++) {
-          const slotKey = `${hour}:00-${hour + 1}:00`; 
+          const slotKey = `${hour}:00-${hour + 1}:00`;
           if (updatedSlots[slotKey] !== undefined) {
-            updatedSlots[slotKey] += game.max_players; 
+            updatedSlots[slotKey] += game.max_players;
           }
         }
 
@@ -171,7 +171,6 @@ const GameDetails = ({ route, navigation }) => {
       alert("Failed to cancel event. Please try again.");
     }
   };
-
 
   const start_date = new Date(game.start_time);
   const end_date = new Date(game.end_time);
@@ -635,13 +634,13 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     position: "absolute",
-    bottom: 20,
+    bottom: 35,
     alignSelf: "center",
     backgroundColor: "#FFDCEC",
     paddingVertical: 15,
     paddingHorizontal: 30,
     borderRadius: 20,
-    width: "95%",
+    width: "90%",
     marginBottom: 70,
   },
   cancelButtonText: {
