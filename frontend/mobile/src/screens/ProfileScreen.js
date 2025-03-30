@@ -12,17 +12,8 @@ import {
   TextInput,
 } from "react-native";
 import { SvgXml } from "react-native-svg";
-import {
-  doc,
-  getDoc,
-  updateDoc,
-  collection,
-  getDocs,
-  query,
-  where,
-} from "firebase/firestore";
 import { DrawerActions } from "@react-navigation/native";
-import { db } from "../firebaseConfig";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import profileIcons from "../utils/profileIcons/profileIcons";
 import { logoXml } from "../utils/logo";
@@ -30,9 +21,12 @@ import { pinkEditIconXml } from "../utils/pinkEditIcon";
 import { editIconXml } from "../utils/editIcon";
 import { useGamer } from "../contexts/GamerContext";
 
+// API base URL
+const API_BASE_URL = "https://b3cc-185-134-146-68.ngrok-free.app";
+
 const ProfileScreen = ({ route, navigation }) => {
   const { gamerId: navigatedGamerId } = route.params || {};
-  const { gamerId: currentUserId } = useGamer();
+  const { gamerId: contextGamerId } = useGamer();
   const [userInfo, setUserInfo] = useState(null);
   const [isPublican, setIsPublican] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -40,55 +34,83 @@ const ProfileScreen = ({ route, navigation }) => {
   const [emailInput, setEmailInput] = useState("");
   const nameInputRef = useRef(null);
   const emailInputRef = useRef(null);
+  const [gamerId, setGamerId] = useState(null);
+  const [error, setError] = useState(null);
 
-  const [gamerId, setGamerId] = useState(navigatedGamerId || currentUserId);
-
+  // First, ensure we have a gamerId from somewhere
   useEffect(() => {
-    if (navigatedGamerId) {
-      setGamerId(navigatedGamerId || currentUserId);
-    }
-  }, [navigatedGamerId, currentUserId]);
-
-  useEffect(() => {
-    const fetchUserInfo = async () => {
+    const fetchGamerId = async () => {
       try {
-        let userData = {};
-        let userProfile = "01"; // Default profile
-        let userIdToDisplay = "";
+        // Try to get gamerId from route params, context, or AsyncStorage
+        let id = navigatedGamerId || contextGamerId;
 
-        const userRef = doc(db, "users", gamerId);
-        const userSnap = await getDoc(userRef);
-
-        if (userSnap.exists() && userSnap.data().publicanId) {
-          userData = userSnap.data();
-          userIdToDisplay = userSnap.data().publicanId;
-          setIsPublican(true);
-        } else {
-          const gamerRef = doc(db, "gamers", gamerId);
-          const gamerSnap = await getDoc(gamerRef);
-
-          if (gamerSnap.exists()) {
-            userData = gamerSnap.data();
-            userIdToDisplay = gamerId;
-          } else {
-            Alert.alert("Error", "User data not found. Please log in again.");
-            navigation.navigate("LoginScreen");
-            return;
-          }
+        if (!id) {
+          // If not available from route or context, try AsyncStorage
+          id = await AsyncStorage.getItem("gamerId");
         }
 
-        userProfile = userData.profile || "01";
+        if (id) {
+          console.log("Using gamerId:", id);
+          setGamerId(id);
+        } else {
+          setError("Gamer ID is required");
+          setLoading(false);
+          Alert.alert("Error", "Gamer ID is required");
+        }
+      } catch (error) {
+        console.error("Error fetching gamer ID:", error);
+        setError("Failed to retrieve Gamer ID");
+        setLoading(false);
+        Alert.alert("Error", "Failed to retrieve Gamer ID");
+      }
+    };
+
+    fetchGamerId();
+  }, [navigatedGamerId, contextGamerId]);
+
+  // Then fetch user info once we have a gamerId
+  useEffect(() => {
+    if (!gamerId) return;
+
+    const fetchUserInfo = async () => {
+      try {
+        console.log("Fetching profile for gamerId:", gamerId);
+        const response = await fetch(`${API_BASE_URL}/api/fetch_profile`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ gamerId }),
+        });
+
+        if (!response.ok) {
+          const errorData = await response.json();
+          throw new Error(errorData.error || "Failed to fetch user data");
+        }
+
+        const userData = await response.json();
+        console.log("Fetched user data:", userData);
+
+        const userProfile = userData.profile || "01";
+        setIsPublican(userData.isPublican || false);
         setUserInfo({
           ...userData,
-          userIdToDisplay,
+          userIdToDisplay: userData.userIdToDisplay || gamerId,
           profile: userProfile,
         });
         setNameInput(
-          isPublican ? userData.pub_name || "" : userData.fullName || ""
+          userData.isPublican
+            ? userData.pub_name || ""
+            : userData.fullName || ""
         );
         setEmailInput(userData.email || "");
       } catch (error) {
         console.error("Error fetching user data:", error);
+        setError(error.message || "Server error while fetching user data");
+        Alert.alert(
+          "Error",
+          error.message || "Server error while fetching user data"
+        );
       } finally {
         setLoading(false);
       }
@@ -108,45 +130,73 @@ const ProfileScreen = ({ route, navigation }) => {
 
   const checkIfEmailExists = async (email) => {
     try {
-      const usersRef = collection(db, "users");
-      const q = query(usersRef, where("email", "==", email));
-      const querySnapshot = await getDocs(q);
-      return !querySnapshot.empty;
+      const response = await fetch(`${API_BASE_URL}/api/check_email_exists`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ email }),
+      });
+      const data = await response.json();
+      return data.exists;
     } catch (error) {
-      console.error("Error checking email in Firestore:", error);
+      console.error("Error checking email:", error);
       return false;
     }
   };
 
   const checkIfPubNameExists = async (pubName) => {
     try {
-      const pubsRef = collection(db, "publican");
-      const q = query(pubsRef, where("pub_name", "==", pubName));
-      const querySnapshot = await getDocs(q);
-      return !querySnapshot.empty;
+      const response = await fetch(
+        `${API_BASE_URL}/api/check_pub_name_exists`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ pubName }),
+        }
+      );
+      const data = await response.json();
+      return data.exists;
     } catch (error) {
-      console.error("Error checking pub name in Firestore:", error);
+      console.error("Error checking pub name:", error);
       return false;
     }
   };
 
   const updateUserInfo = async (field, value) => {
+    if (!gamerId || !userInfo) {
+      Alert.alert("Error", "User information not available");
+      return;
+    }
+
     try {
-      const userRef = doc(db, "users", gamerId);
-      const targetRef = isPublican
-        ? doc(db, "publican", userInfo.userIdToDisplay)
-        : doc(db, "gamers", gamerId);
+      const response = await fetch(`${API_BASE_URL}/api/update_profile`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          gamerId,
+          field,
+          value,
+          isPublican,
+          userIdToDisplay: userInfo.userIdToDisplay,
+        }),
+      });
 
-      await Promise.all([
-        updateDoc(targetRef, { [field]: value }),
-        updateDoc(userRef, { [field]: value }),
-      ]);
+      const data = await response.json();
 
-      setUserInfo((prev) => ({ ...prev, [field]: value }));
-      Alert.alert(
-        "Success",
-        `${field === "email" ? "Email" : "Name"} updated successfully.`
-      );
+      if (response.ok) {
+        setUserInfo((prev) => ({ ...prev, [field]: value }));
+        Alert.alert(
+          "Success",
+          `${field === "email" ? "Email" : "Name"} updated successfully.`
+        );
+      } else {
+        Alert.alert("Error", data.error || "Failed to update info.");
+      }
     } catch (error) {
       console.error("Error updating info:", error);
       Alert.alert("Error", "Failed to update info.");
@@ -161,11 +211,27 @@ const ProfileScreen = ({ route, navigation }) => {
     );
   }
 
-  const userProfileXml = profileIcons[userInfo?.profile] || profileIcons["01"];
+  if (error || !userInfo) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>
+          {error || "Failed to load user data"}
+        </Text>
+        <TouchableOpacity
+          style={styles.logoutButton}
+          onPress={() => navigation.navigate("LoginScreen")}
+        >
+          <Text style={styles.logoutButtonText}>Go to Login</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
-  const createdAt = userInfo?.createdAt?.toDate();
-  const formattedDate = createdAt
-    ? createdAt.toLocaleDateString("en-US", {
+  const userProfileXml = profileIcons[userInfo.profile] || profileIcons["01"];
+
+  // Format the date string from ISO format
+  const formattedDate = userInfo.createdAt
+    ? new Date(userInfo.createdAt).toLocaleDateString("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",
@@ -370,7 +436,7 @@ const ProfileScreen = ({ route, navigation }) => {
               </Text>
               <TextInput
                 style={styles.input}
-                value={userInfo.userIdToDisplay}
+                value={userInfo.userIdToDisplay || gamerId}
                 editable={false}
               />
               <Text style={styles.createdAtText}>
@@ -522,6 +588,18 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 20,
+  },
+  errorText: {
+    fontSize: 16,
+    color: "#FF007A",
+    textAlign: "center",
+    marginBottom: 20,
   },
 });
 

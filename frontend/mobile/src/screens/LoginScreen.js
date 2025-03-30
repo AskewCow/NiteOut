@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -10,7 +10,6 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
-import { useEffect } from "react";
 
 // Firebase Imports
 import { auth } from "../firebaseConfig";
@@ -46,6 +45,7 @@ const LoginScreen = ({ navigation }) => {
     }
 
     try {
+      // Use Firebase for authentication
       const userCredential = await signInWithEmailAndPassword(
         auth,
         email.trim(),
@@ -55,13 +55,31 @@ const LoginScreen = ({ navigation }) => {
 
       // Store the user's UID (gamerId) in AsyncStorage
       await AsyncStorage.setItem("gamerId", user.uid);
-      console.log("Gamer ID stored successfully:", user.uid);
+      console.log("Gamer ID stored successfully via Firebase:", user.uid);
+
+      // Call backend API to store the gamer ID
+      const response = await fetch(
+        "https://b3cc-185-134-146-68.ngrok-free.app/api/store_gamer_id",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ gamerId: user.uid, email: email.trim() }),
+        }
+      );
+
+      const result = await response.json();
+      if (!response.ok) {
+        console.error("Error storing gamer ID on the server:", result.error);
+      } else {
+        console.log("Gamer ID stored on the server successfully");
+      }
 
       navigation.navigate("Drawer", { screen: "Home" });
     } catch (error) {
       console.error("Error during login:", error);
 
-      // Handling specific Firebase auth errors
       if (error.code === "auth/user-not-found") {
         setEmailError("No user found with this email.");
       } else if (error.code === "auth/invalid-email") {
@@ -72,7 +90,7 @@ const LoginScreen = ({ navigation }) => {
         setEmailError("Invalid email. Please try again.");
         setPasswordError("Invalid password. Please try again.");
       } else {
-        setEmailError(error.message); // Fallback for unexpected errors
+        setEmailError("An unexpected error occurred. Please try again.");
       }
     }
   };

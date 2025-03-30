@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
+"use client";
+
+import { useState, useEffect, useRef } from "react";
 import {
   View,
   StyleSheet,
@@ -12,31 +14,18 @@ import {
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
-import { DrawerActions } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SvgXml } from "react-native-svg";
-import moment from "moment";
 
 // Contexts
 import { useGamer } from "../contexts/GamerContext";
 
 // Components
 import GamesNearYou from "../components/GamesNearYou";
-import Friends from "../components/Friends";
 import LoadingAnimation from "../components/LoadingAnimation";
 import { logoXml } from "../utils/logo";
 import { expandIconXml } from "../utils/expandIcon";
-
-// Firebase Import
-import { db } from "../firebaseConfig";
-import {
-  collection,
-  query,
-  where,
-  doc,
-  getDoc,
-  getDocs,
-} from "firebase/firestore";
+import profileIcons from "../utils/profileIcons/profileIcons";
 
 const MainScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
@@ -47,7 +36,7 @@ const MainScreen = ({ navigation }) => {
   const [fetchingUser, setFetchingUser] = useState(false);
   const [pubs, setPubs] = useState(null);
   const [fetchingPubs, setFetchingPubs] = useState(false);
-  const [friends, setFriends] = useState(null);
+  const [friends, setFriends] = useState([]);
   const { gamerId, setGamerId } = useGamer();
   const [selectedTag, setSelectedTag] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
@@ -62,6 +51,7 @@ const MainScreen = ({ navigation }) => {
     fetchPubs();
     fetchUserInfo();
     fetchGames();
+    fetchFriends();
   }, []);
 
   useEffect(() => {
@@ -79,6 +69,12 @@ const MainScreen = ({ navigation }) => {
         latitudeDelta: 0.00922,
         longitudeDelta: 0.0421,
       });
+    } else {
+      console.log("Loading not complete yet:", {
+        currentLocation,
+        pubs,
+        userInfo,
+      });
     }
   }, [currentLocation, pubs, userInfo]);
 
@@ -86,113 +82,98 @@ const MainScreen = ({ navigation }) => {
   const getLocation = async () => {
     try {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === "granted") {
-        const location = await Location.getCurrentPositionAsync({});
-        setCurrentLocation(location.coords);
-      } else {
-        alert("Location permission denied!");
-      }
-    } catch (error) {
-      console.error(error);
-    }
-  };
-
-  // Fetch pub data from Firestore
-  const fetchPubs = async () => {
-    setFetchingPubs(true);
-    try {
-      const pubsCollect = await getDocs(collection(db, "publicans"));
-      const pubList = pubsCollect.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          pub_name: data.pub_name,
-          address: data.address,
-          xcoord: data.xcoord,
-          ycoord: data.ycoord,
-        };
-      });
-
-      if (pubList.length === 0) {
-        console.warn("No pubs in list.");
-      }
-
-      console.log("Fetched pubs: ", pubList);
-      setPubs(pubList);
-    } catch (error) {
-      console.log("Error fetching pubs: ", error);
-    } finally {
-      setFetchingPubs(false);
-    }
-  };
-
-  // Fetch games info from Firestore
-  const fetchGames = async () => {
-    try {
-      const now = moment().format("YYYY-MM-DDTHH:mm:ss");
-      const gamesRef = collection(db, "games");
-      const q = query(gamesRef, where("expires", ">", now));
-
-      const querySnapshot = await getDocs(q);
-      const gameList = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        game_name: doc.data().game_name,
-        location: doc.data().location,
-        xcoord: doc.data().xcoord,
-        ycoord: doc.data().ycoord,
-        start_time: doc.data().start_time,
-        end_time: doc.data().end_time,
-        expires: doc.data().expires,
-        max_players: doc.data().max_players,
-        participants: doc.data().participants,
-        host: doc.data().host,
-        game_desc: doc.data().game_desc,
-      }));
-
-      setGames(gameList);
-      console.log("Fetched games: ", gameList);
-    } catch (error) {
-      console.error("Error fetching games: ", error);
-    }
-  };
-
-  // Fetch User Info from Firestore
-  const fetchUserInfo = async () => {
-    setFetchingUser(true);
-    try {
-      const gamerId = await AsyncStorage.getItem("gamerId");
-      console.log("Retrieved Gamer ID from AsyncStorage:", gamerId);
-
-      if (!gamerId) {
-        navigation.navigate("LoginScreen");
+      if (status !== "granted") {
+        console.log("Location permission denied!");
         return;
       }
 
-      setGamerId(gamerId);
-      const userDoc = await getDoc(doc(db, "gamers", gamerId));
+      const location = await Location.getCurrentPositionAsync({});
+      setCurrentLocation({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+      console.log("Current Location: ", location.coords);
+    } catch (error) {
+      console.error("Error getting location:", error);
+    }
+  };
 
-      if (userDoc.exists()) {
-        const userData = userDoc.data();
-        console.log("User Data Retrieved:", userData);
+  // Fetch pub data from API
+  const fetchPubs = async () => {
+    try {
+      const response = await fetch(
+        "https://b3cc-185-134-146-68.ngrok-free.app/api/fetch_pubs"
+      );
+      const pubs = await response.json();
+      console.log("Fetched pubs data:", pubs);
+      setPubs(pubs);
+    } catch (error) {
+      console.error("Error fetching pubs:", error);
+    }
+  };
 
-        setUserInfo({
-          fullName: userData.fullName,
-          gamer_id: gamerId,
-        });
-        setFriends(userData.friends_list || []);
+  const fetchGames = async () => {
+    try {
+      const response = await fetch(
+        "https://b3cc-185-134-146-68.ngrok-free.app/api/fetch_games"
+      );
+      const games = await response.json();
+      console.log("Fetched games data:", games);
+      setGames(games);
+    } catch (error) {
+      console.error("Error fetching games:", error);
+    }
+  };
 
-        setGamerId(gamerId);
+  const fetchUserInfo = async () => {
+    try {
+      const gamerId = await AsyncStorage.getItem("gamerId");
+      console.log("Retrieved Gamer ID from AsyncStorage:", gamerId);
+      const response = await fetch(
+        "https://b3cc-185-134-146-68.ngrok-free.app/api/fetch_user_info",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ gamerId }),
+        }
+      );
+      const userInfo = await response.json();
+      console.log("Fetched user info:", userInfo);
+      setUserInfo(userInfo);
+
+      // Set friends after fetching user info
+      if (userInfo && userInfo.friends_list) {
+        setFriends(userInfo.friends_list);
+        console.log("Friends list set:", userInfo.friends_list);
       } else {
-        console.log("No user document found with ID:", gamerId);
-        navigation.navigate("LoginScreen");
+        setFriends([]);
+        console.log("No friends found");
       }
     } catch (error) {
-      console.error("Error fetching user data:", error);
-      if (error.code === "unavailable") {
-        alert("Network error. Please check your connection.");
-      }
-    } finally {
-      setFetchingUser(false);
+      console.error("Error fetching user info:", error);
+    }
+  };
+
+  const fetchFriends = async () => {
+    try {
+      const gamerId = await AsyncStorage.getItem("gamerId");
+      const response = await fetch(
+        "https://b3cc-185-134-146-68.ngrok-free.app/api/fetch_friends",
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ gamerId }),
+        }
+      );
+      const fetchedFriends = await response.json();
+      console.log("Fetched friends data:", fetchedFriends);
+      setFriends(fetchedFriends);
+    } catch (error) {
+      console.error("Error fetching friends:", error);
     }
   };
 
@@ -362,7 +343,45 @@ const MainScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.friendsAndGamesContainer}>
-          <Friends friends={friends} />
+          <View style={styles.friendsContainer}>
+            <Text style={styles.friendsTitle}>Your Friends</Text>
+            <ScrollView style={styles.friendsScrollView}>
+              {friends.length === 0 ? (
+                <Text style={styles.noFriendsText}>No friends added yet.</Text>
+              ) : (
+                friends.map((friend) => {
+                  // Check if profile exists before trying to use toString()
+                  const profileKey = friend.profile
+                    ? (typeof friend.profile === "string"
+                        ? friend.profile
+                        : friend.profile.toString()
+                      ).padStart(2, "0")
+                    : "01"; // Default to "01" if profile is undefined
+
+                  const userProfileXml =
+                    profileIcons[profileKey] ||
+                    (friend.profile
+                      ? profileIcons[Number.parseInt(friend.profile)]
+                      : null) ||
+                    profileIcons["01"];
+
+                  return (
+                    <View key={friend.gamerId} style={styles.friendItem}>
+                      <View style={styles.friendInfo}>
+                        <SvgXml xml={userProfileXml} width={30} height={30} />
+                        <Text style={styles.friendName}>{friend.fullName}</Text>
+                      </View>
+                      {friend.statusMessage && (
+                        <Text style={styles.statusMessage}>
+                          {friend.statusMessage}
+                        </Text>
+                      )}
+                    </View>
+                  );
+                })
+              )}
+            </ScrollView>
+          </View>
           <GamesNearYou gamesList={games} />
         </View>
       </SafeAreaView>
@@ -478,23 +497,23 @@ const styles = StyleSheet.create({
   },
   friendsContainer: {
     width: "45%",
-    height: "45%",
     backgroundColor: "#90E0EF",
     borderRadius: 10,
     padding: 10,
-    marginTop: 100,
     marginLeft: 10,
+    flex: 1, // This will make it expand to match the height
   },
   friendsTitle: {
     fontSize: 18,
     fontWeight: "bold",
-    marginBottom: 5,
+    marginBottom: 10,
     textAlign: "center",
   },
   friendItem: {
     padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
+    backgroundColor: "#ffffff",
+    borderRadius: 10,
+    marginBottom: 10,
   },
   friendName: {
     fontSize: 16,
@@ -508,7 +527,20 @@ const styles = StyleSheet.create({
     flex: 1,
     width: "100%",
     flexDirection: "row",
+    gap: 5,
     padding: 10,
+  },
+  friendsScrollView: {
+    flex: 1,
+  },
+  friendInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+  },
+  statusMessage: {
+    fontSize: 12,
+    color: "gray",
   },
 });
 
