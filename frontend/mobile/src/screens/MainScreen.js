@@ -1,4 +1,5 @@
 "use client";
+import { NGROK_URL } from "../../environment";
 
 import { useState, useEffect, useRef } from "react";
 import {
@@ -93,6 +94,7 @@ const MainScreen = ({ navigation }) => {
         longitude: location.coords.longitude,
       });
       console.log("Current Location: ", location.coords);
+      console.log("NGROK_URL:", NGROK_URL);
     } catch (error) {
       console.error("Error getting location:", error);
     }
@@ -101,9 +103,7 @@ const MainScreen = ({ navigation }) => {
   // Fetch pub data from API
   const fetchPubs = async () => {
     try {
-      const response = await fetch(
-        "https://b3cc-185-134-146-68.ngrok-free.app/api/fetch_pubs"
-      );
+      const response = await fetch(`${NGROK_URL}/api/fetch_pubs`);
       const pubs = await response.json();
       console.log("Fetched pubs data:", pubs);
       setPubs(pubs);
@@ -114,9 +114,7 @@ const MainScreen = ({ navigation }) => {
 
   const fetchGames = async () => {
     try {
-      const response = await fetch(
-        "https://b3cc-185-134-146-68.ngrok-free.app/api/fetch_games"
-      );
+      const response = await fetch(`${NGROK_URL}/api/fetch_games`);
       const games = await response.json();
       console.log("Fetched games data:", games);
       setGames(games);
@@ -129,16 +127,13 @@ const MainScreen = ({ navigation }) => {
     try {
       const gamerId = await AsyncStorage.getItem("gamerId");
       console.log("Retrieved Gamer ID from AsyncStorage:", gamerId);
-      const response = await fetch(
-        "https://b3cc-185-134-146-68.ngrok-free.app/api/fetch_user_info",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ gamerId }),
-        }
-      );
+      const response = await fetch(`${NGROK_URL}/api/fetch_user_info`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ gamerId }),
+      });
       const userInfo = await response.json();
       console.log("Fetched user info:", userInfo);
       setUserInfo(userInfo);
@@ -159,16 +154,13 @@ const MainScreen = ({ navigation }) => {
   const fetchFriends = async () => {
     try {
       const gamerId = await AsyncStorage.getItem("gamerId");
-      const response = await fetch(
-        "https://b3cc-185-134-146-68.ngrok-free.app/api/fetch_friends",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ gamerId }),
-        }
-      );
+      const response = await fetch(`${NGROK_URL}/api/fetch_friends`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ gamerId }),
+      });
       const fetchedFriends = await response.json();
       console.log("Fetched friends data:", fetchedFriends);
       setFriends(fetchedFriends);

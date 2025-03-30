@@ -22,7 +22,7 @@ import { editIconXml } from "../utils/editIcon";
 import { useGamer } from "../contexts/GamerContext";
 
 // API base URL
-const API_BASE_URL = "https://b3cc-185-134-146-68.ngrok-free.app";
+import { NGROK_URL } from "../../environment";
 
 const ProfileScreen = ({ route, navigation }) => {
   const { gamerId: navigatedGamerId } = route.params || {};
@@ -75,7 +75,7 @@ const ProfileScreen = ({ route, navigation }) => {
     const fetchUserInfo = async () => {
       try {
         console.log("Fetching profile for gamerId:", gamerId);
-        const response = await fetch(`${API_BASE_URL}/api/fetch_profile`, {
+        const response = await fetch(`${NGROK_URL}/api/fetch_profile`, {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
@@ -130,7 +130,7 @@ const ProfileScreen = ({ route, navigation }) => {
 
   const checkIfEmailExists = async (email) => {
     try {
-      const response = await fetch(`${API_BASE_URL}/api/check_email_exists`, {
+      const response = await fetch(`${NGROK_URL}/api/check_email_exists`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -147,16 +147,13 @@ const ProfileScreen = ({ route, navigation }) => {
 
   const checkIfPubNameExists = async (pubName) => {
     try {
-      const response = await fetch(
-        `${API_BASE_URL}/api/check_pub_name_exists`,
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ pubName }),
-        }
-      );
+      const response = await fetch(`${NGROK_URL}/api/check_pub_name_exists`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ pubName }),
+      });
       const data = await response.json();
       return data.exists;
     } catch (error) {
@@ -172,7 +169,7 @@ const ProfileScreen = ({ route, navigation }) => {
     }
 
     try {
-      const response = await fetch(`${API_BASE_URL}/api/update_profile`, {
+      const response = await fetch(`${NGROK_URL}/api/update_profile`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
