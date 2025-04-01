@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from "react";
+import { NGROK_URL } from "../../environment";
 import {
   View,
   Text,
@@ -58,16 +59,13 @@ const LoginScreen = ({ navigation }) => {
       console.log("Gamer ID stored successfully via Firebase:", user.uid);
 
       // Call backend API to store the gamer ID
-      const response = await fetch(
-        "https://b3cc-185-134-146-68.ngrok-free.app/api/store_gamer_id",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({ gamerId: user.uid, email: email.trim() }),
-        }
-      );
+      const response = await fetch(`${NGROK_URL}/api/store_gamer_id`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ gamerId: user.uid, email: email.trim() }),
+      });
 
       const result = await response.json();
       if (!response.ok) {
