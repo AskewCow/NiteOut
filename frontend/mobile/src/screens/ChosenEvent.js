@@ -10,18 +10,13 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
   ScrollView,
+  Modal,
+  FlatList,
 } from "react-native";
+import { NGROK_URL } from "../../environment";
 import { useNavigation, useRoute } from "@react-navigation/native";
 import { useGamer } from "../contexts/GamerContext";
-import { db } from "../firebaseConfig";
 import TimeRangeSlider from "../components/TimeRangeSlider";
-import {
-  collection,
-  writeBatch,
-  doc,
-  updateDoc,
-  arrayUnion,
-} from "firebase/firestore"; // Import the new component
 
 const ChosenEvent = () => {
   const [gameName, setGameName] = useState("");
@@ -35,6 +30,18 @@ const ChosenEvent = () => {
   const { event } = route.params;
   const { gamerId } = useGamer();
   const [timeSlots, setTimeSlots] = useState([]);
+  const gameTypes = [
+    "Darts",
+    "Pool",
+    "Trivia",
+    "Card Games",
+    "Board Games",
+    "Video Games",
+    "Other",
+  ];
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedGameType, setSelectedGameType] = useState("Select game type");
+  
 
   useEffect(() => {
     if (event && event.available_slots) {
@@ -54,6 +61,18 @@ const ChosenEvent = () => {
     }
   }, [event]);
 
+  const renderItem = ({ item }) => (
+    <TouchableOpacity
+      style={styles.modalItem}
+      onPress={() => {
+        setSelectedGameType(item);
+        setModalVisible(false);
+      }}
+    >
+      <Text style={styles.modalItemText}>{item}</Text>
+    </TouchableOpacity>
+  );
+
   console.log("TimeSlots array mapping:");
   timeSlots.forEach((slot, index) => {
     console.log(`Index ${index}: ${slot.time}`);
@@ -65,12 +84,17 @@ const ChosenEvent = () => {
 
   const handleSubmit = async () => {
     console.log("Submitting game...");
-    console.log("startTime: ", startTime);
-    console.log("endTime: ", endTime);
+    console.log("Game Name: ", gameName);
+    console.log("Game Description: ", gameDescription);
+    console.log("pub_id: ", event.pub_details.pub_id);
+    console.log("Start Time: ", startTime);
+    console.log("End Time: ", endTime);
+    console.log("gamerId: ", gamerId);
+    console.log("Game Type: ", selectedGameType);
     if (
       !gameName ||
       !gameDescription ||
-      !gameType ||
+      selectedGameType === "Select game type" ||
       startTime > endTime ||
       !gamerId ||
       !event.pub_details.pub_id
@@ -113,12 +137,12 @@ const ChosenEvent = () => {
     selectedSlotKeys.forEach((key) => {
       updatedSlots[key] = updatedSlots[key] - numPlayers;
     });
+    console.log("updated slots after subtraction: ", updatedSlots);
 
     const game_code = generateGameCode();
     const gameData = {
       game_name: gameName,
       game_desc: gameDescription,
-      game_type: gameType,
       start_time: formattedStartTime,
       end_time: formattedEndTime,
       pub_id: event.pub_details.pub_id,
@@ -130,33 +154,33 @@ const ChosenEvent = () => {
       ycoord: event.pub_details.ycoord,
       event_id: event.id,
       game_code,
+      updated_slots: updatedSlots,
+      game_type: selectedGameType,
     };
 
     try {
-      const batch = writeBatch(db);
-      const gameDocRef = doc(collection(db, "games"));
-      batch.set(gameDocRef, gameData);
-
-      const eventDocRef = doc(db, "events", event.id);
-      batch.update(eventDocRef, {
-        available_slots: updatedSlots,
+      const response = await fetch(`${NGROK_URL}/api/create_game`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(gameData),
       });
 
-      await batch.commit();
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-      const hostDocRef = doc(db, "gamers", gamerId);
-      await updateDoc(hostDocRef, {
-        hosted_games: arrayUnion(gameDocRef.id),
-      });
-
+      const responseData = await response.json();
+      console.log("Game created on backend:", responseData);
       Alert.alert("Success", "Game created successfully!");
       navigation.goBack();
     } catch (error) {
+      console.error("Error creating game:", error);
       Alert.alert("Error", `Failed to create game: ${error.message}`);
     }
   };
 
-  // Helper function to get selected slot keys from the map
   const getSelectedSlotKeys = (start, end) => {
     const startTimeStr = timeSlots[start].time;
     const endTimeStr = timeSlots[end].time;
@@ -215,6 +239,38 @@ const ChosenEvent = () => {
             <Text style={styles.characterCount}>
               {gameDescription.length}/400
             </Text>
+
+            {/* Game Type Modal Trigger */}
+            <Text style={styles.label}>Game Type</Text>
+            <TouchableOpacity
+              style={styles.gameTypeButton}
+              onPress={() => setModalVisible(true)}
+            >
+              <Text style={styles.gameTypeText}>{selectedGameType}</Text>
+            </TouchableOpacity>
+            {/* Modal */}
+            <Modal
+              animationType="slide"
+              transparent={true}
+              visible={modalVisible}
+              onRequestClose={() => setModalVisible(false)}
+            >
+              <View style={styles.modalOverlay}>
+                <View style={styles.modalContent}>
+                  <FlatList // Flatlist added here.
+                    data={gameTypes}
+                    renderItem={renderItem}
+                    keyExtractor={(item) => item}
+                  />
+                  <TouchableOpacity
+                    style={styles.modalCloseButton}
+                    onPress={() => setModalVisible(false)}
+                  >
+                    <Text style={styles.modalCloseButtonText}>Close</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </Modal>
 
             {/* 🔄 NEW TIME RANGE SLIDER */}
             <Text style={styles.label}>Select Game Time</Text>
@@ -370,6 +426,46 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 18,
     fontWeight: "bold",
+  },
+  gameTypeButton: {
+    borderRadius: 13,
+    padding: 10,
+    backgroundColor: "#eef0f2",
+    marginBottom: 10,
+  },
+  gameTypeText: {
+    fontSize: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+  },
+  modalContent: {
+    backgroundColor: "white",
+    padding: 20,
+    borderRadius: 10,
+    width: "80%",
+  },
+  modalItem: {
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: "#eee",
+  },
+  modalItemText: {
+    fontSize: 16,
+  },
+  modalCloseButton: {
+    marginTop: 20,
+    backgroundColor: "#FF006E",
+    padding: 15,
+    borderRadius: 20,
+    alignItems: "center",
+  },
+  modalCloseButtonText: {
+    color: "white",
+    fontSize: 16,
   },
 });
 

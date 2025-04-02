@@ -136,6 +136,7 @@ const MainScreen = ({ navigation }) => {
       });
       const userInfo = await response.json();
       console.log("Fetched user info:", userInfo);
+      setGamerId(gamerId);
       setUserInfo(userInfo);
 
       // Set friends after fetching user info
