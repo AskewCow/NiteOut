@@ -65,6 +65,39 @@ Returns:
     data of all gamers and HTTP status 200 if successful
 """
 
+@app.route("/api/create_game", methods=["POST"])
+def create_game():
+    try:
+        game_data = request.get_json()
+
+        required_fields = [
+            "game_name", "start_time", "end_time", "pub_id", "host",
+            "location", "max_players", "event_id", "game_code",
+            "updated_slots", "game_type"
+        ]
+        if not all(field in game_data for field in required_fields):
+            return jsonify({"error": "Missing required fields."}), 400
+
+        batch = db_firestore.batch()
+
+        game_doc_ref = db_firestore.collection("games").document()
+        batch.set(game_doc_ref, game_data)
+
+        event_doc_ref = db_firestore.collection("events").document(game_data["event_id"])
+
+        batch.update(event_doc_ref, {"available_slots": game_data["updated_slots"]})
+
+        host_doc_ref = db_firestore.collection("gamers").document(game_data["host"])
+        batch.update(host_doc_ref, {"hosted_games": firestore.ArrayUnion([game_doc_ref.id])})
+
+        batch.commit()
+
+        return jsonify({"message": "Game created successfully!", "gameId": game_doc_ref.id}), 201 
+
+    except Exception as e:
+        print(f"Error creating game: {e}")
+        return jsonify({"error": str(e)}), 500
+
 #  To store Gamer UID
 @app.route("/api/store_gamer_id", methods=["POST"])
 def store_gamer_id():
