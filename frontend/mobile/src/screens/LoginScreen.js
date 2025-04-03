@@ -74,7 +74,7 @@ const LoginScreen = ({ navigation }) => {
         console.log("Gamer ID stored on the server successfully");
       }
 
-      navigation.navigate("Drawer", { screen: "Home" });
+      navigation.navigate("Drawer", { screen: "MainScreen" });
     } catch (error) {
       console.error("Error during login:", error);
 

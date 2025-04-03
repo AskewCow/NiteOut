@@ -41,27 +41,41 @@ const ProfileScreen = ({ route, navigation }) => {
   useEffect(() => {
     const fetchGamerId = async () => {
       try {
-        // Try to get gamerId from route params, context, or AsyncStorage
-        let id = navigatedGamerId || contextGamerId;
+        // Try to determine whether the user is a publican or a gamer
+        const loggedInAs = await AsyncStorage.getItem("loggedInAs");
 
-        if (!id) {
-          // If not available from route or context, try AsyncStorage
-          id = await AsyncStorage.getItem("gamerId");
-        }
-
-        if (id) {
-          console.log("Using gamerId:", id);
-          setGamerId(id);
+        if (loggedInAs === "publican") {
+          const publicanId = await AsyncStorage.getItem("publicanId");
+          if (publicanId) {
+            console.log("Using publicanId:", publicanId);
+            setGamerId(publicanId); // Treating publicanId as gamerId for profile fetching
+            setIsPublican(true);
+          } else {
+            setError("Publican ID is required");
+            setLoading(false);
+            Alert.alert("Error", "Publican ID is required");
+          }
         } else {
-          setError("Gamer ID is required");
-          setLoading(false);
-          Alert.alert("Error", "Gamer ID is required");
+          // Handle gamer login as usual
+          let id = navigatedGamerId || contextGamerId;
+          if (!id) {
+            id = await AsyncStorage.getItem("gamerId");
+          }
+          if (id) {
+            console.log("Using gamerId:", id);
+            setGamerId(id);
+            setIsPublican(false);
+          } else {
+            setError("Gamer ID is required");
+            setLoading(false);
+            Alert.alert("Error", "Gamer ID is required");
+          }
         }
       } catch (error) {
-        console.error("Error fetching gamer ID:", error);
-        setError("Failed to retrieve Gamer ID");
+        console.error("Error fetching ID:", error);
+        setError("Failed to retrieve ID");
         setLoading(false);
-        Alert.alert("Error", "Failed to retrieve Gamer ID");
+        Alert.alert("Error", "Failed to retrieve ID");
       }
     };
 
@@ -74,7 +88,10 @@ const ProfileScreen = ({ route, navigation }) => {
 
     const fetchUserInfo = async () => {
       try {
-        console.log("Fetching profile for gamerId:", gamerId);
+        console.log(
+          `Fetching profile for ${isPublican ? "publicanId" : "gamerId"}:`,
+          gamerId
+        );
         const response = await fetch(`${NGROK_URL}/api/fetch_profile`, {
           method: "POST",
           headers: {
@@ -429,7 +446,7 @@ const ProfileScreen = ({ route, navigation }) => {
             {/* ID + Created Date */}
             <View style={styles.inputContainer}>
               <Text style={styles.label}>
-                {isPublican ? "Publican ID" : "User ID"}
+                {isPublican ? "Publican ID" : "Gamer ID"}
               </Text>
               <TextInput
                 style={styles.input}

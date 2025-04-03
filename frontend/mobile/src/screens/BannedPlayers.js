@@ -15,20 +15,43 @@ import { db } from "../firebaseConfig";
 import { useGamer } from "../contexts/GamerContext";
 import { logoXml } from "../utils/logo";
 import { SvgXml } from "react-native-svg";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const BannedPlayers = () => {
   const [bannedPlayers, setBannedPlayers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const { gamerId } = useGamer();
+  const [publicanId, setPublicanId] = useState(null);
+
+  useEffect(() => {
+    const fetchPublicanId = async () => {
+      try {
+        const retrievedPublicanId = await AsyncStorage.getItem("publicanId");
+        if (retrievedPublicanId) {
+          setPublicanId(retrievedPublicanId);
+        } else {
+          console.warn("No publican ID found in AsyncStorage.");
+        }
+      } catch (error) {
+        console.error("Error fetching publican ID from AsyncStorage:", error);
+      }
+    };
+    fetchPublicanId();
+  }, []);
 
   useEffect(() => {
     const fetchBannedPlayers = async () => {
       try {
         setLoading(true);
 
+        if (!publicanId) {
+          console.warn("Publican ID is not set.");
+          setLoading(false);
+          return;
+        }
+
         // Fetch the bannedPlayers list from publicans collection
-        const publicanRef = doc(db, "publicans", gamerId);
+        const publicanRef = doc(db, "publicans", publicanId);
         const publicanSnap = await getDoc(publicanRef);
 
         if (!publicanSnap.exists()) {
@@ -91,14 +114,14 @@ const BannedPlayers = () => {
       }
     };
 
-    if (gamerId) {
+    if (publicanId) {
       fetchBannedPlayers();
     }
-  }, [gamerId]);
+  }, [publicanId]);
 
   const handleUnban = async (playerId) => {
     try {
-      const publicanRef = doc(db, "publicans", gamerId);
+      const publicanRef = doc(db, "publicans", publicanId);
       const publicanSnap = await getDoc(publicanRef);
 
       if (!publicanSnap.exists()) {

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -23,8 +23,10 @@ import {
 } from "firebase/firestore";
 import { db } from "../firebaseConfig";
 import { useGamer } from "../contexts/GamerContext";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 const BannedPlayersScreen = ({ navigation }) => {
+  const [publicanId, setPublicanId] = useState(null);
   const { gamerId } = useGamer();
   const [gamerIdInput, setGamerIdInput] = useState("");
   const [gamerDetails, setGamerDetails] = useState(null);
@@ -33,6 +35,23 @@ const BannedPlayersScreen = ({ navigation }) => {
     hosted: [],
     joined: [],
   });
+
+  useEffect(() => {
+    const fetchPublicanId = async () => {
+      try {
+        const retrievedPublicanId = await AsyncStorage.getItem("publicanId");
+        if (retrievedPublicanId) {
+          setPublicanId(retrievedPublicanId);
+          console.log("Publican ID set:", retrievedPublicanId);
+        } else {
+          console.warn("No publican ID found in AsyncStorage.");
+        }
+      } catch (error) {
+        console.error("Error fetching publican ID from AsyncStorage:", error);
+      }
+    };
+    fetchPublicanId();
+  }, []);
 
   const fetchGameDetails = async (gameIds) => {
     console.log("Fetching game details for IDs:", gameIds);
@@ -107,7 +126,13 @@ const BannedPlayersScreen = ({ navigation }) => {
   const banPlayer = async () => {
     try {
       setIsLoading(true);
-      const publicanRef = doc(db, "publicans", gamerId);
+      if (!publicanId) {
+        Alert.alert("Error", "Publican ID not found");
+        setIsLoading(false);
+        return;
+      }
+
+      const publicanRef = doc(db, "publicans", publicanId);
       const publicanSnap = await getDoc(publicanRef);
 
       if (!publicanSnap.exists()) {
@@ -135,7 +160,7 @@ const BannedPlayersScreen = ({ navigation }) => {
       setGamerDetails(null);
       setGameDetails({ hosted: [], joined: [] });
       setIsLoading(false);
-      navigation.navigate("BannedPlayers"); // assuming the route name
+      navigation.navigate("BannedPlayers");
     } catch (error) {
       console.error("Error banning player:", error);
       Alert.alert("Error", "Failed to ban player");

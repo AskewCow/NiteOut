@@ -73,7 +73,7 @@ const PublicanLogin = ({ navigation }) => {
       console.log("Publican ID stored successfully:", user.uid);
 
       // Navigate to the publican dashboard or appropriate screen
-      navigation.navigate("Drawer", { screen: "Home" });
+      navigation.navigate("Drawer", { screen: "MainScreen" });
       console.log("Navigating to PublicanMainScreen");
     } catch (error) {
       console.error(

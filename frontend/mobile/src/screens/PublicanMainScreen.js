@@ -47,7 +47,8 @@ const PublicanMainScreen = ({ navigation }) => {
   const [pubs, setPubs] = useState(null);
   const [fetchingPubs, setFetchingPubs] = useState(false);
   const [friends, setFriends] = useState(null);
-  const { gamerId, setGamerId } = useGamer();
+  const { setGamerId } = useGamer();
+  const [publicanId, setPublicanId] = useState(null);
   const [selectedTag, setSelectedTag] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredResults, setFilteredResults] = useState([]);
@@ -63,12 +64,17 @@ const PublicanMainScreen = ({ navigation }) => {
   const [filteredEvents, setFilteredEvents] = useState([]);
 
   useEffect(() => {
-    getLocation();
     fetchPubs();
     fetchUserInfo();
-    fetchGames();
     fetchEvents();
   }, []);
+
+  useEffect(() => {
+    if (publicanId) {
+      console.log("Publican ID set, fetching events...");
+      fetchEvents();
+    }
+  }, [publicanId]);
 
   useEffect(() => {
     if (games) {
@@ -77,6 +83,7 @@ const PublicanMainScreen = ({ navigation }) => {
   }, [searchQuery, pubs, games]);
 
   useEffect(() => {
+    console.log("Loading state before: ", loading);
     if (currentLocation && pubs && userInfo) {
       setLoading(false);
       setMapRegion({
@@ -85,21 +92,34 @@ const PublicanMainScreen = ({ navigation }) => {
         latitudeDelta: 0.00922,
         longitudeDelta: 0.0421,
       });
+      console.log("Loading state after: ", loading);
     }
   }, [currentLocation, pubs, userInfo]);
 
   useEffect(() => {
     const checkPublican = async () => {
-      const loggedInAs = await AsyncStorage.getItem("loggedInAs");
-      const publicanId = await AsyncStorage.getItem("publicanId");
-      if (loggedInAs !== "publican" || !publicanId) {
-        console.warn("Publican validation failed, redirecting to login.");
-        return;
-      }
+      try {
+        const loggedInAs = await AsyncStorage.getItem("loggedInAs");
+        const retrievedPublicanId = await AsyncStorage.getItem("publicanId");
 
-      setGamerId(publicanId); // Update gamerId first
-      await fetchUserInfo(); // Fetch user info after setting gamerId
-      await fetchEvents(); // Fetch events after user info is properly loaded
+        console.log("Logged in as:", loggedInAs);
+        console.log(
+          "Retrieved Publican ID from AsyncStorage:",
+          retrievedPublicanId
+        );
+
+        if (loggedInAs !== "publican" || !retrievedPublicanId) {
+          console.warn("Publican validation failed, redirecting to login.");
+          navigation.navigate("LoginScreen");
+          return;
+        }
+
+        setPublicanId(retrievedPublicanId);
+      } catch (error) {
+        console.error("Error checking publican: ", error);
+      } finally {
+        setLoading(false);
+      }
     };
 
     checkPublican();
@@ -120,21 +140,6 @@ const PublicanMainScreen = ({ navigation }) => {
 
     setSelectedDate(newSelectedDate);
     setMarkedDates(updatedMarkedDates);
-  };
-
-  // Get current location
-  const getLocation = async () => {
-    try {
-      const { status } = await Location.requestForegroundPermissionsAsync();
-      if (status === "granted") {
-        const location = await Location.getCurrentPositionAsync({});
-        setCurrentLocation(location.coords);
-      } else {
-        alert("Location permission denied!");
-      }
-    } catch (error) {
-      console.error(error);
-    }
   };
 
   // Fetch pub data from Firestore
@@ -167,40 +172,17 @@ const PublicanMainScreen = ({ navigation }) => {
   };
 
   // Fetch games info from Firestore
-  const fetchGames = async () => {
-    try {
-      const now = moment().format("YYYY-MM-DDTHH:mm:ss");
-      const gamesRef = collection(db, "games");
-      const q = query(gamesRef, where("expires", ">", now));
-
-      const querySnapshot = await getDocs(q);
-      const gameList = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        game_name: doc.data().game_name,
-        location: doc.data().location,
-        xcoord: doc.data().xcoord,
-        ycoord: doc.data().ycoord,
-        start_time: doc.data().start_time,
-        end_time: doc.data().end_time,
-        expires: doc.data().expires,
-        max_players: doc.data().max_players,
-        participants: doc.data().participants,
-        host: doc.data().host,
-        game_desc: doc.data().game_desc,
-      }));
-
-      setGames(gameList);
-      console.log("Fetched games: ", gameList);
-    } catch (error) {
-      console.error("Error fetching games: ", error);
-    }
-  };
 
   // Fetch events created by the logged-in publican from Firestore
   const fetchEvents = async () => {
     try {
+      if (!publicanId) {
+        console.log("Publican ID not set, unable to fetch events.");
+        return;
+      }
+
       const eventsRef = collection(db, "events");
-      const q = query(eventsRef, where("pub_id", "==", gamerId));
+      const q = query(eventsRef, where("pub_id", "==", publicanId));
       const querySnapshot = await getDocs(q);
       const eventList = querySnapshot.docs.map((doc) => ({
         id: doc.id,
@@ -212,6 +194,7 @@ const PublicanMainScreen = ({ navigation }) => {
         num_seats: doc.data().num_seats,
       }));
 
+      console.log("Fetched events: ", eventList);
       setEvents(eventList);
 
       const newEvents = {};
@@ -262,22 +245,31 @@ const PublicanMainScreen = ({ navigation }) => {
     setFetchingUser(true);
     try {
       const loggedInAs = await AsyncStorage.getItem("loggedInAs");
-      const publicanId = await AsyncStorage.getItem("publicanId");
+      let publicanId = await AsyncStorage.getItem("publicanId");
 
-      console.log("Retrieved Logged In As from AsyncStorage:", loggedInAs);
+      console.log("Logged in as:", loggedInAs);
       console.log("Retrieved Publican ID from AsyncStorage:", publicanId);
 
       if (loggedInAs === "publican" && publicanId) {
-        setGamerId(publicanId);
+        setPublicanId(publicanId);
+
+        // Double-check if publicanId is correctly retrieved
+        if (!publicanId) {
+          console.warn("Publican ID is not available.");
+          navigation.navigate("LoginScreen");
+          return;
+        }
+
         const userDoc = await getDoc(doc(db, "publicans", publicanId));
         if (userDoc.exists()) {
           const userData = userDoc.data();
           console.log("Publican Data Retrieved:", userData);
 
           setUserInfo({
-            fullName: userData.pub_name,
+            fullName: userData.pub_name || "Unknown",
             publican_id: publicanId,
           });
+          setLoading(false);
         } else {
           console.log("No publican document found with ID:", publicanId);
           navigation.navigate("LoginScreen");
@@ -294,7 +286,6 @@ const PublicanMainScreen = ({ navigation }) => {
       setFetchingUser(false);
     }
   };
-
   const handleSearch = () => {
     if (!searchQuery.trim()) {
       setFilteredResults([]);
@@ -372,7 +363,7 @@ const PublicanMainScreen = ({ navigation }) => {
                 </TouchableOpacity>
 
                 <Text style={{ fontSize: 24, color: "black" }}>
-                  {userInfo.fullName}
+                  {userInfo?.fullName || ""}
                 </Text>
               </View>
             </View>
@@ -443,7 +434,14 @@ const PublicanMainScreen = ({ navigation }) => {
                       //   navigation.navigate("EventDetails", { event })
                       // }
                     >
-                      <Text style={styles.moreDetailsButtonText}>
+                      <Text
+                        style={styles.moreDetailsButtonText}
+                        onPress={() =>
+                          navigation.navigate("PublicanDetails", {
+                            eventId: event.id,
+                          })
+                        }
+                      >
                         More Details
                       </Text>
                     </TouchableOpacity>

@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,15 +9,33 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { logoXml } from "../utils/logo";
 import { SvgXml } from "react-native-svg";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { db } from "../firebaseConfig";
 import { collection, addDoc, doc, updateDoc, getDoc } from "firebase/firestore";
-import { useGamer } from "../contexts/GamerContext";
 
 const CreateEventScreen = ({ navigation }) => {
-  const { gamerId } = useGamer();
+  const [publicanId, setPublicanId] = useState(null);
+
+  useEffect(() => {
+    const fetchPublicanId = async () => {
+      try {
+        const id = await AsyncStorage.getItem("publicanId");
+        if (id) {
+          setPublicanId(id);
+          console.log("Publican ID:", id);
+        } else {
+          console.warn("No publican ID found in AsyncStorage.");
+        }
+      } catch (error) {
+        console.error("Error fetching publican ID from AsyncStorage:", error);
+      }
+    };
+    fetchPublicanId();
+  }, []);
+
   const [gameType] = useState("Seat Based");
   const [numSeats, setNumSeats] = useState("1");
   const [showStartPicker, setShowStartPicker] = useState(false);
@@ -32,7 +50,6 @@ const CreateEventScreen = ({ navigation }) => {
   );
   const [loading, setLoading] = useState(false);
 
-  // Format date for display
   const formatDateTime = (date) => {
     return date.toLocaleString("en-US", {
       month: "short",
@@ -62,20 +79,32 @@ const CreateEventScreen = ({ navigation }) => {
 
     while (current < end) {
       let nextHour = new Date(current);
-      nextHour.setHours(current.getHours() + 1);
+      nextHour.setMinutes(0);
+      nextHour.setSeconds(0);
+      nextHour.setMilliseconds(0);
 
-      if (nextHour > end) break;
+      if (current.getMinutes() !== 0) {
+        nextHour.setHours(current.getHours() + 1);
+      } else {
+        nextHour.setHours(current.getHours());
+      }
+
+      if (nextHour > end) {
+        nextHour = end;
+      }
 
       const slotKey = `${current.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
+        hour12: false,
       })}-${nextHour.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
+        hour12: false,
       })}`;
-      slots[slotKey] = maxSeats;
 
-      current = nextHour;
+      slots[slotKey] = maxSeats;
+      current = new Date(nextHour.getTime() + 1); // Move to the next slot
     }
 
     return slots;
@@ -87,13 +116,17 @@ const CreateEventScreen = ({ navigation }) => {
       return;
     }
 
-    // Ensure start and end are on the same day
+    if (!publicanId) {
+      Alert.alert("Error", "Publican ID not found.");
+      return;
+    }
+
     if (startDateTime.toDateString() !== endDateTime.toDateString()) {
       Alert.alert("Error", "Start time and end time must be on the same day.");
       return;
     }
 
-    const publicanRef = doc(db, "publicans", gamerId);
+    const publicanRef = doc(db, "publicans", publicanId);
     const publicanSnap = await getDoc(publicanRef);
 
     if (!publicanSnap.exists()) {
@@ -103,14 +136,13 @@ const CreateEventScreen = ({ navigation }) => {
 
     const publicanData = publicanSnap.data();
     const pubDetails = {
-      pub_id: gamerId,
+      pub_id: publicanId,
       pub_name: publicanData.pub_name || "Unknown Pub",
       pub_address: publicanData.address || "Address not available",
       xcoord: publicanData.xcoord || "0",
       ycoord: publicanData.ycoord || "0",
     };
 
-    // Generate available slots
     const availableSlots = generateAvailableSlots(
       startDateTime,
       endDateTime,
@@ -122,21 +154,23 @@ const CreateEventScreen = ({ navigation }) => {
       start_time: startDateTime.toISOString(),
       end_time: endDateTime.toISOString(),
       expires: expireDateTime.toISOString(),
-      pub_id: gamerId,
+      pub_id: publicanId,
       pub_details: pubDetails,
       available_slots: availableSlots,
+      num_seats: parseInt(numSeats),
     };
-
-    if (gameType === "Seat Based") {
-      eventData.num_seats = parseInt(numSeats);
-    }
 
     setLoading(true);
 
     try {
       const eventRef = await addDoc(collection(db, "events"), eventData);
-      await updateDoc(doc(db, "publicans", gamerId), {
-        events: eventRef.id,
+      const eventId = eventRef.id;
+
+      const updatedEvents = publicanData.events
+        ? [...publicanData.events, eventId]
+        : [eventId];
+      await updateDoc(publicanRef, {
+        events: updatedEvents,
       });
 
       Alert.alert("Success", "Event created successfully!");

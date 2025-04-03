@@ -33,6 +33,7 @@ import BannedPlayers from "./src/screens/BannedPlayers";
 import BannedPlayersScreen from "./src/screens/BannedPlayersScreen";
 import JoinGame from "./src/screens/JoinGame";
 import PublicanLogin from "./src/screens/PublicanLogin";
+import PublicanDetails from "./src/screens/PublicanDetails";
 
 const screenHeight = Dimensions.get("window").height;
 const headerHeight = screenHeight * 0.12;
@@ -54,16 +55,15 @@ function DrawerNavigator() {
         const userSnap = await getDoc(userRef);
         if (userSnap.exists()) {
           console.log("User data:", userSnap.data());
-          const isUserPublican = !!userSnap.data().publicanId;
+          const userData = userSnap.data();
+          const isUserPublican =
+            userData.publicanId !== undefined && userData.publicanId !== null;
           setIsPublican(isUserPublican);
           console.log("Is Publican:", isUserPublican);
         } else {
           console.log("User document not found.");
           setIsPublican(false);
         }
-      } else {
-        console.log("User not logged in.");
-        setIsPublican(false);
       }
     });
 
@@ -83,10 +83,12 @@ function DrawerNavigator() {
         drawerActiveBackgroundColor: "#FF006E",
       }}
     >
-      <Drawer.Screen
-        name="Main"
-        component={() => (isPublican ? <PublicanMainScreen /> : <MainScreen />)}
-      />
+      {isPublican !== null && (
+        <Drawer.Screen
+          name="Main"
+          component={isPublican ? PublicanMainScreen : MainScreen}
+        />
+      )}
       <Drawer.Screen
         name="My Profile"
         component={ProfileScreen}
@@ -276,6 +278,14 @@ export default function App() {
                 headerShown: true,
                 gestureEnabled: false,
                 headerLeft: () => null,
+              }}
+            />
+            <Stack.Screen
+              name="PublicanDetails"
+              component={PublicanDetails}
+              options={{
+                headerShown: false,
+                gestureEnabled: false,
               }}
             />
           </Stack.Navigator>
