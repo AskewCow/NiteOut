@@ -318,6 +318,8 @@ const GameDetails = ({ route, navigation }) => {
           </View>
           <Text style={styles.hostText}>Description</Text>
           <Text style={styles.descriptionText}>{game.game_desc}</Text>
+          <Text style={styles.hostText}>Game Type</Text>
+          <Text style={styles.descriptionText}>{game.game_type}</Text>
         </View>
       </View>
 
