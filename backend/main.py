@@ -166,6 +166,7 @@ def fetch_games():
                 "participants": doc.to_dict().get("participants"),
                 "host": doc.to_dict().get("host"),
                 "game_desc": doc.to_dict().get("game_desc"),
+                "game_type": doc.to_dict().get("game_type"),
             }
             for doc in query.stream()
         ]
