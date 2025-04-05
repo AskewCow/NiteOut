@@ -1,5 +1,4 @@
 #!/bin/bash
-
 echo "Setting up the project (macOS/Linux)..."
 
 # Backend Setup
@@ -16,5 +15,5 @@ npm install
 
 echo "Setup complete! Run the following to start the project:"
 echo "1️⃣ Start backend: cd backend && source venv/bin/activate && python app.py"
-echo "2️⃣ Expose backend: ngrok http 5000"
+echo "2️⃣ Expose backend: ngrok http 8080"
 echo "3️⃣ Start frontend: cd frontend && expo start"
