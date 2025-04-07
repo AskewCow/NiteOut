@@ -79,32 +79,28 @@ const CreateEventScreen = ({ navigation }) => {
 
     while (current < end) {
       let nextHour = new Date(current);
-      nextHour.setMinutes(0);
-      nextHour.setSeconds(0);
-      nextHour.setMilliseconds(0);
+      nextHour.setMinutes(0, 0, 0); // Set minutes, seconds, and milliseconds to 0
 
       if (current.getMinutes() !== 0) {
         nextHour.setHours(current.getHours() + 1);
-      } else {
-        nextHour.setHours(current.getHours());
       }
 
       if (nextHour > end) {
         nextHour = end;
       }
 
-      const slotKey = `${current.toLocaleTimeString([], {
+      const slotKey = `${nextHour.toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
-      })}-${nextHour.toLocaleTimeString([], {
+      })}-${new Date(nextHour.getTime() + 3600000).toLocaleTimeString([], {
         hour: "2-digit",
         minute: "2-digit",
         hour12: false,
       })}`;
 
       slots[slotKey] = maxSeats;
-      current = new Date(nextHour.getTime() + 1); // Move to the next slot
+      current = new Date(nextHour.getTime() + 3600000); // Move to the next hour
     }
 
     return slots;
