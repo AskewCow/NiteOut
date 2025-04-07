@@ -24,7 +24,7 @@ import { useGamer } from "../contexts/GamerContext";
 
 // Components
 import GamesNearYou from "../components/GamesNearYou";
-import FriendsList from "../components/FriendsList";
+import FriendsList from "../components/Friends";
 import LoadingAnimation from "../components/LoadingAnimation";
 import { logoXml } from "../utils/logo";
 import { expandIconXml } from "../utils/expandIcon";
