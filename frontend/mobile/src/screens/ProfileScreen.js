@@ -28,7 +28,7 @@ const ProfileScreen = ({ route, navigation }) => {
   const { gamerId: navigatedGamerId } = route.params || {};
   const { gamerId: contextGamerId } = useGamer();
   const [userInfo, setUserInfo] = useState(null);
-  const [isPublican, setIsPublican] = useState(false);
+  const [isPublican, setIsPublican] = useState(null);
   const [loading, setLoading] = useState(true);
   const [nameInput, setNameInput] = useState("");
   const [emailInput, setEmailInput] = useState("");
@@ -114,6 +114,7 @@ const ProfileScreen = ({ route, navigation }) => {
           ...userData,
           userIdToDisplay: userData.userIdToDisplay || gamerId,
           profile: userProfile,
+          isPublican,
         });
         setNameInput(
           userData.isPublican
@@ -261,7 +262,7 @@ const ProfileScreen = ({ route, navigation }) => {
             <SvgXml xml={logoXml} width={40} height={40} />
           </TouchableOpacity>
           <Text style={styles.headerText}>
-            {isPublican ? "Publican Profile" : "Gamer Profile"}
+            {userInfo?.isPublican ? "Publican Profile" : "Gamer Profile"}
           </Text>
         </View>
 

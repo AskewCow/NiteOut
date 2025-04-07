@@ -339,6 +339,17 @@ const PublicanMainScreen = ({ navigation }) => {
     );
   }
 
+  const handleProfilePress = (gamerId) => {
+    console.log("GamerId: ", gamerId);
+    if (gamerId) {
+        navigation.dispatch(DrawerActions.openDrawer());
+    } else {
+        alert("Please log in again.");
+        navigation.navigate("Login");
+        return;
+    }
+};
+
   return (
     <TouchableWithoutFeedback
       onPress={() => {
@@ -358,7 +369,7 @@ const PublicanMainScreen = ({ navigation }) => {
           <View style={styles.container}>
             <View style={styles.header}>
               <View style={styles.userIconContainer}>
-                <TouchableOpacity>
+                <TouchableOpacity onPress={() => handleProfilePress(userInfo?.publican_id)}>
                   <SvgXml xml={logoXml} width={40} height={40} />
                 </TouchableOpacity>
 
@@ -470,7 +481,7 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    paddingBottom: 20, // Ensures content is not cut off at the bottom
+    paddingBottom: 20, 
   },
   container: {
     flex: 1,

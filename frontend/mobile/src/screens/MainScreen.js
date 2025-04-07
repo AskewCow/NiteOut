@@ -18,6 +18,7 @@ import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { SvgXml } from "react-native-svg";
+import { DrawerActions } from "@react-navigation/native";
 
 // Contexts
 import { useGamer } from "../contexts/GamerContext";
@@ -224,6 +225,18 @@ const MainScreen = ({ navigation }) => {
         );
     }
 
+    const handleProfilePress = (gamerId) => {
+        console.log("GamerId: ", gamerId);
+        if (gamerId) {
+            navigation.dispatch(DrawerActions.openDrawer());
+        } else {
+            alert("Please log in again.");
+            navigation.navigate("Login");
+            return;
+        }
+    };
+
+
     return (
         <TouchableWithoutFeedback
             onPress={() => {
@@ -239,7 +252,7 @@ const MainScreen = ({ navigation }) => {
                 <View style={styles.container}>
                     <View style={styles.header}>
                         <View>
-                            <TouchableOpacity>
+                            <TouchableOpacity onPress={() => handleProfilePress(gamerId)}>
                                 <SvgXml xml={logoXml} width={40} height={40} />
                             </TouchableOpacity>
                         </View>

@@ -15,6 +15,8 @@ import { SvgXml } from "react-native-svg";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { db } from "../firebaseConfig";
 import { collection, addDoc, doc, updateDoc, getDoc } from "firebase/firestore";
+import { DrawerActions } from "@react-navigation/native";
+import { useNavigation } from "@react-navigation/native";
 
 const CreateEventScreen = ({ navigation }) => {
   const [publicanId, setPublicanId] = useState(null);
@@ -179,11 +181,22 @@ const CreateEventScreen = ({ navigation }) => {
     }
   };
 
+  const handleProfilePress = (gamerId) => {
+      console.log("GamerId: ", gamerId);
+      if (gamerId) {
+          navigation.goBack();
+      } else {
+          alert("Please log in again.");
+          navigation.navigate("Login");
+          return;
+      }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <View>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => handleProfilePress(publicanId)}>
             <SvgXml xml={logoXml} width={40} height={40} />
           </TouchableOpacity>
         </View>

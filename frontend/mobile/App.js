@@ -107,9 +107,6 @@ function DrawerNavigator() {
 
       {!isPublican && <Drawer.Screen name="Host Game" component={HostGame} />}
       {isPublican && (
-        <Drawer.Screen name="Create Event" component={CreateEvent} />
-      )}
-      {isPublican && (
         <Drawer.Screen
           name="Banned Players"
           component={BannedPlayers}

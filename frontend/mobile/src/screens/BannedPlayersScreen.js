@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -24,6 +25,8 @@ import {
 import { db } from "../firebaseConfig";
 import { useGamer } from "../contexts/GamerContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import { useNavigation } from "@react-navigation/native";
+import { DrawerActions } from "@react-navigation/native";
 
 const BannedPlayersScreen = ({ navigation }) => {
   const [publicanId, setPublicanId] = useState(null);
@@ -188,11 +191,22 @@ const BannedPlayersScreen = ({ navigation }) => {
     </View>
   );
 
+  const handleProfilePress = (gamerId) => {
+      console.log("GamerId: ", gamerId);
+      if (gamerId) {
+          navigation.goBack();
+      } else {
+          alert("Please log in again.");
+          navigation.navigate("Login");
+          return;
+      }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <View>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => handleProfilePress(publicanId)}>
             <SvgXml xml={logoXml} width={40} height={40} />
           </TouchableOpacity>
         </View>
