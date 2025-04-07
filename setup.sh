@@ -17,5 +17,5 @@ echo "Setup complete! Run the following to start the project:"
 echo "1️⃣ Start backend: cd backend && source venv/bin/activate && python app.py"
 echo "2️⃣ Expose backend: ngrok http 8080"
 echo "3️⃣ Copy the generated Ngrok URL and update the frontend .env file: "API_URL=https://your-ngrok-url.ngrok.io""
-echo "4️⃣ Start frontend: cd frontend && expo start"
+echo "4️⃣ Start frontend: cd frontend && cd mobile && npm start"
 

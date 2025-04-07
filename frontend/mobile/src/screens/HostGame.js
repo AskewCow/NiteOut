@@ -14,12 +14,26 @@ import { SvgXml } from "react-native-svg";
 import { logoXml } from "../utils/logo";
 import { DrawerActions, useFocusEffect } from "@react-navigation/native";
 import { Calendar } from "react-native-calendars";
+import { useGamer } from "../contexts/GamerContext";
 
 const HostGame = ({ navigation }) => {
   const [eventsByDate, setEventsByDate] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(null);
   const [markedDates, setMarkedDates] = useState({});
+  const {gamerId} = useGamer();
+
+  const handleProfilePress = (gamerId) => {
+    console.log("GamerId: ", gamerId);
+    if (gamerId) {
+        navigation.dispatch(DrawerActions.openDrawer());
+    } else {
+        alert("Please log in again.");
+        navigation.navigate("Login");
+        return;
+    }
+};
+
 
   const fetchEvents = async () => {
     try {
@@ -112,7 +126,7 @@ const HostGame = ({ navigation }) => {
     <SafeAreaView style={styles.safeArea}>
       <View style={styles.header}>
         <View>
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => handleProfilePress(gamerId)}>
             <SvgXml xml={logoXml} width={40} height={40} />
           </TouchableOpacity>
         </View>
