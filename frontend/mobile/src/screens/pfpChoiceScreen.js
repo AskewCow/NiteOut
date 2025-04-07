@@ -12,6 +12,9 @@ import { doc, updateDoc } from "firebase/firestore";
 import { db } from "../firebaseConfig"; // Ensure Firebase is configured
 import profileIcons from "../utils/profileIcons/profileIcons";
 import AsyncStorage from "@react-native-async-storage/async-storage"; // Import AsyncStorage
+import { logoXml } from "../utils/logo"; 
+import { SafeAreaView } from "react-native-safe-area-context";
+
 
 const { width } = Dimensions.get("window");
 
@@ -64,51 +67,64 @@ const pfpChoiceScreen = ({ route, navigation }) => {
         }
     };
 
+    const handleProfilePress = () => {
+        navigation.goBack();
+      };
+
     return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Choose your Avatar</Text>
-
-            <View
-                style={[
-                    styles.avatarBox,
-                    { minHeight: avatarSize * 3 + boxPadding * 2 },
-                ]}
-            >
-                <View style={[styles.avatarsContainer, { gap: avatarSpacing }]}>
-                    {avatarsArray.map(([key, xml]) => (
-                        <TouchableOpacity
-                            key={key}
-                            style={[
-                                styles.avatarWrapper,
-                                selectedAvatar === key && styles.selectedAvatar,
-                                { margin: avatarSpacing / 2 },
-                            ]}
-                            onPress={() => setSelectedAvatar(key)}
-                        >
-                            <SvgXml xml={xml} width="80%" height="80%" />
-                        </TouchableOpacity>
-                    ))}
-                </View>
+        <View style={{ flex: 1, backgroundColor: "#f8f9fa" }}> 
+            <View style={styles.header}>
+                <TouchableOpacity onPress={handleProfilePress}>
+                    <SvgXml xml={logoXml} width={40} height={40} />
+                </TouchableOpacity>
             </View>
+            <SafeAreaView style={styles.safeArea}> 
+                <View style={styles.container}>
+                    <Text style={styles.title}>Choose your Avatar</Text>
 
-            <TouchableOpacity
-                style={[
-                    styles.startButton,
-                    selectedAvatar
-                        ? styles.startButtonActive
-                        : styles.startButtonInactive,
-                ]}
-                disabled={!selectedAvatar}
-                onPress={saveProfileToFirebase}
-            >
-                <Text style={styles.startButtonText}>Set Avatar</Text>
-            </TouchableOpacity>
+                    <View
+                        style={[
+                            styles.avatarBox,
+                            { minHeight: avatarSize * 3 + boxPadding * 2 },
+                        ]}
+                    >
+                        <View style={[styles.avatarsContainer, { gap: avatarSpacing }]}>
+                            {avatarsArray.map(([key, xml]) => (
+                                <TouchableOpacity
+                                    key={key}
+                                    style={[
+                                        styles.avatarWrapper,
+                                        selectedAvatar === key && styles.selectedAvatar,
+                                        { margin: avatarSpacing / 2 },
+                                    ]}
+                                    onPress={() => setSelectedAvatar(key)}
+                                >
+                                    <SvgXml xml={xml} width="80%" height="80%" />
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                    </View>
 
-            <Text style={styles.footerText}>
-                By signing in with an account, you agree to NiteOut's{" "}
-                <Text style={styles.linkText}>Terms of Service</Text> and{" "}
-                <Text style={styles.linkText}>Privacy Policy</Text>.
-            </Text>
+                    <TouchableOpacity
+                        style={[
+                            styles.startButton,
+                            selectedAvatar
+                                ? styles.startButtonActive
+                                : styles.startButtonInactive,
+                        ]}
+                        disabled={!selectedAvatar}
+                        onPress={saveProfileToFirebase}
+                    >
+                        <Text style={styles.startButtonText}>Set Avatar</Text>
+                    </TouchableOpacity>
+
+                    <Text style={styles.footerText}>
+                        By signing in with an account, you agree to NiteOut's{" "}
+                        <Text style={styles.linkText}>Terms of Service</Text> and{" "}
+                        <Text style={styles.linkText}>Privacy Policy</Text>.
+                    </Text>
+                </View>
+            </SafeAreaView>
         </View>
     );
 };
@@ -117,7 +133,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         alignItems: "center",
-        justifyContent: "center",
+        // justifyContent: "center",
         backgroundColor: "#fff",
         paddingHorizontal: 20,
     },
@@ -186,6 +202,19 @@ const styles = StyleSheet.create({
         color: "#FF007A",
         fontWeight: "bold",
     },
+    header: {
+        flexDirection: "row",
+        alignItems: "left",
+        backgroundColor: "#00B4D8",
+        paddingHorizontal: 16,
+        paddingTop: "12%",
+        height: "12%",
+        width: "100%",
+    },
+    safeArea: {
+        flex: 1,
+        backgroundColor: "#f8f9fa",
+    }
 });
 
 export default pfpChoiceScreen;

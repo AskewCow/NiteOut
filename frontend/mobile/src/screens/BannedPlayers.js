@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -18,6 +18,7 @@ import { SvgXml } from "react-native-svg";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { DrawerActions } from "@react-navigation/native";
 import { useNavigation } from "@react-navigation/native";
+import { useFocusEffect } from "@react-navigation/native";
 
 const BannedPlayers = () => {
   const [bannedPlayers, setBannedPlayers] = useState([]);
@@ -42,85 +43,166 @@ const BannedPlayers = () => {
     fetchPublicanId();
   }, []);
 
-  useEffect(() => {
-    const fetchBannedPlayers = async () => {
-      try {
-        setLoading(true);
-
-        if (!publicanId) {
-          console.warn("Publican ID is not set.");
-          setLoading(false);
-          return;
-        }
-
-        // Fetch the bannedPlayers list from publicans collection
-        const publicanRef = doc(db, "publicans", publicanId);
-        const publicanSnap = await getDoc(publicanRef);
-
-        if (!publicanSnap.exists()) {
-          console.warn("Publican document not found");
-          setLoading(false);
-          return;
-        }
-
-        const publicanData = publicanSnap.data();
-        const bannedIds = publicanData.bannedPlayers || [];
-        console.log("Banned Player IDs:", bannedIds);
-
-        if (bannedIds.length === 0) {
-          setBannedPlayers([]);
-          setLoading(false);
-          return;
-        }
-
-        // Fetch details of each banned player from "gamers" collection
-        const bannedUsersPromises = bannedIds.map(async (bannedId) => {
-          const gamerRef = doc(db, "gamers", bannedId);
-          const gamerSnap = await getDoc(gamerRef);
-          console.log(`Fetching gamerId: ${bannedId}`);
-
-          if (gamerSnap.exists()) {
-            const gamerData = gamerSnap.data();
-            console.log(`Fetched Gamer Data for ${bannedId}:`, gamerData);
-
+  useFocusEffect(
+    useCallback(() => {
+      const fetchBannedPlayers = async () => {
+        try {
+          setLoading(true);
+  
+          if (!publicanId) {
+            console.warn("Publican ID is not set.");
+            setLoading(false);
+            return;
+          }
+  
+          // Fetch the bannedPlayers list from publicans collection
+          const publicanRef = doc(db, "publicans", publicanId);
+          const publicanSnap = await getDoc(publicanRef);
+  
+          if (!publicanSnap.exists()) {
+            console.warn("Publican document not found");
+            setLoading(false);
+            return;
+          }
+  
+          const publicanData = publicanSnap.data();
+          const bannedIds = publicanData.bannedPlayers || [];
+          console.log("Banned Player IDs:", bannedIds);
+  
+          if (bannedIds.length === 0) {
+            setBannedPlayers([]);
+            setLoading(false);
+            return;
+          }
+  
+          // Fetch details of each banned player from "gamers" collection
+          const bannedUsersPromises = bannedIds.map(async (bannedId) => {
+            const gamerRef = doc(db, "gamers", bannedId);
+            const gamerSnap = await getDoc(gamerRef);
+            console.log(`Fetching gamerId: ${bannedId}`);
+  
+            if (gamerSnap.exists()) {
+              const gamerData = gamerSnap.data();
+              console.log(`Fetched Gamer Data for ${bannedId}:`, gamerData);
+  
+              return {
+                id: bannedId,
+                fullName: gamerData.fullName || "Unknown Player",
+                email: gamerData.email || "No email provided",
+                gamerId: gamerData.gamerId || "N/A",
+                profile: gamerData.profile || "No profile",
+                createdAt: gamerData.createdAt
+                  ? new Date(gamerData.createdAt.toDate()).toLocaleDateString()
+                  : "Unknown date",
+              };
+            }
+  
+            console.warn(`Gamer document not found for ID: ${bannedId}`);
             return {
               id: bannedId,
-              fullName: gamerData.fullName || "Unknown Player",
-              email: gamerData.email || "No email provided",
-              gamerId: gamerData.gamerId || "N/A",
-              profile: gamerData.profile || "No profile",
-              createdAt: gamerData.createdAt
-                ? new Date(gamerData.createdAt.toDate()).toLocaleDateString()
-                : "Unknown date",
+              fullName: "Unknown Player",
+              email: "N/A",
+              gamerId: "N/A",
+              profile: "N/A",
             };
-          }
-
-          console.warn(`Gamer document not found for ID: ${bannedId}`);
-          return {
-            id: bannedId,
-            fullName: "Unknown Player",
-            email: "N/A",
-            gamerId: "N/A",
-            profile: "N/A",
-          };
-        });
-
-        const bannedUsers = await Promise.all(bannedUsersPromises);
-        console.log("Fetched Banned Users:", bannedUsers);
-
-        setBannedPlayers(bannedUsers);
-      } catch (error) {
-        console.error("Error fetching banned players:", error);
-        setError("Failed to load banned players");
-      } finally {
-        setLoading(false);
+          });
+  
+          const bannedUsers = await Promise.all(bannedUsersPromises);
+          console.log("Fetched Banned Users:", bannedUsers);
+  
+          setBannedPlayers(bannedUsers);
+        } catch (error) {
+          console.error("Error fetching banned players:", error);
+          setError("Failed to load banned players");
+        } finally {
+          setLoading(false);
+        }
+      };
+      if (publicanId) {
+        fetchBannedPlayers();
       }
-    };
+    }, [publicanId])
+  );
 
-    if (publicanId) {
-      fetchBannedPlayers();
-    }
-  }, [publicanId]);
+  // useEffect(() => {
+  //   const fetchBannedPlayers = async () => {
+  //     try {
+  //       setLoading(true);
+
+  //       if (!publicanId) {
+  //         console.warn("Publican ID is not set.");
+  //         setLoading(false);
+  //         return;
+  //       }
+
+  //       // Fetch the bannedPlayers list from publicans collection
+  //       const publicanRef = doc(db, "publicans", publicanId);
+  //       const publicanSnap = await getDoc(publicanRef);
+
+  //       if (!publicanSnap.exists()) {
+  //         console.warn("Publican document not found");
+  //         setLoading(false);
+  //         return;
+  //       }
+
+  //       const publicanData = publicanSnap.data();
+  //       const bannedIds = publicanData.bannedPlayers || [];
+  //       console.log("Banned Player IDs:", bannedIds);
+
+  //       if (bannedIds.length === 0) {
+  //         setBannedPlayers([]);
+  //         setLoading(false);
+  //         return;
+  //       }
+
+  //       // Fetch details of each banned player from "gamers" collection
+  //       const bannedUsersPromises = bannedIds.map(async (bannedId) => {
+  //         const gamerRef = doc(db, "gamers", bannedId);
+  //         const gamerSnap = await getDoc(gamerRef);
+  //         console.log(`Fetching gamerId: ${bannedId}`);
+
+  //         if (gamerSnap.exists()) {
+  //           const gamerData = gamerSnap.data();
+  //           console.log(`Fetched Gamer Data for ${bannedId}:`, gamerData);
+
+  //           return {
+  //             id: bannedId,
+  //             fullName: gamerData.fullName || "Unknown Player",
+  //             email: gamerData.email || "No email provided",
+  //             gamerId: gamerData.gamerId || "N/A",
+  //             profile: gamerData.profile || "No profile",
+  //             createdAt: gamerData.createdAt
+  //               ? new Date(gamerData.createdAt.toDate()).toLocaleDateString()
+  //               : "Unknown date",
+  //           };
+  //         }
+
+  //         console.warn(`Gamer document not found for ID: ${bannedId}`);
+  //         return {
+  //           id: bannedId,
+  //           fullName: "Unknown Player",
+  //           email: "N/A",
+  //           gamerId: "N/A",
+  //           profile: "N/A",
+  //         };
+  //       });
+
+  //       const bannedUsers = await Promise.all(bannedUsersPromises);
+  //       console.log("Fetched Banned Users:", bannedUsers);
+
+  //       setBannedPlayers(bannedUsers);
+  //     } catch (error) {
+  //       console.error("Error fetching banned players:", error);
+  //       setError("Failed to load banned players");
+  //     } finally {
+  //       setLoading(false);
+  //     }
+  //   };
+
+  //   if (publicanId) {
+  //     fetchBannedPlayers();
+  //   }
+  // }, [publicanId]);
 
   const handleUnban = async (playerId) => {
     try {
@@ -192,7 +274,7 @@ const BannedPlayers = () => {
             <SvgXml xml={logoXml} width={40} height={40} />
           </TouchableOpacity>
         </View>
-        <Text style={styles.headerText}>Banned Player</Text>
+        <Text style={styles.headerText}>Banned players</Text>
       </View>
       <ScrollView
         style={styles.scrollView}

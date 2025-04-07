@@ -200,7 +200,7 @@ export default function App() {
               name="pfpChoice"
               component={pfpChoiceScreen}
               options={{
-                headerShown: true,
+                headerShown: false,
                 gestureEnabled: false,
               }}
             />
