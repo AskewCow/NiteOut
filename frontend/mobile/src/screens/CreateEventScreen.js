@@ -172,7 +172,7 @@ const CreateEventScreen = ({ navigation }) => {
       });
 
       Alert.alert("Success", "Event created successfully!");
-      navigation.navigate("PublicanMainScreen");
+      navigation.goBack();
     } catch (error) {
       console.error("Error creating event:", error);
       Alert.alert("Error", "Failed to create event. Please try again.");

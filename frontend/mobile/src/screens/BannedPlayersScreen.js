@@ -163,7 +163,7 @@ const BannedPlayersScreen = ({ navigation }) => {
       setGamerDetails(null);
       setGameDetails({ hosted: [], joined: [] });
       setIsLoading(false);
-      navigation.navigate("BannedPlayers");
+      navigation.goBack();
     } catch (error) {
       console.error("Error banning player:", error);
       Alert.alert("Error", "Failed to ban player");
