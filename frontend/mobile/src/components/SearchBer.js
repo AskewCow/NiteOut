@@ -9,8 +9,9 @@ import {
 } from "react-native";
 import { SvgXml } from "react-native-svg";
 import { closeIconXml } from "../utils/closeIcon";
+import { leafIconXml } from "../utils/leafIcon";
 
-const BerDescription = ({ visible, onClose }) => {
+const SearchBer = ({ visible, onClose }) => {
     return (
         <Modal
             animationType="fade"
@@ -28,16 +29,19 @@ const BerDescription = ({ visible, onClose }) => {
                     <SvgXml xml={closeIconXml} width={23} height={23} />
                 </TouchableOpacity>
 
-                <Text style={styles.modalTitle}>What is BER?</Text>
+                <View style={styles.iconTitleRow}>
+                    <SvgXml xml={leafIconXml} width={20} height={20} />
+                    <Text style={styles.modalTitle}> BER Rating </Text>
+                    <SvgXml xml={leafIconXml} width={20} height={20} />
+                </View>
 
                 {/* Description Content */}
                 <View style={styles.descriptionWrapper}>
                     <Text style={styles.descriptionText}>
-                        The BER (Building Energy Rating) measures the energy
-                        efficiency of a building, rated from A1 (best) to G
-                        (worst). While uploading a certificate is not required
-                        to create a publican account, pubs with a verified
-                        certificate will be promoted more.
+                        This pub has a green leaf icon because it has a low BER
+                        rating (A1–B2), indicating high energy efficiency. We
+                        highlight these pubs as more sustainable and
+                        environmentally friendly choices for your night out.
                     </Text>
                 </View>
             </View>
@@ -69,6 +73,12 @@ const styles = StyleSheet.create({
         textAlign: "center",
         marginBottom: 0,
     },
+    iconTitleRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "center",
+        gap: 6,
+    },
     descriptionWrapper: {
         paddingVertical: 20,
         paddingHorizontal: 15,
@@ -91,4 +101,4 @@ const styles = StyleSheet.create({
     },
 });
 
-export default BerDescription;
+export default SearchBer;

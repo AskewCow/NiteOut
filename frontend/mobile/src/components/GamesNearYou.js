@@ -6,10 +6,11 @@ import {
     StyleSheet,
     TouchableOpacity,
     ActivityIndicator,
+    Image,
 } from "react-native";
 import { useNavigation } from "@react-navigation/native";
 
-const GamesNearYou = ({ gamesList, isLoading }) => {
+const GamesNearYou = ({ gamesList, publicans, isLoading }) => {
     const navigation = useNavigation();
 
     if (isLoading) {
@@ -40,19 +41,48 @@ const GamesNearYou = ({ gamesList, isLoading }) => {
             <FlatList
                 data={gamesList}
                 keyExtractor={(item) => item.id}
-                renderItem={({ item }) => (
-                    <TouchableOpacity
-                        style={styles.card}
-                        onPress={() =>
-                            navigation.navigate("GameDetails", { game: item })
-                        }
-                    >
-                        <Text style={styles.gameName}>{item.game_name}</Text>
-                        <Text style={styles.gameLocation}>
-                            at {item.location}
-                        </Text>
-                    </TouchableOpacity>
-                )}
+                renderItem={({ item }) => {
+                    const matchedPublican = publicans?.find(
+                        (pub) => pub.id === item.pub_id
+                    );
+                    console.log(
+                        "🖼️ Image URL:",
+                        matchedPublican?.pub_image_url
+                    );
+
+                    return (
+                        <TouchableOpacity
+                            style={styles.card}
+                            onPress={() =>
+                                navigation.navigate("GameDetails", {
+                                    game: item,
+                                })
+                            }
+                        >
+                            <View style={styles.rowContainer}>
+                                {matchedPublican?.pub_image_url ? (
+                                    <Image
+                                        source={{
+                                            uri: matchedPublican.pub_image_url,
+                                        }}
+                                        style={styles.thumbnail}
+                                        resizeMode="cover"
+                                    />
+                                ) : (
+                                    <View style={styles.placeholder} />
+                                )}
+                                <View style={styles.textContainer}>
+                                    <Text style={styles.gameName}>
+                                        {item.game_name}
+                                    </Text>
+                                    <Text style={styles.gameLocation}>
+                                        at {item.location}
+                                    </Text>
+                                </View>
+                            </View>
+                        </TouchableOpacity>
+                    );
+                }}
                 showsVerticalScrollIndicator={false}
             />
         </View>
@@ -78,10 +108,32 @@ const styles = StyleSheet.create({
     },
     card: {
         backgroundColor: "white",
-        padding: 15,
+        padding: 10,
         marginBottom: 10,
         borderRadius: 10,
         elevation: 3,
+    },
+    rowContainer: {
+        flexDirection: "row",
+        alignItems: "center",
+    },
+    thumbnail: {
+        width: 60,
+        height: 60,
+        borderRadius: 6,
+        marginRight: 10,
+        resizeMode: "cover",
+        overflow: "hidden",
+    },
+    placeholder: {
+        width: 80,
+        height: 80,
+        backgroundColor: "#ccc",
+        borderRadius: 8,
+        marginRight: 10,
+    },
+    textContainer: {
+        flexShrink: 1,
     },
     gameName: {
         fontSize: 16,
