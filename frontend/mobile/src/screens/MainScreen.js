@@ -24,10 +24,12 @@ import { useGamer } from "../contexts/GamerContext";
 
 // Components
 import GamesNearYou from "../components/GamesNearYou";
-import FriendsList from "../components/FriendsList";
+import FriendsList from "../components/Friends";
 import LoadingAnimation from "../components/LoadingAnimation";
+import SearchBer from "../components/SearchBer";
 import { logoXml } from "../utils/logo";
 import { expandIconXml } from "../utils/expandIcon";
+import { leafIconXml } from "../utils/leafIcon";
 
 const MainScreen = ({ navigation }) => {
     const [loading, setLoading] = useState(true);
@@ -43,6 +45,7 @@ const MainScreen = ({ navigation }) => {
     const [searchQuery, setSearchQuery] = useState("");
     const [filteredResults, setFilteredResults] = useState([]);
     const searchBarRef = useRef(null);
+    const [showBerInfo, setShowBerInfo] = useState(false);
     const [isSearchActive, setIsSearchActive] = useState(false);
     const [mapRegion, setMapRegion] = useState(null);
     const mapRef = useRef(null);
@@ -105,8 +108,9 @@ const MainScreen = ({ navigation }) => {
     const fetchPubs = async () => {
         try {
             const response = await fetch(`${NGROK_URL}/api/fetch_pubs`);
-            const pubs = await response.json();
-            console.log("Fetched pubs data:", pubs);
+            let pubs = await response.json();
+
+            console.log("Fetched pubs data (with dummy BERs):", pubs);
             setPubs(pubs);
         } catch (error) {
             console.error("Error fetching pubs:", error);
@@ -171,6 +175,27 @@ const MainScreen = ({ navigation }) => {
         }
     };
 
+    const berPriority = {
+        A1: 1,
+        A2: 2,
+        A3: 3,
+        B1: 4,
+        B2: 5,
+        B3: 6,
+        C1: 7,
+        C2: 8,
+        C3: 9,
+        D1: 10,
+        D2: 11,
+        E1: 12,
+        E2: 13,
+        F: 14,
+        G: 15,
+        "N/A": 16,
+        null: 16,
+        undefined: 16,
+    };
+
     const handleSearch = () => {
         if (!searchQuery.trim()) {
             setFilteredResults([]);
@@ -181,7 +206,12 @@ const MainScreen = ({ navigation }) => {
             .filter((pub) =>
                 pub.pub_name.toLowerCase().includes(searchQuery.toLowerCase())
             )
-            .map((pub) => ({ ...pub, type: "pub" }));
+            .map((pub) => ({ ...pub, type: "pub" }))
+            .sort((a, b) => {
+                const aRating = berPriority[a.BER] ?? 16;
+                const bRating = berPriority[b.BER] ?? 16;
+                return aRating - bRating; // lower = better
+            });
 
         const filteredGames = (games || [])
             .filter((game) =>
@@ -204,7 +234,7 @@ const MainScreen = ({ navigation }) => {
                 3000
             );
         } else if (item.type === "game") {
-            alert(`Game: ${item.game_name}`);
+            navigation.navigate("GameDetails", { game: item });
         }
         setSearchQuery("");
         setFilteredResults([]);
@@ -229,8 +259,8 @@ const MainScreen = ({ navigation }) => {
             onPress={() => {
                 if (isSearchActive) {
                     setIsSearchActive(false);
-                    setSearchQuery(""); // Clear search query
-                    setFilteredResults([]); // Hide results
+                    setSearchQuery("");
+                    setFilteredResults([]);
                 }
                 Keyboard.dismiss();
             }}
@@ -266,12 +296,38 @@ const MainScreen = ({ navigation }) => {
                                         style={styles.searchResult}
                                         onPress={() => handleResultPress(item)}
                                     >
-                                        <Text style={styles.resultText}>
-                                            {item.type === "pub"
-                                                ? "🍺 "
-                                                : "🎲 "}
-                                            {item.pub_name || item.game_name}
-                                        </Text>
+                                        <View style={styles.resultRow}>
+                                            <Text style={styles.resultText}>
+                                                {item.type === "pub"
+                                                    ? "🍺 "
+                                                    : "🎲 "}
+                                                {item.pub_name ||
+                                                    item.game_name}
+                                            </Text>
+
+                                            {item.type === "pub" &&
+                                                [
+                                                    "A1",
+                                                    "A2",
+                                                    "A3",
+                                                    "B1",
+                                                    "B2",
+                                                ].includes(
+                                                    item.BER?.toUpperCase?.()
+                                                ) && (
+                                                    <TouchableOpacity
+                                                        onPress={() =>
+                                                            setShowBerInfo(true)
+                                                        }
+                                                    >
+                                                        <SvgXml
+                                                            xml={leafIconXml}
+                                                            width={20}
+                                                            height={20}
+                                                        />
+                                                    </TouchableOpacity>
+                                                )}
+                                        </View>
                                     </TouchableOpacity>
                                 ))}
                             </ScrollView>
@@ -322,8 +378,16 @@ const MainScreen = ({ navigation }) => {
 
                 <View style={styles.friendsAndGamesContainer}>
                     <FriendsList friends={friends} />
-                    <GamesNearYou gamesList={games} />
+                    <GamesNearYou
+                        gamesList={games}
+                        publicans={pubs}
+                        isLoading={loading}
+                    />
                 </View>
+                <SearchBer
+                    visible={showBerInfo}
+                    onClose={() => setShowBerInfo(false)}
+                />
             </SafeAreaView>
         </TouchableWithoutFeedback>
     );
@@ -380,6 +444,11 @@ const styles = StyleSheet.create({
         padding: 10,
         borderBottomWidth: 1,
         borderBottomColor: "#ddd",
+    },
+    resultRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
     },
     resultText: {
         fontSize: 16,

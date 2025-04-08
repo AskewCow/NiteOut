@@ -6,6 +6,8 @@ import {
     TouchableOpacity,
     ScrollView,
     StyleSheet,
+    TouchableWithoutFeedback,
+    Keyboard,
 } from "react-native";
 import MapView, { Marker } from "react-native-maps";
 import * as Location from "expo-location";
@@ -16,15 +18,21 @@ import { collection, getDocs } from "firebase/firestore";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import GamesList from "../components/GamesList";
-import { logoXml } from "../utils/logo";
 import LoadingAnimation from "../components/LoadingAnimation";
+import SearchBer from "../components/SearchBer";
+import { logoXml } from "../utils/logo";
+import { minimizeIconXml } from "../utils/minimizeIcon";
+import { leafIconXml } from "../utils/leafIcon";
 
 const MapScreen = ({ navigation }) => {
     const [currentLocation, setCurrentLocation] = useState(null);
     const [pubs, setPubs] = useState([]);
-    const [selectedTag, setSelectedTag] = useState("All");
     const [games, setGames] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [filteredResults, setFilteredResults] = useState([]);
+    const [showBerInfo, setShowBerInfo] = useState(false);
+    const [isSearchActive, setIsSearchActive] = useState(false);
 
     useEffect(() => {
         getLocation();
@@ -37,6 +45,10 @@ const MapScreen = ({ navigation }) => {
             setLoading(false);
         }
     }, [currentLocation, pubs, games]);
+
+    useEffect(() => {
+        handleSearch();
+    }, [searchQuery, pubs, games]);
 
     const getLocation = async () => {
         try {
@@ -79,6 +91,75 @@ const MapScreen = ({ navigation }) => {
         }
     };
 
+    const berPriority = {
+        A1: 1,
+        A2: 2,
+        A3: 3,
+        B1: 4,
+        B2: 5,
+        B3: 6,
+        C1: 7,
+        C2: 8,
+        C3: 9,
+        D1: 10,
+        D2: 11,
+        E1: 12,
+        E2: 13,
+        F: 14,
+        G: 15,
+        "N/A": 16,
+        null: 16,
+        undefined: 16,
+    };
+
+    const handleSearch = () => {
+        if (!searchQuery.trim()) {
+            setFilteredResults([]);
+            return;
+        }
+
+        const filteredPubs = (pubs || [])
+            .filter((pub) =>
+                pub.pub_name.toLowerCase().includes(searchQuery.toLowerCase())
+            )
+            .map((pub) => ({ ...pub, type: "pub" }))
+            .sort((a, b) => {
+                const aRating = berPriority[a.BER?.toUpperCase?.()] ?? 16;
+                const bRating = berPriority[b.BER?.toUpperCase?.()] ?? 16;
+                return aRating - bRating;
+            });
+
+        const filteredGames = (games || [])
+            .filter((game) =>
+                game.game_name.toLowerCase().includes(searchQuery.toLowerCase())
+            )
+            .map((game) => ({ ...game, type: "game" }));
+
+        setFilteredResults([...filteredPubs, ...filteredGames]);
+    };
+
+    const handleResultPress = (item) => {
+        if (item.type === "pub") {
+            // Zoom to pub
+            mapRef.current?.animateToRegion(
+                {
+                    latitude: parseFloat(item.xcoord),
+                    longitude: parseFloat(item.ycoord),
+                    latitudeDelta: 0.005,
+                    longitudeDelta: 0.005,
+                },
+                3000
+            );
+        } else if (item.type === "game") {
+            navigation.navigate("GameDetails", {
+                game: item,
+            });
+        }
+
+        setSearchQuery("");
+        setFilteredResults([]);
+    };
+
     if (loading) {
         return (
             <View style={styles.loadingContainer}>
@@ -103,39 +184,51 @@ const MapScreen = ({ navigation }) => {
                     style={styles.searchBar}
                     placeholder="Search pubs, games"
                     placeholderTextColor="#999"
+                    value={searchQuery}
+                    onChangeText={setSearchQuery}
+                    onFocus={() => setIsSearchActive(true)}
                 />
             </SafeAreaView>
+            {searchQuery.length > 0 && (
+                <View style={styles.searchResultsContainer}>
+                    <ScrollView
+                        style={styles.scrollView}
+                        nestedScrollEnabled={true}
+                    >
+                        {filteredResults.map((item) => (
+                            <TouchableOpacity
+                                key={item.id}
+                                style={styles.searchResult}
+                                onPress={() => handleResultPress(item)}
+                            >
+                                <View style={styles.resultRow}>
+                                    <Text style={styles.resultText}>
+                                        {item.type === "pub" ? "🍺 " : "🎲 "}
+                                        {item.pub_name || item.game_name}
+                                    </Text>
 
-            <View style={styles.tagContainer}>
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.tagScrollView}
-                >
-                    {[
-                        "All",
-                        "Scrabble",
-                        "Darts",
-                        "Billiards",
-                        "Trivia",
-                        "Cards",
-                        "Catan",
-                    ].map((tag, index) => (
-                        <TouchableOpacity
-                            key={index}
-                            onPress={() => setSelectedTag(tag)}
-                            style={[
-                                styles.tagButton,
-                                selectedTag === tag
-                                    ? styles.selectedTag
-                                    : styles.unselectedTag,
-                            ]}
-                        >
-                            <Text style={styles.tagText}>{tag}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-            </View>
+                                    {item.type === "pub" &&
+                                        ["A1", "A2", "A3", "B1", "B2"].includes(
+                                            item.BER?.toUpperCase?.()
+                                        ) && (
+                                            <TouchableOpacity
+                                                onPress={() =>
+                                                    setShowBerInfo(true)
+                                                }
+                                            >
+                                                <SvgXml
+                                                    xml={leafIconXml}
+                                                    width={20}
+                                                    height={20}
+                                                />
+                                            </TouchableOpacity>
+                                        )}
+                                </View>
+                            </TouchableOpacity>
+                        ))}
+                    </ScrollView>
+                </View>
+            )}
 
             {/* Map Section (fills remaining space) */}
             <View style={styles.mapContainer}>
@@ -176,6 +269,16 @@ const MapScreen = ({ navigation }) => {
                             pinColor="#90E0EF"
                         />
                     ))}
+
+                    <TouchableOpacity
+                        style={styles.minimizeIconContainer}
+                        onPress={() =>
+                            navigation.navigate("Drawer", { screen: "Main" })
+                        }
+                    >
+                        <SvgXml xml={minimizeIconXml} width={25} height={25} />
+                    </TouchableOpacity>
+
                     <View style={styles.gamesListContainer}>
                         <ScrollView
                             horizontal
@@ -187,6 +290,10 @@ const MapScreen = ({ navigation }) => {
                     </View>
                 </MapView>
             </View>
+            <SearchBer
+                visible={showBerInfo}
+                onClose={() => setShowBerInfo(false)}
+            />
         </View>
     );
 };
@@ -218,32 +325,40 @@ const styles = StyleSheet.create({
         marginLeft: 10,
         fontSize: 17,
     },
-    tagContainer: {
-        height: "5%",
-        justifyContent: "center",
-        marginBottom: 5, // Creates a small gap between the buttons and the map
+    searchResultsContainer: {
+        position: "absolute",
+        top: 60,
+        width: "90%",
+        alignSelf: "center",
+        backgroundColor: "white",
+        borderRadius: 8,
+        shadowColor: "#000",
+        shadowOpacity: 0.2,
+        shadowRadius: 5,
+        maxHeight: 200,
+        zIndex: 10,
     },
-    tagScrollView: {
-        flexGrow: 0,
-        paddingHorizontal: 7,
+    scrollView: {
+        maxHeight: 200,
     },
-    tagButton: {
-        paddingHorizontal: 15,
-        borderRadius: 10,
-        marginHorizontal: 3,
-        height: 16 * 1.2 + 8 * 2,
-        justifyContent: "center",
+    searchResult: {
+        padding: 10,
+        borderBottomWidth: 1,
+        borderBottomColor: "#ddd",
     },
-    tagText: {
+    resultRow: {
+        flexDirection: "row",
+        alignItems: "center",
+        justifyContent: "space-between",
+    },
+    resultText: {
         fontSize: 16,
-        lineHeight: 16 * 1.2,
-        color: "black",
     },
-    selectedTag: {
-        backgroundColor: "#FF006E",
-    },
-    unselectedTag: {
-        backgroundColor: "#FFDCEC",
+    minimizeIconContainer: {
+        position: "absolute",
+        top: 10,
+        right: 10,
+        zIndex: 10,
     },
     mapContainer: {
         flex: 1,
