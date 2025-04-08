@@ -169,6 +169,7 @@ def fetch_games():
                 "host": doc.to_dict().get("host"),
                 "game_desc": doc.to_dict().get("game_desc"),
                 "game_type": doc.to_dict().get("game_type"),
+                "pub_id": doc.to_dict().get("pub_id"),
             }
             for doc in query.stream()
         ]
