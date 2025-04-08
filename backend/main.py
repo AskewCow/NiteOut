@@ -139,6 +139,8 @@ def fetch_pubs():
                 "address": doc.to_dict().get("address"),
                 "xcoord": doc.to_dict().get("xcoord"),
                 "ycoord": doc.to_dict().get("ycoord"),
+                "BER": doc.to_dict().get("BER"),
+                "pub_image_url": doc.to_dict().get("pub_image_url"),
             }
             for doc in pubs_ref.stream()
         ]
