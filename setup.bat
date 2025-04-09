@@ -10,7 +10,7 @@ pip install -r requirements.txt
 cd ..
 
 REM Frontend Setup
-cd frontend
+cd frontend/mobile
 echo Installing frontend dependencies...
 npm install
 cd ..
