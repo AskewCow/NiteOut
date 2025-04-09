@@ -10,7 +10,7 @@ pip install -r requirements.txt
 
 # Frontend Setup
 echo "Installing frontend dependencies..."
-cd ../frontend || exit
+cd ../frontend/mobile || exit
 npm install
 
 echo "Setup complete! Run the following to start the project:"
