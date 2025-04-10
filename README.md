@@ -32,7 +32,7 @@ chmod +x setup.sh  # Only once
 
 Open the project directory in **Windows Powershell**
 
-```sh
+```
 .\setup.ps1
 ```
 
@@ -52,17 +52,19 @@ Sign up for [NGROK](https://dashboard.ngrok.com/get-started/your-authtoken). You
 ngrok config add-authtoken YOUR_TOKEN_HERE
 ```
 
+> **⚠️ Important:** NGROK must be added to System Path variables for this to work. Scroll down to Troubleshooting if you encounter issues!
+
 ---
 
 ## 🏃‍♀️‍➡️ Running the Project
 
-Once setup is complete, run the following commands, each in their own cmd prompt window:
+Once setup is complete, run the following commands, each in **their own** cmd prompt window:
 
 ### Backend (Flask)
 
 ```sh
 cd backend
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+source venv/bin/activate  # On Windows: ./venv/Scripts/Activate
 python main.py
 ```
 
@@ -97,32 +99,19 @@ npx expo start
 
 ## 🛠️ Troubleshooting
 
-### Virtual environment not activating?
+### Windows setup file not working
 
-Try running:
+You might encounter the error "running scripts is disabled on this system". To enable running scripts in PowerShell run the following:
 
-```sh
-source venv/bin/activate  # Mac/Linux
-venv\Scripts\activate     # Windows
+```
+Set-ExecutionPolicy -Scope CurrentUser -ExecutionPolicy Unrestricted -Force
 ```
 
-## Ngrok error?
+### Setup file stopped working?
 
--   Ensure your Flask server is running before starting Ngrok.
+-   After running the setup file once make sure to open a new powershell window for it to work
 
-## Expo not detecting your device?
-
--   Make sure your phone and computer are on the same Wi-Fi network.
-
-## Expo not building/Lan Issues?
-
-Try running:
-
-```sh
-npx expo start -tunnel
-```
-
-## No module named ...
+### No module named ...
 
 Make sure you have requirements installed by running this inside the backend folder:
 
@@ -130,7 +119,58 @@ Make sure you have requirements installed by running this inside the backend fol
 pip install -r requirements.txt  # or python -m pip install -r requirements.txt
 ```
 
-## Just testing?
+### Virtual environment not activating?
+
+Try running:
+
+```sh
+source venv/bin/activate  # Mac/Linux
+./venv/Scripts/Activate     # Windows
+```
+
+### Python/Pip/Ngrok not found even though it's installed?
+
+This is a very common issue on Windows. It is caused when the installation process doesn't update the system's PATH environment variable.
+For Python & Pip:
+
+-   If Python is installed using the default settings, it should be found in: C:\Users\YourUsername\AppData\Local\Programs\Python\PythonXX (where XX is the version)
+
+For NGROK:
+
+-   The NGROK.exe will be by default found in your downloads folder. You will need to create a folder somewhere safe that you will be able to access easily.
+-   After creating this folder you will need to move the NGROK.exe file from your downloads to this new folder. For example "C:\Program Files\ngrok" where ngrok is the name of the folder and inside is ngrok.exe
+
+Adding to System Path Variables:
+
+-   Open system variables by searching "environment variables" in the windows search and clicking the "Environment Variables..." button.
+-   Under System Variables, scroll down and find "Path" and then click edit. Click new and then paste corresponding path to the module you are pissing (one new entry per path):
+
+```
+C:\Users\YourUsername\AppData\Local\Programs\Python\PythonXX\  # When Python is not recognized
+C:\Users\YourUsername\AppData\Local\Programs\Python\PythonXX\Scripts\  # When pip is not recognized
+C:\Users\YourUsername\YourPathToNgrok\  # When NGROK is not recognized
+
+```
+
+-   Click "OK" to save
+
+### Ngrok error?
+
+-   Ensure your Flask server is running **before** starting Ngrok.
+
+### Expo not detecting your device?
+
+-   Make sure your phone and computer are on the same Wi-Fi network.
+
+### Expo not building/Lan Issues?
+
+Try running:
+
+```sh
+npx expo start -tunnel
+```
+
+### Just testing?
 
 Log into our app using these test credentials:
 
