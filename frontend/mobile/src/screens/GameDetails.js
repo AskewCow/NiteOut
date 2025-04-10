@@ -37,7 +37,6 @@ const GameDetails = ({ route, navigation }) => {
   const [owner, setOwner] = useState(false);
   const [showCode, setShowCode] = useState(false);
   const [gameCode, setGameCode] = useState("");
-  const [joinedGame, setJoinedGame] = useState(false);
 
   const handleToggleJoin = async () => {
     try {
@@ -54,7 +53,6 @@ const GameDetails = ({ route, navigation }) => {
         await updateDoc(gameRef, {
           participants: game.participants.filter((id) => id !== gamerId),
         });
-
         alert("You have left the game.");
       } else {
         await updateDoc(gameRef, {
@@ -67,11 +65,29 @@ const GameDetails = ({ route, navigation }) => {
         alert("You have joined the game!");
       }
       setIsJoined(!isJoined);
+      console.log("switched isJoined:", isJoined);
     } catch (error) {
       console.error("Error updating participation:", error);
       alert("Something went wrong. Please try again.");
     }
   };
+
+  useEffect(() => {
+    const fetchGameData = async () => {
+      const gameRef = doc(db, "games", game.id);
+      const gameSnap = await getDoc(gameRef);
+      
+      if (gameSnap.exists()) {
+        const gameData = gameSnap.data();
+        setIsJoined(gameData.participants.includes(gamerId));
+      }
+    };
+    console.log("is joined:", isJoined);
+  
+    // Fetch game data on mount and whenever game ID changes
+    fetchGameData();
+  }, [game.id, gamerId]);
+  
 
   const handleCancelGame = async () => {
     try {
@@ -225,7 +241,7 @@ const GameDetails = ({ route, navigation }) => {
             setOwner(true);
           }
           if (game.participants.includes(gamerId)) {
-            setJoinedGame(true);
+            setIsJoined(true);
           }
         } else {
           console.error("Host data not found");
@@ -247,22 +263,6 @@ const GameDetails = ({ route, navigation }) => {
       </View>
     );
   }
-
-  const handleReserveSeat = async () => {
-    try {
-      // Proceed with reservation
-      await updateDoc(doc(db, "games", game.id), {
-        participants: arrayUnion(gamerId),
-      });
-      await updateDoc(doc(db, "gamers", gamerId), {
-        joined_games: arrayUnion(game.id),
-      });
-      alert("Reservation confirmed!");
-    } catch (error) {
-      console.error("Error reserving seat:", error);
-      alert("Failed to reserve seat. Please try again.");
-    }
-  };
 
   const handleShowCode = async () => {
     try {
@@ -375,7 +375,7 @@ const GameDetails = ({ route, navigation }) => {
       )}
 
       {/* Join Event Button */}
-      {!joinedGame && (
+      {!isJoined && (
         <TouchableOpacity
           style={styles.reserveButton}
           onPress={
@@ -387,7 +387,7 @@ const GameDetails = ({ route, navigation }) => {
                     "Are you sure you want to join this event?",
                     [
                       { text: "Cancel", style: "destructive" },
-                      { text: "Join", onPress: () => handleReserveSeat() },
+                      { text: "Join", onPress: () => handleToggleJoin() },
                     ]
                   )
           }
@@ -398,14 +398,15 @@ const GameDetails = ({ route, navigation }) => {
         </TouchableOpacity>
       )}
 
-      {joinedGame && (
+      {isJoined && (
         <TouchableOpacity
           style={styles.reserveButton}
-          onPress={() => alert("You have already joined this game.")}
+          onPress={() => handleToggleJoin()}
         >
-          <Text style={styles.reserveButtonText}>Joined</Text>
+          <Text style={styles.reserveButtonText}>Leave Game</Text>
         </TouchableOpacity>
-      )}
+      )} 
+
 
       <Modal
         visible={showCode}
