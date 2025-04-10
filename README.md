@@ -55,13 +55,13 @@ Once setup is complete, run the following commands:
 ```sh
 cd backend
 source venv/bin/activate  # On Windows: venv\Scripts\activate
-python app.py
+python main.py
 ```
 ### Frontend (React Native)
 ```sh
 Copy
 Edit
-cd frontend
+cd frontend/mobile
 npm start
 ```
 **Scan the QR code in Expo Go to test on your phone.**
