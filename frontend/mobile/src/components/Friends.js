@@ -97,12 +97,9 @@ const FriendsList = ({ friends }) => {
 const styles = StyleSheet.create({
     friendsContainer: {
         flex: 1,
-        height: "100%",
-        width: "100%",
         padding: 10,
         backgroundColor: "#90E0EF",
         borderRadius: 10,
-        marginHorizontal: 5,
     },
     friendsTitle: {
         fontSize: 18,
