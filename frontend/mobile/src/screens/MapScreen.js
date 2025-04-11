@@ -6,6 +6,8 @@ import {
   Text,
   TextInput,
   TouchableOpacity,
+  TouchableWithoutFeedback,
+  Keyboard,
   ScrollView,
   StyleSheet,
 } from "react-native";
@@ -28,8 +30,10 @@ const MapScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [filteredResults, setFilteredResults] = useState([]);
+  const searchBarRef = useRef(null);
   const [showBerInfo, setShowBerInfo] = useState(false);
-  const [, setIsSearchActive] = useState(false);
+  const [isSearchActive, setIsSearchActive] = useState(false);
+  const [mapRegion, setMapRegion] = useState(null);
   const mapRef = useRef(null);
 
   useEffect(() => {
@@ -39,14 +43,27 @@ const MapScreen = ({ navigation }) => {
   }, []);
 
   useEffect(() => {
-    if (currentLocation && pubs.length > 0 && games.length > 0) {
-      setLoading(false);
+    if (games) {
+      handleSearch();
     }
-  }, [currentLocation, pubs, games]);
+  }, [searchQuery, pubs, games]);
 
   useEffect(() => {
-    handleSearch();
-  }, [searchQuery, pubs, games]);
+    if (currentLocation && pubs) {
+      setLoading(false);
+      setMapRegion({
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
+        latitudeDelta: 0.00922,
+        longitudeDelta: 0.0421,
+      });
+    } else {
+      console.log("Loading not complete yet:", {
+        currentLocation,
+        pubs,
+      });
+    }
+  }, [currentLocation, pubs]);
 
   const getLocation = async () => {
     try {
@@ -136,23 +153,19 @@ const MapScreen = ({ navigation }) => {
   };
 
   const handleResultPress = (item) => {
-    if (item.type === "pub") {
-      // Zoom to pub
-      mapRef.current?.animateToRegion(
+    if (item.type === "pub" && mapRef.current) {
+      mapRef.current.animateToRegion(
         {
-          latitude: parseFloat(item.xcoord),
-          longitude: parseFloat(item.ycoord),
+          latitude: item.xcoord,
+          longitude: item.ycoord,
           latitudeDelta: 0.005,
           longitudeDelta: 0.005,
         },
         3000,
       );
     } else if (item.type === "game") {
-      navigation.navigate("GameDetails", {
-        game: item,
-      });
+      navigation.navigate("GameDetails", { game: item });
     }
-
     setSearchQuery("");
     setFilteredResults([]);
   };
@@ -166,114 +179,112 @@ const MapScreen = ({ navigation }) => {
   }
 
   return (
-    <View style={styles.container}>
-      {/* Header Section (Logo + Search Bar) */}
-      <SafeAreaView style={styles.header}>
-        <TouchableOpacity
-          onPress={() => navigation.navigate("Drawer", { screen: "Main" })}
-        >
-          <SvgXml xml={logoXml} width={40} height={40} />
-        </TouchableOpacity>
-
-        <TextInput
-          style={styles.searchBar}
-          placeholder="Search pubs, games"
-          placeholderTextColor="#999"
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          onFocus={() => setIsSearchActive(true)}
-        />
-      </SafeAreaView>
-      {searchQuery.length > 0 && (
-        <View style={styles.searchResultsContainer}>
-          <ScrollView style={styles.scrollView} nestedScrollEnabled>
-            {filteredResults.map((item) => (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.searchResult}
-                onPress={() => handleResultPress(item)}
-              >
-                <View style={styles.resultRow}>
-                  <Text style={styles.resultText}>
-                    {item.type === "pub" ? "🍺 " : "🎲 "}
-                    {item.pub_name || item.game_name}
-                  </Text>
-
-                  {item.type === "pub" &&
-                    ["A1", "A2", "A3", "B1", "B2"].includes(
-                      item.BER?.toUpperCase?.(),
-                    ) && (
-                      <TouchableOpacity onPress={() => setShowBerInfo(true)}>
-                        <SvgXml xml={leafIconXml} width={20} height={20} />
-                      </TouchableOpacity>
-                    )}
-                </View>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
-
-      {/* Map Section (fills remaining space) */}
-      <View style={styles.mapContainer}>
-        <MapView
-          style={styles.map}
-          region={
-            currentLocation
-              ? {
-                  latitude: currentLocation.latitude,
-                  longitude: currentLocation.longitude,
-                  latitudeDelta: 0.00922,
-                  longitudeDelta: 0.00421,
-                }
-              : {
-                  latitude: 53.3498,
-                  longitude: -6.2603,
-                  latitudeDelta: 0.02,
-                  longitudeDelta: 0.02,
-                }
-          }
-        >
-          {currentLocation && (
-            <Marker
-              coordinate={currentLocation}
-              title="You are here"
-              pinColor="#FF006E"
-            />
-          )}
-          {pubs.map((pub) => (
-            <Marker
-              key={pub.id}
-              coordinate={{
-                latitude: pub.xcoord,
-                longitude: pub.ycoord,
-              }}
-              title={pub.pub_name}
-              description={pub.address}
-              pinColor="#90E0EF"
-            />
-          ))}
-
+    <TouchableWithoutFeedback
+      onPress={() => {
+        if (isSearchActive) {
+          setIsSearchActive(false);
+          setSearchQuery("");
+          setFilteredResults([]);
+        }
+        Keyboard.dismiss();
+      }}
+    >
+      <View style={styles.container}>
+        {/* Header Section (Logo + Search Bar) */}
+        <SafeAreaView style={styles.header}>
           <TouchableOpacity
-            style={styles.minimizeIconContainer}
             onPress={() => navigation.navigate("Drawer", { screen: "Main" })}
           >
-            <SvgXml xml={minimizeIconXml} width={25} height={25} />
+            <SvgXml xml={logoXml} width={40} height={40} />
           </TouchableOpacity>
 
-          <View style={styles.gamesListContainer}>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.gamesListScrollView}
-            >
-              <GamesList games={games} />
+          <TextInput
+            ref={searchBarRef}
+            style={styles.searchBar}
+            placeholder="Search pubs and games"
+            placeholderTextColor="#999"
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            onFocus={() => setIsSearchActive(true)} // Set active on focus
+          />
+        </SafeAreaView>
+        {searchQuery.length > 0 && (
+          <View style={styles.searchResultsContainer}>
+            <ScrollView style={styles.scrollView} nestedScrollEnabled>
+              {filteredResults.map((item) => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.searchResult}
+                  onPress={() => handleResultPress(item)}
+                >
+                  <View style={styles.resultRow}>
+                    <Text style={styles.resultText}>
+                      {item.type === "pub" ? "🍺 " : "🎲 "}
+                      {item.pub_name || item.game_name}
+                    </Text>
+
+                    {item.type === "pub" &&
+                      ["A1", "A2", "A3", "B1", "B2"].includes(
+                        item.BER?.toUpperCase?.(),
+                      ) && (
+                        <TouchableOpacity onPress={() => setShowBerInfo(true)}>
+                          <SvgXml xml={leafIconXml} width={20} height={20} />
+                        </TouchableOpacity>
+                      )}
+                  </View>
+                </TouchableOpacity>
+              ))}
             </ScrollView>
           </View>
-        </MapView>
+        )}
+
+        {/* Map Section (fills remaining space) */}
+        <View style={styles.mapContainer}>
+          <MapView ref={mapRef} style={styles.map} initialRegion={mapRegion}>
+            {currentLocation && (
+              <Marker
+                coordinate={currentLocation}
+                title="You are here"
+                pinColor="#FF006E"
+              />
+            )}
+            {pubs.map((pub) => (
+              <Marker
+                key={pub.id}
+                coordinate={{
+                  latitude: pub.xcoord,
+                  longitude: pub.ycoord,
+                }}
+                title={pub.pub_name}
+                description={pub.address}
+                pinColor="#90E0EF"
+              />
+            ))}
+
+            <TouchableOpacity
+              style={styles.minimizeIconContainer}
+              onPress={() => navigation.navigate("Drawer", { screen: "Main" })}
+            >
+              <SvgXml xml={minimizeIconXml} width={25} height={25} />
+            </TouchableOpacity>
+
+            <View style={styles.gamesListContainer}>
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                contentContainerStyle={styles.gamesListScrollView}
+              >
+                <GamesList games={games} />
+              </ScrollView>
+            </View>
+          </MapView>
+        </View>
+        <SearchBer
+          visible={showBerInfo}
+          onClose={() => setShowBerInfo(false)}
+        />
       </View>
-      <SearchBer visible={showBerInfo} onClose={() => setShowBerInfo(false)} />
-    </View>
+    </TouchableWithoutFeedback>
   );
 };
 
@@ -306,7 +317,7 @@ const styles = StyleSheet.create({
   },
   searchResultsContainer: {
     position: "absolute",
-    top: 60,
+    top: "12%",
     width: "90%",
     alignSelf: "center",
     backgroundColor: "white",

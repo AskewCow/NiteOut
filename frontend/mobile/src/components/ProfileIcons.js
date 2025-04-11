@@ -21,9 +21,9 @@ const profileIcons = {
   "07": monkey,
   "08": mouse,
   "09": octopus,
-  "10": panda,
-  "11": pug,
-  "12": rabbit,
+  10: panda,
+  11: pug,
+  12: rabbit,
 };
 
 export default profileIcons;

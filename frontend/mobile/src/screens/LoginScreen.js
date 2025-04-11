@@ -50,10 +50,10 @@ const LoginScreen = ({ navigation }) => {
       );
       const user = userCredential.user;
 
-            // Store the user's UID (gamerId) in AsyncStorage
-            await AsyncStorage.setItem("gamerId", user.uid);
-            console.log("Gamer ID stored successfully via Firebase:", user.uid);
-            await AsyncStorage.setItem("loggedInAs", "gamer");
+      // Store the user's UID (gamerId) in AsyncStorage
+      await AsyncStorage.setItem("gamerId", user.uid);
+      console.log("Gamer ID stored successfully via Firebase:", user.uid);
+      await AsyncStorage.setItem("loggedInAs", "gamer");
 
       // Call backend API to store the gamer ID
       const response = await fetch(`${NGROK_URL}/api/store_gamer_id`, {

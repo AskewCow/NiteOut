@@ -1,10 +1,11 @@
+import { Ionicons } from "@expo/vector-icons";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
 import React, { useEffect, useState } from "react";
-import { Dimensions } from "react-native";
+import { Dimensions, TouchableOpacity } from "react-native";
 import { SvgXml } from "react-native-svg";
 
 import { GamerProvider } from "./src/contexts/GamerContext";
@@ -214,17 +215,25 @@ export default function App() {
             <Stack.Screen
               name="FriendProfile"
               component={FriendProfile}
-              options={{
+              options={({ navigation }) => ({
                 headerShown: true,
                 gestureEnabled: false,
-              }}
+                headerLeft: () => (
+                  <TouchableOpacity
+                    onPress={() => navigation.goBack()}
+                    style={{ paddingLeft: 20 }}
+                  >
+                    <Ionicons name="arrow-back" size={30} color="#FF007A" />
+                  </TouchableOpacity>
+                ),
+              })}
             />
             <Stack.Screen
               name="ChosenEvent"
               component={ChosenEvent}
               options={{
                 headerShown: false,
-                gestureEnabled: true,
+                gestureEnabled: false,
               }}
             />
             <Stack.Screen
@@ -240,7 +249,7 @@ export default function App() {
               component={CreateEvent}
               options={{
                 headerShown: false,
-                gestureEnabled: true,
+                gestureEnabled: false,
               }}
             />
             <Stack.Screen

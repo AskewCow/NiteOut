@@ -1,4 +1,6 @@
-import React, { useEffect, useState, useRef, useCallback } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { DrawerActions } from "@react-navigation/native";
+import React, { useEffect, useState, useRef } from "react";
 import {
   View,
   Text,
@@ -12,19 +14,13 @@ import {
   TextInput,
 } from "react-native";
 import { SvgXml } from "react-native-svg";
-import { DrawerActions, useFocusEffect } from "@react-navigation/native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { NGROK_URL } from "../../environment";
 import { useGamer } from "../contexts/GamerContext";
 import { editIconXml } from "../utils/editIcon";
 import { logoXml } from "../utils/logo";
 import { pinkEditIconXml } from "../utils/pinkEditIcon";
-import { editIconXml } from "../utils/editIcon";
-import { useGamer } from "../contexts/GamerContext";
-import { doc, getDoc } from "firebase/firestore";
-
-// API base URL
+import profileIcons from "../utils/profileIcons/profileIcons";
 
 const ProfileScreen = ({ route, navigation }) => {
   const { gamerId: navigatedGamerId } = route.params || {};
@@ -138,7 +134,6 @@ const ProfileScreen = ({ route, navigation }) => {
     fetchUserInfo();
   }, [gamerId]);
 
-  
   const handleProfilePress = () => {
     navigation.dispatch(DrawerActions.openDrawer());
   };
@@ -244,9 +239,8 @@ const ProfileScreen = ({ route, navigation }) => {
     );
   }
 
-
   const userProfileXml = profileIcons[userInfo.profile] || profileIcons["01"];
- 
+
   // Format the date string from ISO format
   const formattedDate = userInfo.createdAt
     ? new Date(userInfo.createdAt).toLocaleDateString("en-US", {
