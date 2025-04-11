@@ -1,22 +1,20 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import DateTimePicker from "@react-native-community/datetimepicker";
+import { collection, addDoc, doc, updateDoc, getDoc } from "firebase/firestore";
 import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
-  TextInput,
   TouchableOpacity,
   StyleSheet,
   SafeAreaView,
   Alert,
   ScrollView,
 } from "react-native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { logoXml } from "../utils/logo";
 import { SvgXml } from "react-native-svg";
-import DateTimePicker from "@react-native-community/datetimepicker";
+
 import { db } from "../firebaseConfig";
-import { collection, addDoc, doc, updateDoc, getDoc } from "firebase/firestore";
-import { DrawerActions } from "@react-navigation/native";
-import { useNavigation } from "@react-navigation/native";
+import { logoXml } from "../utils/logo";
 
 const CreateEventScreen = ({ navigation }) => {
   const [publicanId, setPublicanId] = useState(null);
@@ -45,10 +43,10 @@ const CreateEventScreen = ({ navigation }) => {
   const [showExpirePicker, setShowExpirePicker] = useState(false);
   const [startDateTime, setStartDateTime] = useState(new Date());
   const [endDateTime, setEndDateTime] = useState(
-    new Date(Date.now() + 3600000)
+    new Date(Date.now() + 3600000),
   );
   const [expireDateTime, setExpireDateTime] = useState(
-    new Date(Date.now() + 86400000)
+    new Date(Date.now() + 86400000),
   );
   const [loading, setLoading] = useState(false);
 
@@ -64,19 +62,19 @@ const CreateEventScreen = ({ navigation }) => {
   };
 
   const incrementSeats = () => {
-    const current = parseInt(numSeats) || 0;
+    const current = parseInt(numSeats, 10) || 0;
     setNumSeats((current + 1).toString());
   };
 
   const decrementSeats = () => {
-    const current = parseInt(numSeats) || 0;
+    const current = parseInt(numSeats, 10) || 0;
     if (current > 1) {
       setNumSeats((current - 1).toString());
     }
   };
 
   const generateAvailableSlots = (start, end, maxSeats) => {
-    let slots = {};
+    const slots = {};
     let current = new Date(start);
 
     while (current < end) {
@@ -144,10 +142,10 @@ const CreateEventScreen = ({ navigation }) => {
     const availableSlots = generateAvailableSlots(
       startDateTime,
       endDateTime,
-      parseInt(numSeats)
+      parseInt(numSeats, 10),
     );
 
-    let eventData = {
+    const eventData = {
       game_type: gameType,
       start_time: startDateTime.toISOString(),
       end_time: endDateTime.toISOString(),
@@ -155,7 +153,7 @@ const CreateEventScreen = ({ navigation }) => {
       pub_id: publicanId,
       pub_details: pubDetails,
       available_slots: availableSlots,
-      num_seats: parseInt(numSeats),
+      num_seats: parseInt(numSeats, 10),
     };
 
     setLoading(true);
@@ -182,14 +180,13 @@ const CreateEventScreen = ({ navigation }) => {
   };
 
   const handleProfilePress = (gamerId) => {
-      console.log("GamerId: ", gamerId);
-      if (gamerId) {
-          navigation.goBack();
-      } else {
-          alert("Please log in again.");
-          navigation.navigate("Login");
-          return;
-      }
+    console.log("GamerId: ", gamerId);
+    if (gamerId) {
+      navigation.goBack();
+    } else {
+      alert("Please log in again.");
+      navigation.navigate("Login");
+    }
   };
 
   return (

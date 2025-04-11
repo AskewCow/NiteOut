@@ -1,5 +1,18 @@
 "use client";
 
+import { DrawerActions } from "@react-navigation/native";
+import {
+  updateDoc,
+  arrayUnion,
+  arrayRemove,
+  getDoc,
+  doc,
+  collection,
+  getDocs,
+  query,
+  where,
+  limit,
+} from "firebase/firestore";
 import { useEffect, useState } from "react";
 import {
   View,
@@ -14,23 +27,11 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from "react-native";
-import { useGamer } from "../contexts/GamerContext";
 import { SvgXml } from "react-native-svg";
-import { logoXml } from "../utils/logo";
+
+import { useGamer } from "../contexts/GamerContext";
 import { db } from "../firebaseConfig";
-import {
-  updateDoc,
-  arrayUnion,
-  arrayRemove,
-  getDoc,
-  doc,
-  collection,
-  getDocs,
-  query,
-  where,
-  limit,
-} from "firebase/firestore";
-import { DrawerActions } from "@react-navigation/native";
+import { logoXml } from "../utils/logo";
 import profileIcons from "../utils/profileIcons/profileIcons";
 
 const MyFriendsScreen = ({ navigation }) => {
@@ -55,7 +56,7 @@ const MyFriendsScreen = ({ navigation }) => {
         const unaddedQuery = query(
           gamersRef,
           where("gamerId", "not-in", friends),
-          limit(20)
+          limit(20),
         );
         const unaddedSnapshot = await getDocs(unaddedQuery);
         const fetchedUnaddedUsers = unaddedSnapshot.docs.map((doc) => ({
@@ -120,7 +121,7 @@ const MyFriendsScreen = ({ navigation }) => {
       ) {
         Alert.alert(
           "Already Friends",
-          "You are already friends with this person."
+          "You are already friends with this person.",
         );
         return;
       }

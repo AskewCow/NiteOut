@@ -4,3 +4,12 @@ __pycache__/
 node_modules
 frontend/mobile/src/config.json
 .env
+
+# Ignore virtual environment folder
+backend/venv/
+
+# Ignore other unnecessary files and folders
+node_modules/
+*.log
+*.bak
+*.swp

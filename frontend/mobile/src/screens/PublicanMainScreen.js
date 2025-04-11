@@ -1,32 +1,6 @@
-import React, { useState, useEffect, useRef } from "react";
-import {
-  View,
-  StyleSheet,
-  Text,
-  SafeAreaView,
-  TextInput,
-  ScrollView,
-  TouchableOpacity,
-  TouchableWithoutFeedback,
-  Keyboard,
-} from "react-native";
-import MapView, { Marker } from "react-native-maps";
-import * as Location from "expo-location";
-import { DrawerActions } from "@react-navigation/native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import moment from "moment";
 import { Ionicons } from "@expo/vector-icons";
-import { Calendar } from "react-native-calendars"; // Import Calendar Component
-
-// Contexts
-import { useGamer } from "../contexts/GamerContext";
-
-import LoadingAnimation from "../components/LoadingAnimation";
-import { logoXml } from "../utils/logo";
-import { SvgXml } from "react-native-svg";
-
-// Firebase Import
-import { db } from "../firebaseConfig";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { DrawerActions } from "@react-navigation/native";
 import {
   collection,
   query,
@@ -35,33 +9,44 @@ import {
   getDoc,
   getDocs,
 } from "firebase/firestore";
+import moment from "moment";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  StyleSheet,
+  Text,
+  SafeAreaView,
+  ScrollView,
+  TouchableOpacity,
+  TouchableWithoutFeedback,
+  Keyboard,
+} from "react-native";
+import { Calendar } from "react-native-calendars";
+import { SvgXml } from "react-native-svg";
+
+import LoadingAnimation from "../components/LoadingAnimation";
+import { db } from "../firebaseConfig";
+import { logoXml } from "../utils/logo";
 
 const PublicanMainScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
-  const [currentLocation, setCurrentLocation] = useState(null);
+  const [currentLocation] = useState(null);
   const [userInfo, setUserInfo] = useState(null);
-  const [games, setGames] = useState([]);
-  const [events, setEvents] = useState([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [fetchingUser, setFetchingUser] = useState(false);
+  const [games] = useState([]);
+  const [, setEvents] = useState([]);
+  const [, setFetchingUser] = useState(false);
   const [pubs, setPubs] = useState(null);
-  const [fetchingPubs, setFetchingPubs] = useState(false);
-  const [friends, setFriends] = useState(null);
-  const { setGamerId } = useGamer();
+  const [, setFetchingPubs] = useState(false);
   const [publicanId, setPublicanId] = useState(null);
-  const [selectedTag, setSelectedTag] = useState("All");
   const [searchQuery, setSearchQuery] = useState("");
-  const [filteredResults, setFilteredResults] = useState([]);
-  const searchBarRef = useRef(null);
+  const [, setFilteredResults] = useState([]);
   const [eventsByDate, setEventsByDate] = useState({});
   const [markedDates, setMarkedDates] = useState({});
   const [isSearchActive, setIsSearchActive] = useState(false);
-  const [mapRegion, setMapRegion] = useState(null);
-  const mapRef = useRef(null);
+  const [, setMapRegion] = useState(null);
   const [selectedDate, setSelectedDate] = useState(
-    moment().format("YYYY-MM-DD")
+    moment().format("YYYY-MM-DD"),
   ); // Add State for Selected Date
-  const [filteredEvents, setFilteredEvents] = useState([]);
 
   useEffect(() => {
     fetchPubs();
@@ -105,7 +90,7 @@ const PublicanMainScreen = ({ navigation }) => {
         console.log("Logged in as:", loggedInAs);
         console.log(
           "Retrieved Publican ID from AsyncStorage:",
-          retrievedPublicanId
+          retrievedPublicanId,
         );
 
         if (loggedInAs !== "publican" || !retrievedPublicanId) {
@@ -231,23 +216,13 @@ const PublicanMainScreen = ({ navigation }) => {
     }
   };
 
-  // Filter events by date
-  const filterEventsByDate = (date, events) => {
-    const filtered = events.filter(
-      (event) =>
-        moment(date).isSameOrAfter(moment(event.start_time), "day") &&
-        moment(date).isSameOrBefore(moment(event.expires), "day")
-    );
-    setFilteredEvents(filtered);
-  };
-
   // Fetch User Info from Firestore
   // Fetch User Info from Firestore
   const fetchUserInfo = async () => {
     setFetchingUser(true);
     try {
       const loggedInAs = await AsyncStorage.getItem("loggedInAs");
-      let publicanId = await AsyncStorage.getItem("publicanId");
+      const publicanId = await AsyncStorage.getItem("publicanId");
 
       console.log("Logged in as:", loggedInAs);
       console.log("Retrieved Publican ID from AsyncStorage:", publicanId);
@@ -296,35 +271,17 @@ const PublicanMainScreen = ({ navigation }) => {
 
     const filteredPubs = (pubs || [])
       .filter((pub) =>
-        pub.pub_name.toLowerCase().includes(searchQuery.toLowerCase())
+        pub.pub_name.toLowerCase().includes(searchQuery.toLowerCase()),
       )
       .map((pub) => ({ ...pub, type: "pub" }));
 
     const filteredGames = (games || [])
       .filter((game) =>
-        game.game_name.toLowerCase().includes(searchQuery.toLowerCase())
+        game.game_name.toLowerCase().includes(searchQuery.toLowerCase()),
       )
       .map((game) => ({ ...game, type: "game" }));
 
     setFilteredResults([...filteredPubs, ...filteredGames]);
-  };
-
-  const handleResultPress = (item) => {
-    if (item.type === "pub" && mapRef.current) {
-      mapRef.current.animateToRegion(
-        {
-          latitude: item.xcoord,
-          longitude: item.ycoord,
-          latitudeDelta: 0.005,
-          longitudeDelta: 0.005,
-        },
-        3000
-      );
-    } else if (item.type === "game") {
-      alert(`Game: ${item.game_name}`);
-    }
-    setSearchQuery("");
-    setFilteredResults([]);
   };
 
   if (loading) {
@@ -348,7 +305,6 @@ const PublicanMainScreen = ({ navigation }) => {
     } else {
       alert("Please log in again.");
       navigation.navigate("Login");
-      return;
     }
   };
 
@@ -533,9 +489,6 @@ const styles = StyleSheet.create({
     maxHeight: 200,
     zIndex: 10,
   },
-  scrollView: {
-    maxHeight: 200,
-  },
   searchResult: {
     padding: 10,
     borderBottomWidth: 1,
@@ -623,6 +576,7 @@ const styles = StyleSheet.create({
   },
 
   scrollView: {
+    maxHeight: 200,
     flex: 1,
     backgroundColor: "#90E0EF",
     width: "95%",

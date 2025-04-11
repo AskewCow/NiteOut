@@ -1,17 +1,5 @@
-import React, { useState, useEffect } from "react";
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  Image,
-  ActivityIndicator,
-  Alert,
-  Modal,
-} from "react-native";
 import { Ionicons } from "@expo/vector-icons";
-import MapView, { Marker } from "react-native-maps";
-import { db } from "../firebaseConfig";
+import * as Clipboard from "expo-clipboard";
 import {
   arrayRemove,
   doc,
@@ -20,11 +8,23 @@ import {
   arrayUnion,
   deleteDoc,
 } from "firebase/firestore";
-import { useGamer } from "../contexts/GamerContext";
+import React, { useState, useEffect } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ActivityIndicator,
+  Alert,
+  Modal,
+} from "react-native";
+import MapView, { Marker } from "react-native-maps";
 import { SafeAreaView } from "react-native-safe-area-context";
-import profileIcons from "../utils/profileIcons/profileIcons";
 import { SvgXml } from "react-native-svg";
-import * as Clipboard from "expo-clipboard";
+
+import { useGamer } from "../contexts/GamerContext";
+import { db } from "../firebaseConfig";
+import profileIcons from "../utils/profileIcons/profileIcons";
 
 const GameDetails = ({ route, navigation }) => {
   const { game } = route.params;
@@ -76,18 +76,17 @@ const GameDetails = ({ route, navigation }) => {
     const fetchGameData = async () => {
       const gameRef = doc(db, "games", game.id);
       const gameSnap = await getDoc(gameRef);
-      
+
       if (gameSnap.exists()) {
         const gameData = gameSnap.data();
         setIsJoined(gameData.participants.includes(gamerId));
       }
     };
     console.log("is joined:", isJoined);
-  
+
     // Fetch game data on mount and whenever game ID changes
     fetchGameData();
   }, [game.id, gamerId]);
-  
 
   const handleCancelGame = async () => {
     try {
@@ -111,7 +110,7 @@ const GameDetails = ({ route, navigation }) => {
         const endHour = new Date(game.end_time).getHours();
 
         // Create an update object for Firestore
-        let updatedSlots = { ...eventData.available_slots };
+        const updatedSlots = { ...eventData.available_slots };
 
         for (let hour = startHour; hour < endHour; hour++) {
           const slotKey = `${hour}:00-${hour + 1}:00`;
@@ -135,7 +134,7 @@ const GameDetails = ({ route, navigation }) => {
           hostData.hosted_games.includes(String(game.id))
         ) {
           console.log(
-            "Game ID exists in hosted_games. Proceeding with removal..."
+            "Game ID exists in hosted_games. Proceeding with removal...",
           );
 
           await updateDoc(hostRef, {
@@ -150,7 +149,7 @@ const GameDetails = ({ route, navigation }) => {
         const updatedHostDoc = await getDoc(hostRef);
         console.log(
           "hosted_games (after):",
-          updatedHostDoc.data().hosted_games
+          updatedHostDoc.data().hosted_games,
         );
 
         // Remove game ID from each participant's joined_games array
@@ -164,9 +163,9 @@ const GameDetails = ({ route, navigation }) => {
                 joined_games: arrayRemove(String(game.id)),
               });
               console.log(
-                `Game ID removed from ${participantId}'s joined_games`
+                `Game ID removed from ${participantId}'s joined_games`,
               );
-            }
+            },
           );
           await Promise.all(removeFromParticipants);
 
@@ -366,7 +365,7 @@ const GameDetails = ({ route, navigation }) => {
               [
                 { text: "No", style: "cancel" },
                 { text: "Yes", onPress: () => handleCancelGame() },
-              ]
+              ],
             )
           }
         >
@@ -388,7 +387,7 @@ const GameDetails = ({ route, navigation }) => {
                     [
                       { text: "Cancel", style: "destructive" },
                       { text: "Join", onPress: () => handleToggleJoin() },
-                    ]
+                    ],
                   )
           }
         >
@@ -405,8 +404,7 @@ const GameDetails = ({ route, navigation }) => {
         >
           <Text style={styles.reserveButtonText}>Leave Game</Text>
         </TouchableOpacity>
-      )} 
-
+      )}
 
       <Modal
         visible={showCode}

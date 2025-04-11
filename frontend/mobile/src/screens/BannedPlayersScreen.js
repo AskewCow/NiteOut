@@ -1,4 +1,13 @@
-
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  collection,
+  doc,
+  updateDoc,
+  getDoc,
+  where,
+  getDocs,
+  query,
+} from "firebase/firestore";
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -11,26 +20,13 @@ import {
   ScrollView,
   ActivityIndicator,
 } from "react-native";
-import { logoXml } from "../utils/logo";
 import { SvgXml } from "react-native-svg";
-import {
-  collection,
-  doc,
-  updateDoc,
-  getDoc,
-  where,
-  getDocs,
-  query,
-} from "firebase/firestore";
+
 import { db } from "../firebaseConfig";
-import { useGamer } from "../contexts/GamerContext";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { useNavigation } from "@react-navigation/native";
-import { DrawerActions } from "@react-navigation/native";
+import { logoXml } from "../utils/logo";
 
 const BannedPlayersScreen = ({ navigation }) => {
   const [publicanId, setPublicanId] = useState(null);
-  const { gamerId } = useGamer();
   const [gamerIdInput, setGamerIdInput] = useState("");
   const [gamerDetails, setGamerDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -192,14 +188,13 @@ const BannedPlayersScreen = ({ navigation }) => {
   );
 
   const handleProfilePress = (gamerId) => {
-      console.log("GamerId: ", gamerId);
-      if (gamerId) {
-          navigation.goBack();
-      } else {
-          alert("Please log in again.");
-          navigation.navigate("Login");
-          return;
-      }
+    console.log("GamerId: ", gamerId);
+    if (gamerId) {
+      navigation.goBack();
+    } else {
+      alert("Please log in again.");
+      navigation.navigate("Login");
+    }
   };
 
   return (
@@ -276,7 +271,7 @@ const BannedPlayersScreen = ({ navigation }) => {
                 {gameDetails.hosted.length > 0 ? (
                   <View style={styles.gamesList}>
                     {gameDetails.hosted.map((game, index) =>
-                      renderGameItem(game, index)
+                      renderGameItem(game, index),
                     )}
                   </View>
                 ) : (
@@ -290,7 +285,7 @@ const BannedPlayersScreen = ({ navigation }) => {
                 {gameDetails.joined.length > 0 ? (
                   <View style={styles.gamesList}>
                     {gameDetails.joined.map((game, index) =>
-                      renderGameItem(game, index)
+                      renderGameItem(game, index),
                     )}
                   </View>
                 ) : (

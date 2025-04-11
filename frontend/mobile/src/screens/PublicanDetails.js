@@ -1,5 +1,8 @@
 "use client";
 
+import { Ionicons } from "@expo/vector-icons";
+import { doc, getDoc, deleteDoc } from "firebase/firestore";
+import moment from "moment";
 import { useState, useEffect } from "react";
 import {
   View,
@@ -10,12 +13,10 @@ import {
   Alert,
   ScrollView,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import MapView, { Marker } from "react-native-maps";
-import { db } from "../firebaseConfig";
-import { doc, getDoc, deleteDoc } from "firebase/firestore";
 import { SafeAreaView } from "react-native-safe-area-context";
-import moment from "moment";
+
+import { db } from "../firebaseConfig";
 
 const PublicanDetails = ({ route, navigation }) => {
   const { eventId } = route.params;
@@ -68,7 +69,7 @@ const PublicanDetails = ({ route, navigation }) => {
               navigation.goBack();
             },
           },
-        ]
+        ],
       );
     } catch (error) {
       console.error("Error cancelling event:", error);
@@ -160,7 +161,7 @@ const PublicanDetails = ({ route, navigation }) => {
                       <Text style={styles.slotTime}>{slot}</Text>
                       <Text style={styles.slotCount}>{count} seats</Text>
                     </View>
-                  )
+                  ),
                 )}
               </View>
             </View>

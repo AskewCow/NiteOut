@@ -1,24 +1,25 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import {
+  DrawerActions,
+  useNavigation,
+  useFocusEffect,
+} from "@react-navigation/native";
+import { doc, getDoc, updateDoc } from "firebase/firestore";
 import React, { useEffect, useState, useCallback } from "react";
 import {
   View,
   Text,
   StyleSheet,
   ActivityIndicator,
-  Image,
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
   Alert,
 } from "react-native";
-import { doc, getDoc, updateDoc } from "firebase/firestore";
-import { db } from "../firebaseConfig";
-import { useGamer } from "../contexts/GamerContext";
-import { logoXml } from "../utils/logo";
 import { SvgXml } from "react-native-svg";
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { DrawerActions } from "@react-navigation/native";
-import { useNavigation } from "@react-navigation/native";
-import { useFocusEffect } from "@react-navigation/native";
+
+import { db } from "../firebaseConfig";
+import { logoXml } from "../utils/logo";
 
 const BannedPlayers = () => {
   const [bannedPlayers, setBannedPlayers] = useState([]);
@@ -48,43 +49,43 @@ const BannedPlayers = () => {
       const fetchBannedPlayers = async () => {
         try {
           setLoading(true);
-  
+
           if (!publicanId) {
             console.warn("Publican ID is not set.");
             setLoading(false);
             return;
           }
-  
+
           // Fetch the bannedPlayers list from publicans collection
           const publicanRef = doc(db, "publicans", publicanId);
           const publicanSnap = await getDoc(publicanRef);
-  
+
           if (!publicanSnap.exists()) {
             console.warn("Publican document not found");
             setLoading(false);
             return;
           }
-  
+
           const publicanData = publicanSnap.data();
           const bannedIds = publicanData.bannedPlayers || [];
           console.log("Banned Player IDs:", bannedIds);
-  
+
           if (bannedIds.length === 0) {
             setBannedPlayers([]);
             setLoading(false);
             return;
           }
-  
+
           // Fetch details of each banned player from "gamers" collection
           const bannedUsersPromises = bannedIds.map(async (bannedId) => {
             const gamerRef = doc(db, "gamers", bannedId);
             const gamerSnap = await getDoc(gamerRef);
             console.log(`Fetching gamerId: ${bannedId}`);
-  
+
             if (gamerSnap.exists()) {
               const gamerData = gamerSnap.data();
               console.log(`Fetched Gamer Data for ${bannedId}:`, gamerData);
-  
+
               return {
                 id: bannedId,
                 fullName: gamerData.fullName || "Unknown Player",
@@ -96,7 +97,7 @@ const BannedPlayers = () => {
                   : "Unknown date",
               };
             }
-  
+
             console.warn(`Gamer document not found for ID: ${bannedId}`);
             return {
               id: bannedId,
@@ -106,10 +107,10 @@ const BannedPlayers = () => {
               profile: "N/A",
             };
           });
-  
+
           const bannedUsers = await Promise.all(bannedUsersPromises);
           console.log("Fetched Banned Users:", bannedUsers);
-  
+
           setBannedPlayers(bannedUsers);
         } catch (error) {
           console.error("Error fetching banned players:", error);
@@ -121,7 +122,7 @@ const BannedPlayers = () => {
       if (publicanId) {
         fetchBannedPlayers();
       }
-    }, [publicanId])
+    }, [publicanId]),
   );
 
   // useEffect(() => {
@@ -229,7 +230,7 @@ const BannedPlayers = () => {
       });
 
       setBannedPlayers((prev) =>
-        prev.filter((player) => player.id !== playerId)
+        prev.filter((player) => player.id !== playerId),
       );
       console.log(`Successfully unbanned player with ID: ${playerId}`);
       Alert.alert("Player unbanned successfully");
@@ -256,14 +257,13 @@ const BannedPlayers = () => {
   }
 
   const handleProfilePress = (gamerId) => {
-      console.log("GamerId: ", gamerId);
-      if (gamerId) {
-          navigation.dispatch(DrawerActions.openDrawer());
-      } else {
-          alert("Please log in again.");
-          navigation.navigate("Login");
-          return;
-      }
+    console.log("GamerId: ", gamerId);
+    if (gamerId) {
+      navigation.dispatch(DrawerActions.openDrawer());
+    } else {
+      alert("Please log in again.");
+      navigation.navigate("Login");
+    }
   };
 
   return (

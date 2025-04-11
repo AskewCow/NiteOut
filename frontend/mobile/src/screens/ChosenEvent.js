@@ -1,3 +1,4 @@
+import { useNavigation, useRoute } from "@react-navigation/native";
 import React, { useState, useEffect } from "react";
 import {
   View,
@@ -13,15 +14,14 @@ import {
   Modal,
   FlatList,
 } from "react-native";
+
 import { NGROK_URL } from "../../environment";
-import { useNavigation, useRoute } from "@react-navigation/native";
-import { useGamer } from "../contexts/GamerContext";
 import TimeRangeSlider from "../components/TimeRangeSlider";
+import { useGamer } from "../contexts/GamerContext";
 
 const ChosenEvent = () => {
   const [gameName, setGameName] = useState("");
   const [gameDescription, setGameDescription] = useState("");
-  const [gameType, setGameType] = useState("Select game type");
   const [startTime, setStartTime] = useState(0);
   const [endTime, setEndTime] = useState(1);
   const [numPlayers, setNumPlayers] = useState(1);
@@ -41,7 +41,6 @@ const ChosenEvent = () => {
   ];
   const [modalVisible, setModalVisible] = useState(false);
   const [selectedGameType, setSelectedGameType] = useState("Select game type");
-  
 
   useEffect(() => {
     if (event && event.available_slots) {
@@ -49,7 +48,7 @@ const ChosenEvent = () => {
         ([timeString, capacity]) => ({
           time: timeString,
           capacity: typeof capacity === "number" ? capacity : capacity.capacity,
-        })
+        }),
       );
 
       slotsArray.sort((a, b) => {
@@ -123,13 +122,13 @@ const ChosenEvent = () => {
     console.log("selected slots: ", selectedSlotKeys);
 
     const insufficientSlots = selectedSlotKeys.filter(
-      (key) => updatedSlots[key].capacity < numPlayers
+      (key) => updatedSlots[key].capacity < numPlayers,
     );
 
     if (insufficientSlots.length > 0) {
       Alert.alert(
         "Error",
-        "Some selected time slots don't have enough capacity."
+        "Some selected time slots don't have enough capacity.",
       );
       return;
     }
@@ -194,7 +193,7 @@ const ChosenEvent = () => {
       .sort((a, b) => a.startTime.localeCompare(b.startTime));
 
     const startPos = allSlotEntries.findIndex(
-      (item) => item.key === startTimeStr
+      (item) => item.key === startTimeStr,
     );
     const endPos = allSlotEntries.findIndex((item) => item.key === endTimeStr);
     const minPos = Math.min(startPos, endPos);
@@ -216,14 +215,17 @@ const ChosenEvent = () => {
           </TouchableOpacity>
         </View>
         <View style={styles.container}>
-          <ScrollView keyboardShouldPersistTaps="handled">
+          <ScrollView
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}
+          >
             <Text style={styles.label}>Game Name</Text>
             <TextInput
               style={styles.input}
               value={gameName}
               onChangeText={setGameName}
               placeholder="Enter Game Name"
-              placeholderTextColor={"#888"}
+              placeholderTextColor="#888"
             />
 
             <Text style={styles.label}>Game Description</Text>
@@ -232,7 +234,7 @@ const ChosenEvent = () => {
               value={gameDescription}
               onChangeText={setGameDescription}
               placeholder="Enter Game Description"
-              placeholderTextColor={"#888"}
+              placeholderTextColor="#888"
               multiline
               maxLength={400}
             />
@@ -251,7 +253,7 @@ const ChosenEvent = () => {
             {/* Modal */}
             <Modal
               animationType="slide"
-              transparent={true}
+              transparent
               visible={modalVisible}
               onRequestClose={() => setModalVisible(false)}
             >
@@ -300,10 +302,10 @@ const ChosenEvent = () => {
                 onPress={() => {
                   const selectedIndices = [];
                   const startPos = timeSlots.findIndex(
-                    (slot) => slot === timeSlots[startTime]
+                    (slot) => slot === timeSlots[startTime],
                   );
                   const endPos = timeSlots.findIndex(
-                    (slot) => slot === timeSlots[endTime]
+                    (slot) => slot === timeSlots[endTime],
                   );
                   const minPos = Math.min(startPos, endPos);
                   const maxPos = Math.max(startPos, endPos);
@@ -313,7 +315,9 @@ const ChosenEvent = () => {
                   }
 
                   const maxCapacity = Math.min(
-                    ...selectedIndices.map((index) => timeSlots[index].capacity)
+                    ...selectedIndices.map(
+                      (index) => timeSlots[index].capacity,
+                    ),
                   );
                   setNumPlayers(Math.min(numPlayers + 1, maxCapacity));
                 }}
@@ -353,12 +357,17 @@ const styles = StyleSheet.create({
     color: "#000",
   },
   cancelButton: {
-    padding: 0,
+    backgroundColor: "#FF006E",
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
     alignSelf: "center",
   },
+
   cancelButtonText: {
-    color: "#000",
+    color: "#fff",
     fontSize: 16,
+    fontWeight: "bold",
   },
   container: {
     flex: 1,

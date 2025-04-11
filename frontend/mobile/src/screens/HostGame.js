@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { DrawerActions, useFocusEffect } from "@react-navigation/native";
+import { getDocs, collection, query } from "firebase/firestore";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,32 +10,29 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from "react-native";
-import { db } from "../firebaseConfig";
-import { getDocs, collection, query } from "firebase/firestore";
-import { SvgXml } from "react-native-svg";
-import { logoXml } from "../utils/logo";
-import { DrawerActions, useFocusEffect } from "@react-navigation/native";
 import { Calendar } from "react-native-calendars";
+import { SvgXml } from "react-native-svg";
+
 import { useGamer } from "../contexts/GamerContext";
+import { db } from "../firebaseConfig";
+import { logoXml } from "../utils/logo";
 
 const HostGame = ({ navigation }) => {
   const [eventsByDate, setEventsByDate] = useState({});
   const [loading, setLoading] = useState(true);
   const [selectedDate, setSelectedDate] = useState(null);
   const [markedDates, setMarkedDates] = useState({});
-  const {gamerId} = useGamer();
+  const { gamerId } = useGamer();
 
   const handleProfilePress = (gamerId) => {
     console.log("GamerId: ", gamerId);
     if (gamerId) {
-        navigation.dispatch(DrawerActions.openDrawer());
+      navigation.dispatch(DrawerActions.openDrawer());
     } else {
-        alert("Please log in again.");
-        navigation.navigate("Login");
-        return;
+      alert("Please log in again.");
+      navigation.navigate("Login");
     }
-};
-
+  };
 
   const fetchEvents = async () => {
     try {
@@ -44,7 +43,7 @@ const HostGame = ({ navigation }) => {
 
       eventSnapshot.forEach((doc) => {
         const eventData = doc.data();
-        const { start_time, end_time, pub_details } = eventData;
+        const { start_time, end_time } = eventData;
         const dateObj = new Date(start_time);
         const formattedDate = dateObj.toISOString().split("T")[0];
         const startTime = new Date(start_time).toLocaleTimeString([], {
@@ -85,7 +84,7 @@ const HostGame = ({ navigation }) => {
   useFocusEffect(
     useCallback(() => {
       fetchEvents();
-    }, [])
+    }, []),
   );
 
   if (loading) {

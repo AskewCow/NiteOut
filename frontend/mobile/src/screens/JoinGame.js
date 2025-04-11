@@ -1,3 +1,12 @@
+import {
+  collection,
+  doc,
+  updateDoc,
+  where,
+  getDocs,
+  query,
+  arrayUnion,
+} from "firebase/firestore";
 import React, { useState } from "react";
 import {
   View,
@@ -8,58 +17,24 @@ import {
   SafeAreaView,
   Alert,
   ScrollView,
-  ActivityIndicator,
 } from "react-native";
-import { logoXml } from "../utils/logo";
 import { SvgXml } from "react-native-svg";
-import {
-  collection,
-  doc,
-  updateDoc,
-  getDoc,
-  where,
-  getDocs,
-  query,
-  arrayUnion,
-} from "firebase/firestore";
-import { db } from "../firebaseConfig";
+
 import { useGamer } from "../contexts/GamerContext";
+import { db } from "../firebaseConfig";
+import { logoXml } from "../utils/logo";
 
 const JoinGame = () => {
   const { gamerId } = useGamer();
   const [gameCodeInput, setGameCodeInput] = useState("");
-  const [gamerDetails, setGamerDetails] = useState(null);
+  const [, setGamerDetails] = useState(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [gameDetails, setGameDetails] = useState({
+  const [, setGameDetails] = useState({
     hosted: [],
     joined: [],
     fullGameInfo: null,
   });
   const [selectedGameId, setSelectedGameId] = useState(null);
-
-  const fetchGameDetails = async (gameIds) => {
-    console.log("Fetching game details for IDs:", gameIds);
-    const gameDetails = [];
-    for (const gameId of gameIds) {
-      try {
-        const gameDoc = await getDoc(doc(db, "games", gameId));
-        if (gameDoc.exists()) {
-          const data = gameDoc.data();
-          console.log(`Fetched game ${gameId}:`, data);
-          gameDetails.push({
-            id: gameId,
-            name: data.game_name || "Unnamed Game",
-            pubName: data.location || "Unknown Location",
-          });
-        } else {
-          console.log(`Game with ID ${gameId} does not exist.`);
-        }
-      } catch (error) {
-        console.error(`Error fetching game ${gameId}:`, error);
-      }
-    }
-    return gameDetails;
-  };
 
   const fetchGameByCode = async () => {
     try {
@@ -113,7 +88,7 @@ const JoinGame = () => {
         "Attempting to join game:",
         selectedGameId,
         "with gamerId:",
-        gamerId
+        gamerId,
       );
 
       setIsLoading(true);
@@ -130,7 +105,7 @@ const JoinGame = () => {
       Alert.alert(
         "Game Joined!",
         "You've successfully joined the game. Have fun!",
-        [{ text: "OK" }]
+        [{ text: "OK" }],
       );
       setGameCodeInput("");
       setGamerDetails(null);
@@ -148,20 +123,6 @@ const JoinGame = () => {
     setGameCodeInput("");
     setGameDetails({ hosted: [], joined: [], fullGameInfo: null });
   };
-
-  const renderGameItem = (item, index) => (
-    <View style={styles.gameItem} key={item.id}>
-      <Text style={styles.gameNumber}>{index + 1}.</Text>
-      <View style={styles.gameDetails}>
-        <Text style={styles.gameName} numberOfLines={1} ellipsizeMode="tail">
-          {item.name}
-        </Text>
-        <Text style={styles.pubName} numberOfLines={1} ellipsizeMode="tail">
-          {item.pubName}
-        </Text>
-      </View>
-    </View>
-  );
 
   return (
     <SafeAreaView style={styles.safeArea}>
