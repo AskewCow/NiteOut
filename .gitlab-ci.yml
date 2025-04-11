@@ -36,7 +36,6 @@ lint-test-job:
     image: node:18
     script:
         - cd frontend/mobile
-        - npm ci
         - npm run lint || echo "Lint failed with code $?"
     tags:
         - docker
