@@ -214,3 +214,7 @@ For publican account:
 email: bar@gmail.com
 password: test@123
 ```
+
+### Password Reset Link Not Received?
+
+Check your spam or junk folder—it's possible the email was mistakenly marked as spam. The email will be sent from Firebase.
