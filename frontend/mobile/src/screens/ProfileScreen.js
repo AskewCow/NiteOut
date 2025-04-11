@@ -1,6 +1,4 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
-import { DrawerActions } from "@react-navigation/native";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import {
   View,
   Text,
@@ -14,13 +12,17 @@ import {
   TextInput,
 } from "react-native";
 import { SvgXml } from "react-native-svg";
+import { DrawerActions, useFocusEffect } from "@react-navigation/native";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { NGROK_URL } from "../../environment";
 import { useGamer } from "../contexts/GamerContext";
 import { editIconXml } from "../utils/editIcon";
 import { logoXml } from "../utils/logo";
 import { pinkEditIconXml } from "../utils/pinkEditIcon";
-import profileIcons from "../utils/profileIcons/profileIcons";
+import { editIconXml } from "../utils/editIcon";
+import { useGamer } from "../contexts/GamerContext";
+import { doc, getDoc } from "firebase/firestore";
 
 // API base URL
 
@@ -37,22 +39,22 @@ const ProfileScreen = ({ route, navigation }) => {
   const [gamerId, setGamerId] = useState(null);
   const [error, setError] = useState(null);
 
-  // First, ensure we have a gamerId from somewhere
   useEffect(() => {
     const fetchGamerId = async () => {
       try {
-        // Try to determine whether the user is a publican or a gamer
         const loggedInAs = await AsyncStorage.getItem("loggedInAs");
+        console.log("Logged in as:", loggedInAs);
 
         if (loggedInAs === "publican") {
           const publicanId = await AsyncStorage.getItem("publicanId");
           if (publicanId) {
             console.log("Using publicanId:", publicanId);
-            setGamerId(publicanId); // Treating publicanId as gamerId for profile fetching
+            setGamerId(publicanId);
             setIsPublican(true);
           } else {
             setError("Publican ID is required");
             setLoading(false);
+            setIsPublican(false);
             Alert.alert("Error", "Publican ID is required");
           }
         } else {
@@ -82,7 +84,6 @@ const ProfileScreen = ({ route, navigation }) => {
     fetchGamerId();
   }, [navigatedGamerId, contextGamerId]);
 
-  // Then fetch user info once we have a gamerId
   useEffect(() => {
     if (!gamerId) return;
 
@@ -137,6 +138,7 @@ const ProfileScreen = ({ route, navigation }) => {
     fetchUserInfo();
   }, [gamerId]);
 
+  
   const handleProfilePress = () => {
     navigation.dispatch(DrawerActions.openDrawer());
   };
@@ -242,8 +244,9 @@ const ProfileScreen = ({ route, navigation }) => {
     );
   }
 
-  const userProfileXml = profileIcons[userInfo.profile] || profileIcons["01"];
 
+  const userProfileXml = profileIcons[userInfo.profile] || profileIcons["01"];
+ 
   // Format the date string from ISO format
   const formattedDate = userInfo.createdAt
     ? new Date(userInfo.createdAt).toLocaleDateString("en-US", {
