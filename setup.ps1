@@ -1,10 +1,8 @@
-# Welcome Message 
+# Welcome Message
 Write-Host "---------------------------------" -ForegroundColor DarkBlue
 Write-Host "Welcome to NiteOut Installer" -ForegroundColor Magenta
 Write-Host "---------------------------------" -ForegroundColor DarkBlue
 Write-Host "" 
-Write-Host "" 
-Start-Sleep -Seconds 2  # Wait for 2 seconds
 
 # Check if Python is installed
 Write-Host "Checking if Python is installed..." -ForegroundColor Cyan
@@ -61,6 +59,17 @@ try {
 }
 Write-Host "Ngrok is installed." -ForegroundColor Yellow
 
+# Install Expo CLI if not installed
+Write-Host "Checking if Expo CLI is installed..." -ForegroundColor Cyan
+try {
+    expo --version
+    Write-Host "Expo CLI is installed." -ForegroundColor Green  # Message when Expo is found
+} catch {
+    Write-Host "Expo CLI not found. Installing globally..." -ForegroundColor Red
+    npm install -g expo-cli
+    Write-Host "Expo CLI installed successfully." -ForegroundColor Yellow
+}
+
 Write-Host "" 
 Write-Host "Prerequisite conditions have been met." -ForegroundColor Green
 Write-Host "---------------------------------" -ForegroundColor DarkBlue
@@ -92,15 +101,12 @@ Write-Host "---------------------------------" -ForegroundColor DarkBlue
 Write-Host "Installing frontend dependencies..." -ForegroundColor Cyan
 cd ..\frontend\mobile
 if ($?) {
+    # Install all dependencies (if needed) and audit for vulnerabilities
+    Write-Host "Running npm install..." -ForegroundColor Cyan
     npm install
 
-    # Check for high vulnerabilities and run npm audit fix if necessary
     Write-Host "Running npm audit..." -ForegroundColor Cyan
-    $auditResult = npm audit --json
-    if ($auditResult -match '"severity":"high"') {
-        Write-Host "High vulnerabilities detected, running 'npm audit fix'..." -ForegroundColor Red
-        npm audit fix
-    }
+    npm audit fix
     Write-Host "" 
     Write-Host "Frontend setup completed." -ForegroundColor Green
 } else {
