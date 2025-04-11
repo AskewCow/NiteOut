@@ -1,5 +1,6 @@
-import React, { createContext, useState, useEffect, useContext } from "react";
 import * as Location from "expo-location";
+import React, { createContext, useState, useEffect, useContext } from "react";
+
 import { NGROK_URL } from "../../environment";
 const LocationContext = createContext();
 

@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { DrawerActions, useFocusEffect } from "@react-navigation/native";
+import { getDoc, doc } from "firebase/firestore";
+import React, { useState, useCallback } from "react";
 import {
   View,
   Text,
@@ -8,13 +10,12 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from "react-native";
-import { db } from "../firebaseConfig";
-import { useGamer } from "../contexts/GamerContext";
-import { getDoc, doc } from "firebase/firestore";
-import { SvgXml } from "react-native-svg";
-import { logoXml } from "../utils/logo";
-import { DrawerActions, useFocusEffect } from "@react-navigation/native";
 import { Calendar } from "react-native-calendars";
+import { SvgXml } from "react-native-svg";
+
+import { useGamer } from "../contexts/GamerContext";
+import { db } from "../firebaseConfig";
+import { logoXml } from "../utils/logo";
 
 const ReservedEvents = ({ navigation }) => {
   const { gamerId } = useGamer();
@@ -39,7 +40,7 @@ const ReservedEvents = ({ navigation }) => {
           getDoc(doc(db, "games", gameId)).catch((error) => {
             console.error("Error fetching game: ", error);
             return undefined;
-          })
+          }),
         );
 
         const gameDocs = await Promise.all(gamePromises);
@@ -51,7 +52,7 @@ const ReservedEvents = ({ navigation }) => {
           if (doc.exists()) {
             const gameData = doc.data();
             const gameId = doc.id;
-            const { start_time, game_name, location } = gameData;
+            const { start_time } = gameData;
             const dateObj = new Date(start_time);
             const formattedDate = dateObj.toISOString().split("T")[0];
             const time = dateObj.toLocaleTimeString([], {
@@ -90,7 +91,7 @@ const ReservedEvents = ({ navigation }) => {
   useFocusEffect(
     useCallback(() => {
       fetchReservations();
-    }, [gamerId])
+    }, [gamerId]),
   );
 
   if (loading) {
@@ -127,7 +128,6 @@ const ReservedEvents = ({ navigation }) => {
       navigation.dispatch(DrawerActions.openDrawer());
     } else {
       navigation.navigate("Login");
-      return;
     }
   };
 

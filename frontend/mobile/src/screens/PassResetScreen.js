@@ -1,3 +1,4 @@
+import { sendPasswordResetEmail } from "firebase/auth";
 import React, { useState } from "react";
 import {
   View,
@@ -9,7 +10,7 @@ import {
   Keyboard,
   Alert,
 } from "react-native";
-import { sendPasswordResetEmail } from "firebase/auth";
+
 import { auth } from "../firebaseConfig"; // Adjust path based on your project
 
 const PassResetScreen = ({ navigation }) => {

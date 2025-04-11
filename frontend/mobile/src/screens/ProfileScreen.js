@@ -1,3 +1,5 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { DrawerActions } from "@react-navigation/native";
 import React, { useEffect, useState, useRef } from "react";
 import {
   View,
@@ -12,17 +14,15 @@ import {
   TextInput,
 } from "react-native";
 import { SvgXml } from "react-native-svg";
-import { DrawerActions } from "@react-navigation/native";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
-import profileIcons from "../utils/profileIcons/profileIcons";
+import { NGROK_URL } from "../../environment";
+import { useGamer } from "../contexts/GamerContext";
+import { editIconXml } from "../utils/editIcon";
 import { logoXml } from "../utils/logo";
 import { pinkEditIconXml } from "../utils/pinkEditIcon";
-import { editIconXml } from "../utils/editIcon";
-import { useGamer } from "../contexts/GamerContext";
+import profileIcons from "../utils/profileIcons/profileIcons";
 
 // API base URL
-import { NGROK_URL } from "../../environment";
 
 const ProfileScreen = ({ route, navigation }) => {
   const { gamerId: navigatedGamerId } = route.params || {};
@@ -90,7 +90,7 @@ const ProfileScreen = ({ route, navigation }) => {
       try {
         console.log(
           `Fetching profile for ${isPublican ? "publicanId" : "gamerId"}:`,
-          gamerId
+          gamerId,
         );
         const response = await fetch(`${NGROK_URL}/api/fetch_profile`, {
           method: "POST",
@@ -119,7 +119,7 @@ const ProfileScreen = ({ route, navigation }) => {
         setNameInput(
           userData.isPublican
             ? userData.pub_name || ""
-            : userData.fullName || ""
+            : userData.fullName || "",
         );
         setEmailInput(userData.email || "");
       } catch (error) {
@@ -127,7 +127,7 @@ const ProfileScreen = ({ route, navigation }) => {
         setError(error.message || "Server error while fetching user data");
         Alert.alert(
           "Error",
-          error.message || "Server error while fetching user data"
+          error.message || "Server error while fetching user data",
         );
       } finally {
         setLoading(false);
@@ -207,7 +207,7 @@ const ProfileScreen = ({ route, navigation }) => {
         setUserInfo((prev) => ({ ...prev, [field]: value }));
         Alert.alert(
           "Success",
-          `${field === "email" ? "Email" : "Name"} updated successfully.`
+          `${field === "email" ? "Email" : "Name"} updated successfully.`,
         );
       } else {
         Alert.alert("Error", data.error || "Failed to update info.");
@@ -275,7 +275,7 @@ const ProfileScreen = ({ route, navigation }) => {
               <TouchableOpacity
                 style={styles.editIcon}
                 onPress={() =>
-                  navigation.navigate("pfpChoice", {
+                  navigation.navigate("PfpChoice", {
                     gamerId,
                   })
                 }
@@ -309,7 +309,7 @@ const ProfileScreen = ({ route, navigation }) => {
                       if (!trimmed) {
                         Alert.alert(
                           "Invalid Name",
-                          "Pub name cannot be empty."
+                          "Pub name cannot be empty.",
                         );
                         setNameInput(currentName);
                         return;
@@ -319,7 +319,7 @@ const ProfileScreen = ({ route, navigation }) => {
                       if (exists) {
                         Alert.alert(
                           "Name Taken",
-                          "That pub name is already in use."
+                          "That pub name is already in use.",
                         );
                         setNameInput(currentName);
                         return;
@@ -330,7 +330,7 @@ const ProfileScreen = ({ route, navigation }) => {
                       if (wordCount !== 2 && wordCount !== 3) {
                         Alert.alert(
                           "Invalid Name",
-                          "Please enter a Forename and Surname."
+                          "Please enter a Forename and Surname.",
                         );
                         setNameInput(currentName);
                         return;
@@ -354,11 +354,11 @@ const ProfileScreen = ({ route, navigation }) => {
                           onPress: () =>
                             updateUserInfo(
                               isPublican ? "pub_name" : "fullName",
-                              trimmed
+                              trimmed,
                             ),
                           style: "default",
                         },
-                      ]
+                      ],
                     );
                   }}
                 />
@@ -394,18 +394,17 @@ const ProfileScreen = ({ route, navigation }) => {
                       if (!validateEmail(trimmedEmail)) {
                         Alert.alert(
                           "Invalid Email",
-                          "Please enter a valid email address."
+                          "Please enter a valid email address.",
                         );
                         setEmailInput(userInfo.email);
                         return;
                       }
-                      const emailExists = await checkIfEmailExists(
-                        trimmedEmail
-                      );
+                      const emailExists =
+                        await checkIfEmailExists(trimmedEmail);
                       if (emailExists) {
                         Alert.alert(
                           "Email Exists",
-                          "That email is already in use."
+                          "That email is already in use.",
                         );
                         setEmailInput(userInfo.email);
                         return;
@@ -426,7 +425,7 @@ const ProfileScreen = ({ route, navigation }) => {
                               updateUserInfo("email", trimmedEmail),
                             style: "default",
                           },
-                        ]
+                        ],
                       );
                     }
                   }}

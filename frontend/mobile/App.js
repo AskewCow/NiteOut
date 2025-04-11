@@ -1,39 +1,38 @@
-import React, { useEffect, useState } from "react";
-import { createStackNavigator } from "@react-navigation/stack";
 import { createDrawerNavigator } from "@react-navigation/drawer";
 import { NavigationContainer } from "@react-navigation/native";
-import { SvgXml } from "react-native-svg";
-import { Dimensions, TouchableOpacity } from "react-native";
-import { GamerProvider } from "./src/contexts/GamerContext";
-import { LocationProvider } from "./src/contexts/LocationContext";
-import { logoXml } from "./src/utils/logo";
-import { Ionicons } from "@expo/vector-icons";
+import { createStackNavigator } from "@react-navigation/stack";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { getFirestore, doc, getDoc } from "firebase/firestore";
+import React, { useEffect, useState } from "react";
+import { Dimensions } from "react-native";
+import { SvgXml } from "react-native-svg";
 
+import { GamerProvider } from "./src/contexts/GamerContext";
+import { LocationProvider } from "./src/contexts/LocationContext";
 // Screen imports
-import SignUpScreen from "./src/screens/SignUpScreen";
-import PublicanSignUpScreen from "./src/screens/PublicanSignUpScreen";
-import LoginScreen from "./src/screens/LoginScreen";
-import PassResetScreen from "./src/screens/PassResetScreen";
-import ResetVerificationScreen from "./src/screens/ResetVerificationScreen";
-import MapScreen from "./src/screens/MapScreen";
-import MainScreen from "./src/screens/MainScreen";
-import ProfileScreen from "./src/screens/ProfileScreen";
-import pfpChoiceScreen from "./src/screens/pfpChoiceScreen";
-import GameDetails from "./src/screens/GameDetails";
-import FriendProfile from "./src/screens/FriendProfile";
-import ReservedEvents from "./src/screens/ReservedEvents";
-import MyFriendsScreen from "./src/screens/MyFriendsScreen";
-import HostGame from "./src/screens/HostGame";
-import ChosenEvent from "./src/screens/ChosenEvent";
-import PublicanMainScreen from "./src/screens/PublicanMainScreen";
-import CreateEvent from "./src/screens/CreateEventScreen";
 import BannedPlayers from "./src/screens/BannedPlayers";
 import BannedPlayersScreen from "./src/screens/BannedPlayersScreen";
+import ChosenEvent from "./src/screens/ChosenEvent";
+import CreateEvent from "./src/screens/CreateEventScreen";
+import FriendProfile from "./src/screens/FriendProfile";
+import GameDetails from "./src/screens/GameDetails";
+import HostGame from "./src/screens/HostGame";
 import JoinGame from "./src/screens/JoinGame";
-import PublicanLogin from "./src/screens/PublicanLogin";
+import LoginScreen from "./src/screens/LoginScreen";
+import MainScreen from "./src/screens/MainScreen";
+import MapScreen from "./src/screens/MapScreen";
+import MyFriendsScreen from "./src/screens/MyFriendsScreen";
+import PassResetScreen from "./src/screens/PassResetScreen";
+import PfpChoiceScreen from "./src/screens/PfpChoiceScreen";
+import ProfileScreen from "./src/screens/ProfileScreen";
 import PublicanDetails from "./src/screens/PublicanDetails";
+import PublicanLogin from "./src/screens/PublicanLogin";
+import PublicanMainScreen from "./src/screens/PublicanMainScreen";
+import PublicanSignUpScreen from "./src/screens/PublicanSignUpScreen";
+import ReservedEvents from "./src/screens/ReservedEvents";
+import ResetVerificationScreen from "./src/screens/ResetVerificationScreen";
+import SignUpScreen from "./src/screens/SignUpScreen";
+import { logoXml } from "./src/utils/logo";
 
 const screenHeight = Dimensions.get("window").height;
 const headerHeight = screenHeight * 0.12;
@@ -197,8 +196,8 @@ export default function App() {
               }}
             />
             <Stack.Screen
-              name="pfpChoice"
-              component={pfpChoiceScreen}
+              name="PfpChoice"
+              component={PfpChoiceScreen}
               options={{
                 headerShown: false,
                 gestureEnabled: false,

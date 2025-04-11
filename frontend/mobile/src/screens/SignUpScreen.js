@@ -1,4 +1,7 @@
-import React, { useState } from "react";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { updateProfile, createUserWithEmailAndPassword } from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import React, { useState, useEffect } from "react";
 import {
   View,
   Text,
@@ -9,15 +12,9 @@ import {
   Keyboard,
   Alert,
 } from "react-native";
-import { useEffect } from "react";
-
-import { updateProfile } from "firebase/auth";
-import AsyncStorage from "@react-native-async-storage/async-storage";
 
 // Firebase Imports
 import { auth, db } from "../firebaseConfig";
-import { createUserWithEmailAndPassword } from "firebase/auth";
-import { doc, setDoc } from "firebase/firestore";
 
 const SignUpScreen = ({ navigation }) => {
   const [fullName, setFullName] = useState("");
@@ -115,7 +112,7 @@ const SignUpScreen = ({ navigation }) => {
       const userCredential = await createUserWithEmailAndPassword(
         auth,
         trimmedEmail,
-        password
+        password,
       );
       const user = userCredential.user;
 
@@ -128,19 +125,19 @@ const SignUpScreen = ({ navigation }) => {
 
       // Conditional navigation based on gamerId
       if (gamerId) {
-        navigation.navigate("pfpChoice", { gamerId });
+        navigation.navigate("PfpChoice", { gamerId });
       } else {
         Alert.alert("Please log in again.");
         navigation.navigate("LoginScreen");
       }
       const randomProfileId = String(
-        Math.floor(Math.random() * 12) + 1
+        Math.floor(Math.random() * 12) + 1,
       ).padStart(2, "0");
 
       // Save user data to Firestore
       try {
         await setDoc(doc(db, "users", user.uid), {
-          fullName: fullName,
+          fullName,
           email: trimmedEmail,
           profile: randomProfileId,
           friends_list: [],
