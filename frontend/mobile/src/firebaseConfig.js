@@ -3,10 +3,10 @@ import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
 const firebaseConfig = {
-  apiKey: "AIzaSyCsXXjAFlESkikhj7aWi3hs7vFlrNj3soQ",
-  projectId: "niteout-49dc5",
-  storageBucket: "niteout-storage-49dc5",
-  appId: "1:77171862574:ios:09ee78bf87992d1d2103bf",
+  apiKey: "REDACTED",
+  projectId: "REDACTED",
+  storageBucket: "REDACTED",
+  appId: "REDACTED",
 };
 
 const app = initializeApp(firebaseConfig);

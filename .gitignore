@@ -1,15 +1,43 @@
+# Mac system files
 .DS_Store
+
+# Python
 __pycache__/
 *.pyc
-node_modules
-frontend/mobile/src/config.json
-.env
+*.pyo
+*.pyd
 
-# Ignore virtual environment folder
-backend/venv/
-
-# Ignore other unnecessary files and folders
+# Node
 node_modules/
 *.log
-*.bak
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
+firebaseConfig.js
+serviceAccountKey.json
+GoogleService-Info.plist
+frontend/mobile/src/config.json
+
+# IDE/editor configs
+.vscode/
+.idea/
 *.swp
+
+# Build / dist artifacts
+dist/
+build/
+*.bak
+
+# React Native / Expo
+.expo/
+.expo-shared/
+
+# Coverage & test results
+coverage/
+*.lcov
+
+# OS generated
+Thumbs.db
+Desktop.ini
